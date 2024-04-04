@@ -1,0 +1,13 @@
+from fastapi import APIRouter, HTTPException
+
+from app.api.routes.account import router as account_router
+
+router = APIRouter()
+router.include_router(router=account_router)
+
+@router.get("/")
+async def health_check():
+  try:
+    return { "message": "Peak Test App is running" }
+  except Exception as error:
+    raise HTTPException(status_code=400, detail=str(error))
