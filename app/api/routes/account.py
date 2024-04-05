@@ -43,12 +43,12 @@ async def create_user_account(data: SignUpSchema, db: db_dependency):
     create_account(db=db, account=new_account)
     
     return JSONResponse(
-      content={"message":  f"User account created successfuly for {user.email}"},
+      content={"message":  f"Account successfully created for {user.email}"},
       status_code=200
     )
   
-  except Exception as error:
-    raise HTTPException(status_code=400, detail=str(error))
+  except auth.EmailAlreadyExistsError:
+    raise HTTPException(status_code=400, detail="Email is already used.")
   
 @router.post("/login")
 async def login_user_account(data: LoginSchema):
