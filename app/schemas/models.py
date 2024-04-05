@@ -4,6 +4,12 @@ from uuid import UUID
 from pydantic import BaseModel
 
 
+class SignUpSchema(BaseModel):
+    email: str
+    password: str
+    first_name: str
+    last_name: str
+
 ### sample
 class HealthResponse(BaseModel):
     status: str
