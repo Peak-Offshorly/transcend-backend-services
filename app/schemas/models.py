@@ -12,6 +12,11 @@ class SignUpSchema(BaseModel):
     first_name: str
     last_name: str
 
+class UpdateAccountSchema(BaseModel):
+    email: Optional[str]
+    first_name: Optional[str]
+    last_name: Optional[str]
+
 class LoginSchema(BaseModel):
     email: str
     password: str
