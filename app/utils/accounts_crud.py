@@ -2,7 +2,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 from app.database.models import Accounts
 
-# Gets one account based from email; returns Account object 
+# Gets one account based from email; returns Account object if it exists
 def get_one_account(db: Session, account_email):
     db_account = db.query(Accounts).filter(Accounts.email == account_email).first()
 
