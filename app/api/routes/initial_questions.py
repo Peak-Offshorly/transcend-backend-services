@@ -20,16 +20,16 @@ async def get_all_initial_questions(db: db_dependency):
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
 
-@router.get("/{id}")
-async def get_one_initial_question(id, db: db_dependency):
+@router.get("/{initial_question_id}")
+async def get_one_initial_question(initial_question_id, db: db_dependency):
   try:
     return initial_questions_get_one(db=db, id=id)
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
   
-# Post Save Initial Answers (would have calculations based on chosen answers)
-@router.post("/save-answers")
-async def save_initial_questions_answers(db: db_dependency):
+# Post Save Initial Answers; would have calculations based on chosen answers
+@router.post("/save-answers/{user_id}")
+async def save_initial_questions_answers(user_id, db: db_dependency):
   try:
     return None
   except Exception as error:
