@@ -10,8 +10,8 @@ class Traits(Base):
     trait = Column(String, index=True)
     score = Column(Integer, index=True)
 
-class TraitsQuestions(Base):
-    __tablename__ = 'traits_questions'
+class InitialQuestions(Base):
+    __tablename__ = 'initial_questions'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     question = Column(String, index=True)
