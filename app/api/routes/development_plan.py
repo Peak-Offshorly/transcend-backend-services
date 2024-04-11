@@ -9,7 +9,7 @@ db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/development-plan", tags=["development-plan"])
 
 @router.get("/gantt-chart/{user_id}")
-async def get_questions():
+async def get_gantt_chart():
   try:
     return { "message": "Gantt Chart" }
   except Exception as error:
@@ -17,8 +17,9 @@ async def get_questions():
 
 
 @router.get("/review-details/{user_id}")
-async def get_questions():
+async def get_review_details():
   try:
+      
     return { "message": "Review Details" }
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
