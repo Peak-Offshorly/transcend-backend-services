@@ -7,23 +7,23 @@ class Traits(Base):
     __tablename__ = 'traits'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    name = Column(String)
+    name = Column(String, index=True)
     option_id = Column(UUID(as_uuid=True), ForeignKey('options.id'))
 
 class Options(Base):
     __tablename__ = 'options'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    name = Column(String)
-    type = Column(String)
+    name = Column(String, index=True)
+    type = Column(String, index=True)
     question_id = Column(UUID(as_uuid=True), ForeignKey('questions.id'))
 
 class Categories(Base):
     __tablename__ = 'categories'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    name = Column(String)
-    score = Column(Integer)
+    name = Column(String, index=True)
+    score = Column(Integer, index=True)
     trait_id = Column(UUID(as_uuid=True), ForeignKey('traits.id'))
 
 class Answers(Base):
@@ -33,6 +33,6 @@ class Answers(Base):
     user_id = Column(String, ForeignKey('users.id'))
     question_id = Column(UUID(as_uuid=True), ForeignKey('questions.id'))
     option_id = Column(UUID(as_uuid=True), ForeignKey('options.id'))
-    answer = Column(String)
+    answer = Column(String, index=True)
 
 Base.metadata.create_all(engine)
