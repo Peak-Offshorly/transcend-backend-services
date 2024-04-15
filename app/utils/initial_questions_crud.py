@@ -1,6 +1,6 @@
 from uuid import UUID
 from sqlalchemy.orm import Session
-from app.database.models import InitialQuestions
+# from app.database.models import InitialQuestions
 
 def initial_questions_get_all(db: Session):
     return db.query(InitialQuestions).all()
