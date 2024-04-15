@@ -3,6 +3,7 @@ from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from app.database.connection import Base, engine
+from sqlalchemy.orm import relationship
 
 class Users(Base):
     __tablename__ = 'users'
@@ -13,13 +14,21 @@ class Users(Base):
     last_name = Column(String, index=True)
     role = Column(String, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
-    form_id = Column(UUID(as_uuid=True), ForeignKey("forms.id"))
+    form_id = Column(UUID(as_uuid=True), ForeignKey("forms.id")) 
+
+    
 
 class DevelopmentPlan(Base):
     __tablename__ = 'development_plan'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    user_id = Column(String, ForeignKey("users.id"))
+    name = Column(String, index=True)
+
+class UserDevelopmentPlan(Base):
+    __tablename__ = 'user_development_plan'
+
+    user_id = Column(String, ForeignKey("users.id"), primary_key=True)
+    development_plan_id = Column(UUID(as_uuid=True), ForeignKey("development_plan.id"), primary_key=True)
 
 class Forms(Base):
     __tablename__ = 'forms'
@@ -27,6 +36,8 @@ class Forms(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     name = Column(String, index=True)
     user_id = Column(String, ForeignKey("users.id"))
+
+    questions = relationship('Questions', back_populates='forms') 
 
 class UserTraits(Base):
     __tablename__ = 'user_traits'
@@ -44,6 +55,10 @@ class Questions(Base):
     forms_id = Column(UUID(as_uuid=True), ForeignKey("forms.id"))
     option_type = Column(String, index=True)
 
+    forms = relationship('Forms') 
+    options = relationship('Options', back_populates='questions')
+    answers = relationship('Answers', back_populates='questions')
+
 class Traits(Base):
     __tablename__ = 'traits'
 
@@ -58,6 +73,8 @@ class Options(Base):
     name = Column(String, index=True)
     type = Column(String, index=True)
     question_id = Column(UUID(as_uuid=True), ForeignKey('questions.id'))
+    
+    questions = relationship('Questions') 
 
 class Categories(Base):
     __tablename__ = 'categories'
@@ -75,6 +92,8 @@ class Answers(Base):
     question_id = Column(UUID(as_uuid=True), ForeignKey('questions.id'))
     option_id = Column(UUID(as_uuid=True), ForeignKey('options.id'))
     answer = Column(String, index=True)
+    
+    questions = relationship('Questions') 
 
 
 Base.metadata.create_all(engine)
