@@ -19,6 +19,7 @@ class UpdateUserSchema(BaseModel):
 class LoginSchema(BaseModel):
     email: str
     password: str
+
 class OptionSchema(BaseModel):
     id: Optional[UUID] = None
     name: str
