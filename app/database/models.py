@@ -14,7 +14,9 @@ class Users(Base):
     last_name = Column(String, index=True)
     role = Column(String, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
-    form_id = Column(UUID(as_uuid=True), ForeignKey("forms.id"))
+    form_id = Column(UUID(as_uuid=True), ForeignKey("forms.id")) 
+
+    
 
     forms = relationship('Forms', back_populates='users')
     user_traits = relationship('UserTraits', back_populates='users')
