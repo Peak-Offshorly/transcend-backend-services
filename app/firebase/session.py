@@ -12,7 +12,10 @@ from app.const import (
 )
 
 if not firebase_admin._apps:
-    cred = credentials.Certificate("././transcend-service-account-key.json")
+    # Render path for service key
+    cred = credentials.Certificate("/etc/secrets/transcend-service-account-key")
+
+    # cred = credentials.Certificate("././transcend-service-account-key.json")
     firebase_admin.initialize_app(cred)
     print("Firebase Initialized")
 
