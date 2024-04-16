@@ -13,8 +13,13 @@ app: fastapi.FastAPI = create_app()
 if __name__ == "__main__":
   uvicorn.run(
     app="main:app",
-    host=os.environ.get("SERVER_HOST", "127.0.0.1"),
-    port=os.environ.get("SERVER_PORT", 9001),
+    
+    # Server Host and Port used for Render 
+    host=os.environ.get("SERVER_HOST", "0.0.0.0"),
+    port=os.environ.get("SERVER_PORT", 10000),
+
+    # host=os.environ.get("SERVER_HOST", "127.0.0.1"),
+    # port=os.environ.get("SERVER_PORT", 9001),
     log_level="info",
     reload=True,
   )
