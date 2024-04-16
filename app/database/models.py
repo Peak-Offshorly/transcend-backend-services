@@ -16,8 +16,6 @@ class Users(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     form_id = Column(UUID(as_uuid=True), ForeignKey("forms.id")) 
 
-    
-
     forms = relationship('Forms', back_populates='users')
     user_traits = relationship('UserTraits', back_populates='users')
 
@@ -48,7 +46,7 @@ class Forms(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     name = Column(String, index=True)
     user_id = Column(String, ForeignKey("users.id"))
-    sprint_id = Column(String, ForeignKey("sprints.id"))
+    sprint_id = Column(UUID(as_uuid=True), ForeignKey("sprints.id"))
 
     users = relationship('Users', back_populates='forms')
     questions = relationship('Questions', back_populates='forms') 
