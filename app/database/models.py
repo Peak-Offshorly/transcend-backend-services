@@ -3,6 +3,7 @@ from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, F
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from app.database.connection import Base, engine
+from sqlalchemy.orm import relationship
 
 class Users(Base):
     __tablename__ = 'users'
@@ -15,11 +16,16 @@ class Users(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     form_id = Column(UUID(as_uuid=True), ForeignKey("forms.id"))
 
+    forms = relationship('Forms', back_populates='users')
+    user_traits = relationship('UserTraits', back_populates='users')
+
 class Sprints(Base):
     __tablename__ = 'sprints'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     name = Column(Integer, index=True)
+
+    forms = relationship('Forms', back_populates='sprints')
 
 class DevelopmentPlan(Base):
     __tablename__ = 'development_plan'
@@ -42,6 +48,11 @@ class Forms(Base):
     user_id = Column(String, ForeignKey("users.id"))
     sprint_id = Column(String, ForeignKey("sprints.id"))
 
+    users = relationship('Users', back_populates='forms')
+    questions = relationship('Questions', back_populates='forms') 
+    sprints = relationship('Sprints', back_populates='forms')
+    user_traits = relationship('UserTraits', back_populates='forms')
+
 class UserTraits(Base):
     __tablename__ = 'user_traits'
 
@@ -52,6 +63,11 @@ class UserTraits(Base):
     practice_id = Column(UUID(as_uuid=True), ForeignKey("practices.id"))
     t_score = Column(Integer, index=True)
 
+    users = relationship('Users', back_populates='user_traits')
+    traits = relationship('Traits', back_populates='user_traits')
+    practices = relationship('Practices', back_populates='user_traits')
+    forms = relationship('Forms', back_populates='user_traits')
+
 class Questions(Base):
     __tablename__ = 'questions'
 
@@ -59,6 +75,10 @@ class Questions(Base):
     name = Column(String, index=True)
     forms_id = Column(UUID(as_uuid=True), ForeignKey("forms.id"))
     option_type = Column(String, index=True)
+
+    forms = relationship('Forms', back_populates='questions') 
+    options = relationship('Options', back_populates='questions')
+    answers = relationship('Answers', back_populates='questions')
 
 class Traits(Base):
     __tablename__ = 'traits'
@@ -71,6 +91,9 @@ class Traits(Base):
     t_score = Column(Integer, index=True)
     option_id = Column(UUID(as_uuid=True), ForeignKey('options.id'))
 
+    options = relationship('Options', back_populates='traits')
+    user_traits = relationship('UserTraits', back_populates='traits')
+
 class Options(Base):
     __tablename__ = 'options'
 
@@ -81,6 +104,10 @@ class Options(Base):
     question_id = Column(UUID(as_uuid=True), ForeignKey('questions.id'))
     traits_id = Column(UUID(as_uuid=True), ForeignKey('traits.id'))
 
+    questions = relationship('Questions', back_populates='options') 
+    traits = relationship('Traits', back_populates='options')
+    answers = relationship('Answers', back_populates='options')
+
 class Answers(Base):
     __tablename__ = 'answers'
 
@@ -90,12 +117,17 @@ class Answers(Base):
     option_id = Column(UUID(as_uuid=True), ForeignKey('options.id'))
     answer = Column(String, index=True)
 
+    questions = relationship('Questions', back_populates='answers')
+    options = relationship('Options', back_populates='answers')
+
 class Practices(Base):
     __tablename__ = 'practices'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     name = Column(String, index=True)
     score = Column(Integer, index=True)
+
+    user_traits = relationship('UserTraits', back_populates='practices')
 
 
 Base.metadata.create_all(engine)
