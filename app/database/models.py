@@ -14,9 +14,8 @@ class Users(Base):
     last_name = Column(String, index=True)
     role = Column(String, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
-    form_id = Column(UUID(as_uuid=True), ForeignKey("forms.id")) 
+    form_id = Column(UUID(as_uuid=True), ForeignKey("forms.id"))
 
-    forms = relationship('Forms', back_populates='users')
     user_traits = relationship('UserTraits', back_populates='users')
 
 class Sprints(Base):
@@ -48,7 +47,7 @@ class Forms(Base):
     user_id = Column(String, ForeignKey("users.id"))
     sprint_id = Column(UUID(as_uuid=True), ForeignKey("sprints.id"))
 
-    users = relationship('Users', back_populates='forms')
+    users = relationship('Users', backref='forms', foreign_keys=[user_id])
     questions = relationship('Questions', back_populates='forms') 
     sprints = relationship('Sprints', back_populates='forms')
     user_traits = relationship('UserTraits', back_populates='forms')
@@ -89,9 +88,7 @@ class Traits(Base):
     standard_deviation = Column(Float, index=True)
     total_raw_score = Column(Integer, index=True)
     t_score = Column(Integer, index=True)
-    option_id = Column(UUID(as_uuid=True), ForeignKey('options.id'))
 
-    options = relationship('Options', back_populates='traits')
     user_traits = relationship('UserTraits', back_populates='traits')
 
 class Options(Base):
@@ -105,7 +102,7 @@ class Options(Base):
     traits_id = Column(UUID(as_uuid=True), ForeignKey('traits.id'))
 
     questions = relationship('Questions', back_populates='options') 
-    traits = relationship('Traits', back_populates='options')
+    traits = relationship('Traits', backref='options', foreign_keys=[traits_id])
     answers = relationship('Answers', back_populates='options')
 
 class Answers(Base):
