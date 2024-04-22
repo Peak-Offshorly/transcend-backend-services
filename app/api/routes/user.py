@@ -41,12 +41,11 @@ async def create_user_account(data: SignUpSchema, db: db_dependency):
     new_account = Users(
       id = user.uid,
       email = email,
-      password = password,
       first_name = first_name,
       last_name = last_name
     )
 
-    create_user(db=db, account=new_account)
+    create_user(db=db, user=new_account)
     
     return JSONResponse(
       content={"message":  f"Account successfully created for {user.email}"},
