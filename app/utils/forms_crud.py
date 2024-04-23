@@ -4,8 +4,6 @@ from sqlalchemy.orm import Session, joinedload
 from app.database.models import Forms, Questions, Options, Answers
 from app.schemas.models import FormSchema, QuestionSchema, OptionSchema, AnswerSchema
 
-from sqlalchemy.orm import Session
-from fastapi import HTTPException
 
 def form_initial_questions_with_options_get_all(db: Session, form_name: str, user_id: str, form_id: Optional[str]) -> FormSchema:
     questions = db.query(Questions).filter(Questions.category == 'INITIAL_QS').all()
@@ -63,16 +61,6 @@ def forms_create_one_initial_questions_form(db: Session, form: FormSchema):
 
   # Return Form data with form_id
   return form_data
-
-# 1 form all questions, options, and answers for initial questions
-def forms_with_initial_questions_options_answers_get_all(db: Session, name: str, user_id: str):
-  form = db.query(Forms).options(
-      joinedload(Forms.answers)
-  ).filter(Forms.user_id == user_id, Forms.name == name).first()
-  
-  form_type = FormSchema.model_validate(form)
-
-  return form_type
 
 # Creating Form for other set of questions/options
 def forms_create_one(db: Session, form: FormSchema):
