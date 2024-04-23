@@ -16,7 +16,8 @@ class Users(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     form_id = Column(UUID(as_uuid=True), ForeignKey("forms.id"))
 
-    user_traits = relationship('UserTraits', back_populates='users')
+    traits = relationship('Traits', back_populates='users')
+    chosen_traits = relationship('ChosenTraits', back_populates='users')
 
 class Sprints(Base):
     __tablename__ = 'sprints'
@@ -48,12 +49,13 @@ class Forms(Base):
     sprint_id = Column(UUID(as_uuid=True), ForeignKey("sprints.id"))
 
     users = relationship('Users', backref='forms', foreign_keys=[user_id])
-    questions = relationship('Questions', back_populates='forms') 
+    questions = relationship('Questions', back_populates='forms')
+    answers = relationship('Answers', back_populates='forms') 
     sprints = relationship('Sprints', back_populates='forms')
-    user_traits = relationship('UserTraits', back_populates='forms')
+    chosen_traits = relationship('ChosenTraits', back_populates='forms')
 
-class UserTraits(Base):
-    __tablename__ = 'user_traits'
+class ChosenTraits(Base):
+    __tablename__ = 'chosen_traits'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     user_id = Column(String, ForeignKey("users.id"))
@@ -62,17 +64,18 @@ class UserTraits(Base):
     practice_id = Column(UUID(as_uuid=True), ForeignKey("practices.id"))
     t_score = Column(Integer, index=True)
 
-    users = relationship('Users', back_populates='user_traits')
-    traits = relationship('Traits', back_populates='user_traits')
-    practices = relationship('Practices', back_populates='user_traits')
-    forms = relationship('Forms', back_populates='user_traits')
+    users = relationship('Users', back_populates='chosen_traits')
+    traits = relationship('Traits', back_populates='chosen_traits')
+    practices = relationship('Practices', back_populates='chosen_traits')
+    forms = relationship('Forms', back_populates='chosen_traits')
 
 class Questions(Base):
     __tablename__ = 'questions'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     name = Column(String, index=True)
-    forms_id = Column(UUID(as_uuid=True), ForeignKey("forms.id"))
+    category = Column(String, index=True)
+    form_id = Column(UUID(as_uuid=True), ForeignKey("forms.id"))
     option_type = Column(String, index=True)
 
     forms = relationship('Forms', back_populates='questions') 
@@ -83,13 +86,15 @@ class Traits(Base):
     __tablename__ = 'traits'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(String, ForeignKey("users.id"))
     name = Column(String, index=True)
     average = Column(Float, index=True)
     standard_deviation = Column(Float, index=True)
     total_raw_score = Column(Integer, index=True)
     t_score = Column(Integer, index=True)
 
-    user_traits = relationship('UserTraits', back_populates='traits')
+    users = relationship('Users', back_populates='traits')
+    chosen_traits = relationship('ChosenTraits', back_populates='traits')
 
 class Options(Base):
     __tablename__ = 'options'
@@ -97,23 +102,22 @@ class Options(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     name = Column(String, index=True)
     type = Column(String, index=True)
-    raw_score = Column(Integer, index=True)
+    trait_name = Column(String, index=True)
     question_id = Column(UUID(as_uuid=True), ForeignKey('questions.id'))
-    traits_id = Column(UUID(as_uuid=True), ForeignKey('traits.id'))
 
-    questions = relationship('Questions', back_populates='options') 
-    traits = relationship('Traits', backref='options', foreign_keys=[traits_id])
+    questions = relationship('Questions', back_populates='options')
     answers = relationship('Answers', back_populates='options')
 
 class Answers(Base):
     __tablename__ = 'answers'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    user_id = Column(String, ForeignKey('users.id'))
+    form_id = Column(UUID(as_uuid=True), ForeignKey('forms.id'))
     question_id = Column(UUID(as_uuid=True), ForeignKey('questions.id'))
     option_id = Column(UUID(as_uuid=True), ForeignKey('options.id'))
     answer = Column(String, index=True)
 
+    forms = relationship('Forms', back_populates='answers')
     questions = relationship('Questions', back_populates='answers')
     options = relationship('Options', back_populates='answers')
 
@@ -124,7 +128,7 @@ class Practices(Base):
     name = Column(String, index=True)
     score = Column(Integer, index=True)
 
-    user_traits = relationship('UserTraits', back_populates='practices')
+    chosen_traits = relationship('ChosenTraits', back_populates='practices')
 
 
 Base.metadata.create_all(engine)

@@ -20,10 +20,20 @@ class LoginSchema(BaseModel):
     email: str
     password: str
 
+class TraitsSchema(BaseModel):
+    id: Optional[UUID] = None
+    user_id: UUID
+    name: str
+    average: float
+    standard_deviation: float
+    total_raw_score: Optional[int] = None
+    t_score: Optional[int] = None
+
 class OptionSchema(BaseModel):
     id: Optional[UUID] = None
     name: str
     type: str
+    trait_name: Optional[str] = None
     question_id: Optional[UUID] = None
 
     class Config:
@@ -32,10 +42,11 @@ class OptionSchema(BaseModel):
 
 class AnswerSchema(BaseModel):
     id: Optional[UUID] = None
-    answer: List[str]
-    user_id: Optional[UUID] = None
+    answer: str
+    form_id: Optional[UUID] = None
     question_id: Optional[UUID] = None
     option_id: Optional[UUID] = None
+    trait_name: Optional[str] = None
 
     class Config:
         orm_mode = True
@@ -44,6 +55,7 @@ class AnswerSchema(BaseModel):
 class QuestionSchema(BaseModel):
     id: Optional[UUID] = None
     name: str
+    category: Optional[str] = None
     form_id: Optional[UUID] = None
     option_type: str
     options: List[OptionSchema]
@@ -56,7 +68,7 @@ class FormSchema(BaseModel):
     id: Optional[UUID] = None
     name: str
     user_id: Optional[str] = None
-    questions: List[QuestionSchema]
+    questions: Optional[List[QuestionSchema]] = None
     class Config:
         orm_mode = True
         from_attributes = True

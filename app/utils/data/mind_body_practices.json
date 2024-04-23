@@ -1,0 +1,37 @@
+{
+  "Exercise": {
+    "1": "Do regular aerobic exercise (running, walking, biking, hiking, etc.)",
+    "2": "Do strength training several days per week",
+    "3": "Do flexibility exercises several days per week",
+    "4": "Play a sport at least once per week",
+    "5": "Attend exercise classes and/or join a gym"
+  },
+  "Sleep": {
+    "1": "Go to bed by 10pm",
+    "2": "Limit time spent looking at phone or computer screens in the two hours before I go to sleep",
+    "3": "Keep bedroom cool at 65-68 F",
+    "4": "Use darkness at night and light in the morning to aid in syncing circadian rhythms",
+    "5": "Avoid caffeine after 2pm"
+  },
+  "Diet": {
+    "1": "Eat several servings of vegetables and fruits each day",
+    "2": "Avoid or minimize sugary foods and drinks",
+    "3": "Avoid or minimize alcohol consumption",
+    "4": "Stay hydrated, drinking around 8-12 cups of water per day",
+    "5": "Avoid eating after 8pm"
+  },
+  "Stress Reduction": {
+    "1": "Do mental renewal activities (e.g., meditation, yoga, tai chi) every day",
+    "2": "Spend an average of 2 hours each week in nature",
+    "3": "Spend quality time with people who are important to me almost every day",
+    "4": "Do 'morning pages' -- writing 3 pages of stream of consciousness each day",
+    "5": "Give to others (e.g., compassion, support, attention, acts of kindness, gifts)"
+  },
+  "Routines": {
+    "1": "Go to sleep and wake up at consistent times each day",
+    "2": "Eat at consistent times each day",
+    "3": "Engage in joyful, non-work, screen-free activities daily (reading a book, playing games, hobbies, sports, time with friends and family, etc.)",
+    "4": "Spend 30 minutes or less a day using social media (instagram, tiktok, twitter, facebook, youtube, etc.)",
+    "5": "Identify your most important priorities at the start of each day and reflect at the end of the day the extent to which you were able to attend to those priorities."
+  }
+}
