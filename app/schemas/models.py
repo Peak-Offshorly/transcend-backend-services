@@ -42,7 +42,7 @@ class OptionSchema(BaseModel):
 
 class AnswerSchema(BaseModel):
     id: Optional[UUID] = None
-    answer: List[str]
+    answer: str
     form_id: Optional[UUID] = None
     question_id: Optional[UUID] = None
     option_id: Optional[UUID] = None
