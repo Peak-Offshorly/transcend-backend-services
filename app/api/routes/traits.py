@@ -14,8 +14,8 @@ db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/traits", tags=["traits"])
 
 # Get Traits (Strengths and Weaknesses with the Scores)
-@router.get("/all")
-async def get_top_bottom_five_traits(request: Request ,db: db_dependency):
+@router.get("/strength-weaknesses")
+async def get_strength_weaknesses(request: Request ,db: db_dependency):
   payload = await request.json()
   user_id = payload["user_id"]
   try:
