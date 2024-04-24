@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 from app.database.models import Users
 
 # Gets one account based from email; returns Account object if it exists
-def get_one_user(db: Session, user_email):
-    db_account = db.query(Users).filter(Users.email == user_email).first()
+def get_one_user(db: Session, email: str):
+    db_account = db.query(Users).filter(Users.email == email).first()
 
     if db_account:
         return db_account

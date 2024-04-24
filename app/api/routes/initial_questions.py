@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from typing import Annotated
 from app.database.connection import get_db
-from app.schemas.models import DataFormSchema, FormSchema
+from app.schemas.models import DataFormSchema, FormSchema, InitialAnswerSchema
 from app.utils.traits_crud import traits_create, traits_compute_tscore
 from app.utils.answers_crud import answers_to_initial_questions_save
 from app.utils.forms_crud import (
@@ -49,9 +49,10 @@ async def create_get_traits_and_form_questions_options(data: DataFormSchema, db:
 @router.post("/save-answers")
 async def save_initial_questions_answers(request: Request, db: db_dependency):
   payload = await request.json()
+  answers = InitialAnswerSchema.model_validate(payload)
   try:
-    await answers_to_initial_questions_save(db=db, answers=payload)
-    traits_compute_tscore(db=db, payload=payload)
+    await answers_to_initial_questions_save(db=db, answers=answers)
+    traits_compute_tscore(db=db, answers=answers)
 
     return { "message": "Initial question answers saved and t-scores computed." }
   except Exception as error:
