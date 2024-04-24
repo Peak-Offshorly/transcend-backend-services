@@ -43,6 +43,8 @@ def traits_get_top_bottom_five(db: Session, user_id: str):
     bottom_user_traits = db.query(Traits).filter(Traits.user_id == user_id).order_by(asc(Traits.t_score)).limit(5).all()
     
     return {
+        "user_id": user_id,
+
         "strengths": [{
             "name": trait.name,
             "t_score": trait.t_score
