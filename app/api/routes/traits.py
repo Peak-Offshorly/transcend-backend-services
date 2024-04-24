@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from typing import Annotated
@@ -6,23 +6,27 @@ from app.firebase.session import firebase, auth
 from app.database.connection import get_db
 from app.utils.traits_crud import(
     traits_get_all,
-    traits_get_one
+    traits_get_one,
+    traits_get_top_bottom_five
 )
 
 db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/traits", tags=["traits"])
 
 # Get Traits (Strengths and Weaknesses with the Scores)
-@router.get("/all/{user_id}")
-async def get_all_traits(user_id ,db: db_dependency):
+@router.get("/strengths-weaknesses")
+async def get_strengths_weaknesses(request: Request ,db: db_dependency):
+  payload = await request.json()
+  user_id = payload["user_id"]
   try:
-    return traits_get_all(db)
+    return traits_get_top_bottom_five(db=db, user_id=user_id)
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
   
 # Post Save Chosen Strength and Weakness
-@router.post("/save-chosen/{user_id}")
-async def save_traits_chosen(user_id, db: db_dependency):
+@router.post("/save-chosen")
+async def save_traits_chosen(request: Request, db: db_dependency):
+  payload = await request.json()
   try:
     return None
   except Exception as error:

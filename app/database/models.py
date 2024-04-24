@@ -12,9 +12,8 @@ class Users(Base):
     email = Column(String, index=True)
     first_name = Column(String, index=True)
     last_name = Column(String, index=True)
-    role = Column(String, index=True)
+    role = Column(String, index=True, default="user")
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
-    form_id = Column(UUID(as_uuid=True), ForeignKey("forms.id"))
 
     traits = relationship('Traits', back_populates='users')
     chosen_traits = relationship('ChosenTraits', back_populates='users')

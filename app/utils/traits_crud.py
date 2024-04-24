@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import func, asc, desc
 from sqlalchemy.orm import Session
 from app.database.models import Traits
-from app.schemas.models import TraitsSchema
+from app.schemas.models import InitialAnswerSchema
 
 # Creates set of Traits for a new User
 def traits_create(db: Session, user_id: str):
@@ -26,8 +26,8 @@ def traits_create(db: Session, user_id: str):
 
 # Compute T-Score for user Traits: used in Post Save Initial Answers endpoint
 # Formula: (Count of Traits Choice - Avg)/Stdev*10+50
-def traits_compute_tscore(db: Session, payload: dict):
-    user_id = payload.get("user_id")
+def traits_compute_tscore(db: Session, answers: InitialAnswerSchema):
+    user_id = answers.user_id
     user_traits = db.query(Traits).filter(Traits.user_id == user_id).all()
 
     if user_traits:
@@ -37,6 +37,24 @@ def traits_compute_tscore(db: Session, payload: dict):
     db.commit()
 
     return { "message": "T-scores computed." }
+
+def traits_get_top_bottom_five(db: Session, user_id: str):
+    top_user_traits = db.query(Traits).filter(Traits.user_id == user_id).order_by(desc(Traits.t_score)).limit(5).all()
+    bottom_user_traits = db.query(Traits).filter(Traits.user_id == user_id).order_by(asc(Traits.t_score)).limit(5).all()
+    
+    return {
+        "user_id": user_id,
+
+        "strengths": [{
+            "name": trait.name,
+            "t_score": trait.t_score
+        } for trait in top_user_traits],
+        
+        "weaknesses": [{
+            "name": trait.name,
+            "t_score": trait.t_score
+        } for trait in bottom_user_traits]
+    }
 
 def traits_get_all(db: Session):
     return db.query(Traits).all()

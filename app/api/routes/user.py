@@ -47,7 +47,10 @@ async def create_user_account(data: SignUpSchema, db: db_dependency):
     create_user(db=db, user=new_account)
     
     return JSONResponse(
-      content={"message":  f"Account successfully created for {user.email}"},
+      content={
+        "message":  f"Account successfully created for {user.email}",
+        "user_id": new_account.id
+        },
       status_code=200
     )
   
@@ -55,7 +58,7 @@ async def create_user_account(data: SignUpSchema, db: db_dependency):
     raise HTTPException(status_code=400, detail="Email is already used.")
   
 @router.post("/login")
-async def login_user_account(data: LoginSchema):
+async def login_user_account(data: LoginSchema, db: db_dependency):
   email = data.email
   password = data.password
 
@@ -66,9 +69,14 @@ async def login_user_account(data: LoginSchema):
     )
 
     token = user["idToken"]
+    user_db = get_one_user(db=db, email=email)
     
     return JSONResponse(
-      content={"token": token},
+      content={
+        "message": f"Successfully logged in {email}",
+        "token": token,
+        "user_id": user_db.id
+        },
       status_code=200
     )
   
