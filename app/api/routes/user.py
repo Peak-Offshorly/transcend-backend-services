@@ -15,8 +15,6 @@ from app.utils.users_crud import (
 db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/accounts", tags=["accounts"])
 
-global token 
-
 @router.get("/user")
 async def get_user_account():
   try:
