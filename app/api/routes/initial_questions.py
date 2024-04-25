@@ -47,9 +47,7 @@ async def create_get_traits_and_form_questions_options(data: DataFormSchema, db:
 # Post Save Initial Answers: would have calculations based on chosen answers
 # Returns: Success Message
 @router.post("/save-answers")
-async def save_initial_questions_answers(request: Request, db: db_dependency):
-  payload = await request.json()
-  answers = InitialAnswerSchema.model_validate(payload)
+async def save_initial_questions_answers(answers: InitialAnswerSchema, db: db_dependency):
   try:
     await answers_to_initial_questions_save(db=db, answers=answers)
     traits_compute_tscore(db=db, answers=answers)
