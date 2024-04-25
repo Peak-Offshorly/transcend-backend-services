@@ -93,7 +93,7 @@ async def update_user_account(data: UpdateUserSchema, db: db_dependency):
     ### ACTUAL IMPLEMENTATION: Should get tokenId from logged-in user then use that to verify and obtain the uid of the user.
    
     #---TEST IMPLEMENTATION
-    user = get_one_user(db=db, account_email=email)
+    user = get_one_user(db=db, email=email)
     #---
 
     auth.update_user(
@@ -101,7 +101,7 @@ async def update_user_account(data: UpdateUserSchema, db: db_dependency):
       email = data.email
     )
 
-    update_user(db=db, account_id=user.id, first_name=first_name, last_name=last_name)
+    update_user(db=db, user_id=user.id, first_name=first_name, last_name=last_name)
 
     return JSONResponse(
       content={"message":  f"Account successfully updated for {user.email}"},
@@ -117,14 +117,14 @@ async def delete_user_account(email: str, db: db_dependency):
     
     ### ACTUAL IMPLEMENTATION: Should get tokenId from logged-in user then use that to verify and obtain the uid of the user.
     #---TEST IMPLEMENTATION
-    user = get_one_user(db=db, account_email=email)
+    user = get_one_user(db=db, email=email)
     #---
 
     auth.delete_user(
       uid=user.id
     )
 
-    delete_user(db=db, account_id=user.id)
+    delete_user(db=db, user_id=user.id)
 
     return JSONResponse(
       content={"message":  f"Account successfully deleted for {user.email}"},

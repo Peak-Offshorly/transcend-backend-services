@@ -2,7 +2,7 @@ import json
 from uuid import UUID
 from sqlalchemy import func, asc, desc
 from sqlalchemy.orm import Session
-from app.database.models import Traits
+from app.database.models import Traits, ChosenTraits
 from app.schemas.models import InitialAnswerSchema
 
 # Creates set of Traits for a new User
@@ -55,6 +55,12 @@ def traits_get_top_bottom_five(db: Session, user_id: str):
             "t_score": trait.t_score
         } for trait in bottom_user_traits]
     }
+
+def chosen_traits_create(db: Session, user_id: str):
+    return None
+
+def chosen_traits_get(db: Session, user_id: str):
+    return None
 
 def traits_get_all(db: Session):
     return db.query(Traits).all()
