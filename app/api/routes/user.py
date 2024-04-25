@@ -91,7 +91,7 @@ async def update_user_account(data: UpdateUserSchema, db: db_dependency):
     ### ACTUAL IMPLEMENTATION: Should get tokenId from logged-in user then use that to verify and obtain the uid of the user.
    
     #---TEST IMPLEMENTATION
-    user = get_one_user(db=db, account_email=email)
+    user = get_one_user(db=db, email=email)
     #---
 
     auth.update_user(
@@ -115,7 +115,7 @@ async def delete_user_account(email: str, db: db_dependency):
     
     ### ACTUAL IMPLEMENTATION: Should get tokenId from logged-in user then use that to verify and obtain the uid of the user.
     #---TEST IMPLEMENTATION
-    user = get_one_user(db=db, account_email=email)
+    user = get_one_user(db=db, email=email)
     #---
 
     auth.delete_user(
