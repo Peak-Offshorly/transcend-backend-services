@@ -6,8 +6,8 @@ class HealthResponse(BaseModel):
     status: str
 
 class SignUpSchema(BaseModel):
+    uid: str
     email: str
-    password: str
     first_name: str
     last_name: str
 
