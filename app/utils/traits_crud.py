@@ -46,11 +46,13 @@ def traits_get_top_bottom_five(db: Session, user_id: str):
         "user_id": user_id,
 
         "strengths": [{
+            "id": trait.id,
             "name": trait.name,
             "t_score": trait.t_score
         } for trait in top_user_traits],
         
         "weaknesses": [{
+            "id": trait.id,
             "name": trait.name,
             "t_score": trait.t_score
         } for trait in bottom_user_traits]
