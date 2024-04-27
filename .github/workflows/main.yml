@@ -24,7 +24,7 @@ jobs:
       - name: Set up Python 3.10
         uses: actions/setup-python@v3
         with:
-          python-version: "3.10"
+          python-version: "3.10.12"
           architecture: "x64"
 
       #Task for installing dependencies, multi-line command
@@ -38,5 +38,5 @@ jobs:
       - name: Lint with black
         run: |
           # Code formatting with black, check every python file in the src directory 
-          black src 
-          black --check src
+          black app
+          black --check app
