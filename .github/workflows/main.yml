@@ -22,9 +22,10 @@ jobs:
 
       #Task for setting up Python 3.10 using actions/setup-python@v2 Github action
       - name: Set up Python 3.10
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
-          python-version: 3.10.0 # Modify python version HERE
+          python-version: "3.10"
+          architecture: "x64"
 
       #Task for installing dependencies, multi-line command
       - name: Install dependencies
