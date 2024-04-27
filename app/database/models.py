@@ -13,6 +13,7 @@ class Users(Base):
     first_name = Column(String, index=True)
     last_name = Column(String, index=True)
     role = Column(String, index=True, default="user")
+    company_id = Column(String, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
     traits = relationship('Traits', back_populates='users')
@@ -58,7 +59,9 @@ class ChosenTraits(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     user_id = Column(String, ForeignKey("users.id"))
+    name = Column(String, index=True)
     trait_id = Column(UUID(as_uuid=True), ForeignKey("traits.id"))
+    trait_type = Column(String, index=True)
     form_id = Column(UUID(as_uuid=True), ForeignKey("forms.id"))
     practice_id = Column(UUID(as_uuid=True), ForeignKey("practices.id"))
     t_score = Column(Integer, index=True)
@@ -76,6 +79,7 @@ class Questions(Base):
     category = Column(String, index=True)
     form_id = Column(UUID(as_uuid=True), ForeignKey("forms.id"))
     option_type = Column(String, index=True)
+    rank = Column(Integer, index=True, default=0)
 
     forms = relationship('Forms', back_populates='questions') 
     options = relationship('Options', back_populates='questions')

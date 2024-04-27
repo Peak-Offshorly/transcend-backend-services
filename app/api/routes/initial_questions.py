@@ -17,7 +17,7 @@ router = APIRouter(prefix="/initial-questions", tags=["initial-questions"])
 
 # Get Initial Questions - slightly different Get since we get the individual questions and options and don't connect it to a specific Form id
 # Returns: Form Schema (Form, Questions, Options, Answers)
-@router.get("/get-form")
+@router.post("/get-form")
 async def create_get_traits_and_form_questions_options(data: DataFormSchema, db: db_dependency):
   try:
     form_name = data.form_name

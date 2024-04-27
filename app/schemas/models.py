@@ -6,8 +6,8 @@ class HealthResponse(BaseModel):
     status: str
 
 class SignUpSchema(BaseModel):
+    uid: str
     email: str
-    password: str
     first_name: str
     last_name: str
 
@@ -22,10 +22,10 @@ class LoginSchema(BaseModel):
 
 class TraitsSchema(BaseModel):
     id: Optional[UUID] = None
-    user_id: UUID
+    user_id: Optional[str] = None
     name: str
-    average: float
-    standard_deviation: float
+    average: Optional[float] = None
+    standard_deviation: Optional[float] = None
     total_raw_score: Optional[int] = None
     t_score: Optional[int] = None
 
@@ -59,6 +59,7 @@ class QuestionSchema(BaseModel):
     form_id: Optional[UUID] = None
     option_type: str
     options: List[OptionSchema]
+    rank: Optional[int] = None
     answer: Optional[AnswerSchema] = None
     class Config:
         orm_mode = True
@@ -78,6 +79,14 @@ class InitialAnswerSchema(BaseModel):
     form_name: str
     user_id: str
     answers: List[AnswerSchema]
+    class Config:
+        orm_mode = True
+        from_attributes = True
+
+class ChosenTraitsSchema(BaseModel):
+    user_id: str
+    strength: TraitsSchema
+    weakness: TraitsSchema
     class Config:
         orm_mode = True
         from_attributes = True
