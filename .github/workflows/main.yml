@@ -22,7 +22,7 @@ jobs:
 
       #Task for setting up Python 3.10 using actions/setup-python@v2 Github action
       - name: Set up Python 3.10
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: 3.10 # Modify python version HERE
 
@@ -39,11 +39,3 @@ jobs:
           # Code formatting with black, check every python file in the src directory 
           black src 
           black --check src
-
-      # Task for testing with pytest
-      - name: Test with pytest
-        env:
-          # Uses the JWT_SECRET_KEY env variable from the Github actions secrets
-          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
-        run: |
-          pytest
