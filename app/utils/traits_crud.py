@@ -2,8 +2,8 @@ import json
 from uuid import UUID
 from sqlalchemy import func, asc, desc
 from sqlalchemy.orm import Session
-from app.database.models import Traits
-from app.schemas.models import InitialAnswerSchema
+from app.database.models import Traits, ChosenTraits
+from app.schemas.models import TraitsSchema, InitialAnswerSchema, ChosenTraitsSchema
 
 # Creates set of Traits for a new User
 def traits_create(db: Session, user_id: str):
@@ -16,7 +16,12 @@ def traits_create(db: Session, user_id: str):
     trait_ids_names = []
 
     for name, avg, std in zip(traits_data["traits"], traits_data["traits_avg"], traits_data["traits_std"]):
-        db_trait = Traits(user_id=user_id, name=name, average=avg, standard_deviation=std)
+        db_trait = Traits(
+            user_id=user_id, 
+            name=name, 
+            average=avg, 
+            standard_deviation=std
+        )
         db.add(db_trait)
         db.flush()
         trait_ids_names.append((str(db_trait.id), db_trait.name))
@@ -35,8 +40,6 @@ def traits_compute_tscore(db: Session, answers: InitialAnswerSchema):
             trait.t_score = (func.coalesce(Traits.total_raw_score, 0) - trait.average)/trait.standard_deviation * 10 + 50
 
     db.commit()
-
-    return { "message": "T-scores computed." }
 
 def traits_get_top_bottom_five(db: Session, user_id: str):
     top_user_traits = db.query(Traits).filter(Traits.user_id == user_id).order_by(desc(Traits.t_score)).limit(5).all()
@@ -58,8 +61,38 @@ def traits_get_top_bottom_five(db: Session, user_id: str):
         } for trait in bottom_user_traits]
     }
 
-def traits_get_all(db: Session):
-    return db.query(Traits).all()
+def chosen_traits_create(db: Session, user_id: str, trait_id: str, trait_name: str, trait_type: str, t_score: int, form_id: str):
+    # Create ChosenTrait entry
+    chosen_trait = ChosenTraits(
+        user_id=user_id,
+        name=trait_name,
+        trait_id=trait_id,
+        trait_type=trait_type.upper(),
+        form_id=form_id,
+        t_score=t_score
+    )
+    db.add(chosen_trait)
+    db.flush()
 
-def traits_get_one(db: Session, id: UUID):
-    return db.query(Traits).filter_by(id=id).one()
+    db.commit()
+
+def chosen_traits_get(db: Session, user_id: str):
+    user_strength = db.query(ChosenTraits).filter(
+        ChosenTraits.user_id == user_id,
+        ChosenTraits.trait_type == "STRENGTH"
+        ).first()
+    
+    user_weakness = db.query(ChosenTraits).filter(
+        ChosenTraits.user_id == user_id,
+        ChosenTraits.trait_type == "WEAKNESS"
+        ).first()
+    
+    return {
+        "user_id": user_id,
+        "chosen_strength": {
+            "name": user_strength.name,
+        },
+        "chosen_weakness": {
+            "name": user_weakness.name
+        }
+    }

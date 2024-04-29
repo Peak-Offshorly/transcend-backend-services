@@ -8,6 +8,10 @@ async def answers_to_initial_questions_save(db: Session, answers: InitialAnswerS
     form_id = answers.form_id
     user_id = answers.user_id
     
+    # REVISION: user must be able to go back and change their answers
+    # have a checker and see if that answer for that form_id and question_id already exist, 
+    # and if it does, replace/update that answer entry 
+    
     for answer in answers.answers:
         new_answer = Answers(
             form_id=form_id,
