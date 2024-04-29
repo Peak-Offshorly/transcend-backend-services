@@ -8,20 +8,33 @@ async def answers_to_initial_questions_save(db: Session, answers: InitialAnswerS
     form_id = answers.form_id
     user_id = answers.user_id
     
-    # REVISION: user must be able to go back and change their answers
-    # have a checker and see if that answer for that form_id and question_id already exist, 
-    # and if it does, replace/update that answer entry 
+    # Reset to null the total raw score always to account for case of resubmission of initial answer Form
+    user_traits = db.query(Traits).filter(Traits.user_id == user_id).all()
+    for trait in user_traits:
+        trait.total_raw_score = None
+    db.flush()
     
     for answer in answers.answers:
-        new_answer = Answers(
-            form_id=form_id,
-            question_id=answer.question_id,
-            option_id=answer.option_id,
-            answer=answer.answer
-        )
+        existing_answer = db.query(Answers).filter(
+            Answers.form_id == form_id,
+            Answers.question_id == answer.question_id
+        ).first()
+        
+        # Check if answer already exists
+        if existing_answer:
+            existing_answer.option_id = answer.option_id
+            existing_answer.answer = answer.answer
+            
+        else:
+            new_answer = Answers(
+                form_id=form_id,
+                question_id=answer.question_id,
+                option_id=answer.option_id,
+                answer=answer.answer
+            )
 
-        # Add Answer entry to db
-        db.add(new_answer)
+            # Add Answer entry to db
+            db.add(new_answer)
 
         # Increment user Trait total_raw_score by 1
         user_trait = db.query(Traits).filter(
