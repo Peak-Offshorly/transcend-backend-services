@@ -112,7 +112,7 @@ async def get_trait_questions(user_id: str, form_name: str, db: db_dependency):
     raise HTTPException(status_code=400, detail=str(error))
 
 # Post Save Followup Trait Answers; would have calculations based on answers to determine which practices to recommend
-@router.post("/save-answers/{user_id}")
+@router.post("/save-trait-questions-answers")
 async def save_traits_answers(user_id, db: db_dependency):
   try:
     return None

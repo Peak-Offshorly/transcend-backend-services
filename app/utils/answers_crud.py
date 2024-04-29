@@ -35,3 +35,7 @@ async def answers_to_initial_questions_save(db: Session, answers: InitialAnswerS
         
     db.commit()
     return { "message": "Initial question answers saved." }
+
+async def answers_to_trait_questions_save(db: Session, answers: InitialAnswerSchema):
+
+    return { "message": "Strength/Weakness answers saved." }
