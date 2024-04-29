@@ -12,7 +12,7 @@ class Users(Base):
     email = Column(String, index=True)
     first_name = Column(String, index=True)
     last_name = Column(String, index=True)
-    role = Column(String, index=True, default="user")
+    role = Column(String, index=True)
     company_id = Column(String, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
