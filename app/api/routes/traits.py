@@ -16,9 +16,7 @@ router = APIRouter(prefix="/traits", tags=["traits"])
 
 # Get Traits (Strengths and Weaknesses with the Scores)
 @router.get("/all-strengths-weaknesses")
-async def get_strengths_weaknesses(request: Request ,db: db_dependency):
-  payload = await request.json()
-  user_id = payload["user_id"]
+async def get_strengths_weaknesses(user_id: str, db: db_dependency):
   try:
     return traits_get_top_bottom_five(db=db, user_id=user_id)
   except Exception as error:
