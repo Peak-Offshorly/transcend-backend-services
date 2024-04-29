@@ -57,7 +57,7 @@ async def save_traits_chosen(chosen_traits: ChosenTraitsSchema, db: db_dependenc
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
   
-# Create Form questions and options for trait; used in save_traits_chosen function/endpoint
+# Create Form questions and options for trait; used in Post Save Chosen Strength and Weakness
 async def create_trait_form(user_id: str, trait: str, trait_type: str, db: db_dependency):
   form_name = f"1_{trait_type.upper()}_QUESTIONS" 
   questions=[]
