@@ -7,7 +7,7 @@ from app.schemas.models import ChosenTraitsSchema, TraitsAnswerSchema, PracticeS
 from app.database.connection import get_db
 from app.utils.forms_crud import form_questions_options_get_all, forms_create_one, forms_with_questions_options_get_all
 from app.utils.answers_crud import answers_save_one
-from app.utils.practices_crud import practice_save_one
+from app.utils.practices_crud import practice_save_one, practices_by_trait_type_get
 from app.utils.traits_crud import(
     traits_get_top_bottom_five,
     chosen_traits_create,
@@ -169,10 +169,10 @@ async def save_traits_answers(answers: TraitsAnswerSchema, db: db_dependency):
     raise HTTPException(status_code=400, detail=str(error))
 
 # Get Trait Practice;
-@router.get("/get-practices/{user_id}")
-async def get_trait_practices(id, db: db_dependency):
+@router.get("/get-trait-practices")
+async def get_trait_practices(user_id: str, trait_type: str, db: db_dependency):
   try:
-    return None
+    return await practices_by_trait_type_get(db=db, user_id=user_id, trait_type=trait_type)
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
 

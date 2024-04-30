@@ -133,7 +133,7 @@ class Practices(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     user_id = Column(String, ForeignKey("users.id"))
-    chosen_traits_id = Column(UUID(as_uuid=True), ForeignKey("chosen_traits.id"))
+    chosen_trait_id = Column(UUID(as_uuid=True), ForeignKey("chosen_traits.id"))
     name = Column(String, index=True)
 
     users = relationship('Users', back_populates='practices')

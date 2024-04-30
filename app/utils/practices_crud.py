@@ -16,3 +16,17 @@ async def practice_save_one(db: Session, practice: PracticeSchema):
 
     db.add(new_practice)
     db.commit()
+
+async def practices_by_trait_type_get(db: Session, user_id: str, trait_type: str):
+    chosen_trait_id = db.query(ChosenTraits.id).filter(
+        ChosenTraits.user_id == user_id,
+        ChosenTraits.trait_type == trait_type
+    ).scalar()
+
+    practices = db.query(Practices).filter(
+        Practices.chosen_trait_id == chosen_trait_id
+    ).all()
+
+    return practices
+
+
