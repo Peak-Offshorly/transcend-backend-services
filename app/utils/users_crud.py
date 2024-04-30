@@ -2,6 +2,9 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 from app.database.models import Users, Forms, Traits, ChosenTraits, UserDevelopmentPlan, Questions, Options, Answers, Practices
 
+async def get_all_users(db: Session) -> Users:
+    return db.query(Users).all()
+
 # Gets one account based from email; returns Account object if it exists
 def get_one_user(db: Session, email: str):
     db_account = db.query(Users).filter(Users.email == email).first()

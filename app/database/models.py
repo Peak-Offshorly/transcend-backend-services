@@ -15,6 +15,7 @@ class Users(Base):
     role = Column(String, index=True)
     company_id = Column(String, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    is_active = Column(Boolean, default=True)
 
     traits = relationship('Traits', back_populates='users')
     chosen_traits = relationship('ChosenTraits', back_populates='users')
