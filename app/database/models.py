@@ -71,6 +71,7 @@ class ChosenTraits(Base):
 
     users = relationship('Users', back_populates='chosen_traits')
     traits = relationship('Traits', back_populates='chosen_traits')
+    practices = relationship('Practices', back_populates='chosen_traits')
     chosen_practices = relationship('ChosenPractices', back_populates='chosen_traits')
     forms = relationship('Forms', back_populates='chosen_traits')
 
@@ -132,11 +133,11 @@ class Practices(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     user_id = Column(String, ForeignKey("users.id"))
-    chosen_traits_id = Column(String, ForeignKey("chosen_traits.id"))
+    chosen_traits_id = Column(UUID(as_uuid=True), ForeignKey("chosen_traits.id"))
     name = Column(String, index=True)
 
     users = relationship('Users', back_populates='practices')
-    chosen_traits = relationship('ChosenTraits', back_populates='chosen_traits')
+    chosen_traits = relationship('ChosenTraits', back_populates='practices')
     chosen_practices = relationship('ChosenPractices', back_populates='practices')
 
 class ChosenPractices(Base):
