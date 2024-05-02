@@ -135,23 +135,23 @@ async def save_traits_answers(answers: TraitsAnswerSchema, db: db_dependency):
       extent_answers[answer.answer].append(answer)
 
     # First, sort the "Not at All" or "To a Small Extent" answers  by rank
-    sorted_answers = sorted(extent_answers["Not at All"] + extent_answers["To a Small Extent"], key=lambda x: x.question_rank)
+    sorted_answers_1 = sorted(extent_answers["Not at All"] + extent_answers["To a Small Extent"], key=lambda x: x.question_rank)
     # Select the first 5 practices as recommended
-    recommended_practices = sorted_answers[:5]
+    recommended_practices = sorted_answers_1[:5]
 
     # Check "To a Moderate Extent" answers if practices are still less than 5
     if len(recommended_practices) < 5 and extent_answers["To a Moderate Extent"]:
       # Sort the answers by rank
-      sorted_answers = sorted(extent_answers["To a Moderate Extent"], key=lambda x: x.question_rank)
+      sorted_answers_2 = sorted(extent_answers["To a Moderate Extent"], key=lambda x: x.question_rank)
       # Add to recommended practices until we have 5
-      recommended_practices += sorted_answers[:5 - len(recommended_practices)]
+      recommended_practices += sorted_answers_2[:5 - len(recommended_practices)]
     
     # Check "To a Large Extent" answers if needed
     if len(recommended_practices) < 5 and extent_answers["To a Large Extent"]:
       # Sort the answers by rank
-      sorted_answers = sorted(extent_answers["To a Large Extent"], key=lambda x: x.question_rank)
+      sorted_answers_3 = sorted(extent_answers["To a Large Extent"], key=lambda x: x.question_rank)
       # Add to recommended practices until we have 5
-      recommended_practices += sorted_answers[:5 - len(recommended_practices)]
+      recommended_practices += sorted_answers_3[:5 - len(recommended_practices)]
 
     for practice in recommended_practices:
       practice_data = PracticeSchema(

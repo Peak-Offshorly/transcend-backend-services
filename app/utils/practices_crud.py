@@ -10,7 +10,7 @@ async def practice_save_one(db: Session, practice: PracticeSchema):
     chosen_trait = db.query(ChosenTraits).filter(ChosenTraits.form_id == question.form_id).first()
     new_practice = Practices(
         user_id=practice.user_id,
-        chosen_traits_id=chosen_trait.id,
+        chosen_trait_id=chosen_trait.id,
         name=question.name
     )
 
