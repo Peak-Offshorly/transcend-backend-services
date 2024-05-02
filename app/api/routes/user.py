@@ -1,3 +1,4 @@
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -10,7 +11,8 @@ from app.utils.users_crud import (
     create_user,
     update_user,
     delete_user,
-    get_one_user
+    get_one_user,
+    get_all_users
 )
 db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/accounts", tags=["accounts"])
@@ -122,6 +124,41 @@ async def delete_user_account(email: str, db: db_dependency):
     return JSONResponse(
       content={"message":  f"Account successfully deleted for {user.email}"},
       status_code=200
+    )
+  except Exception as error:
+    raise HTTPException(status_code=400, detail=str(error))
+  
+@router.get("/check-if-active")
+async def check_if_active_user(db: db_dependency):
+  try:
+    print("---IS USER ACTIVE CHECKING STARTED---")
+    users_db = await get_all_users(db)
+
+    # Set a threshold for considering a user as active - set threshold to 30 days
+    activity_threshold_seconds = 30 * 24 * 60 * 60  # 30 days in seconds
+    
+    for user_db in users_db:
+      user = auth.get_user_by_email(user_db.email)
+      # Get the last sign-in timestamp from the Firebase user object
+      last_sign_in_timestamp = user.user_metadata.last_sign_in_timestamp or 0
+      # Get the current time
+      current_time = datetime.now().timestamp()
+      # Calculate the time difference in seconds since the last sign-in
+      time_difference_seconds = current_time - (last_sign_in_timestamp / 1000)  # Convert milliseconds to seconds
+
+      # Check if the user's last sign-in was within the activity threshold
+      if time_difference_seconds <= activity_threshold_seconds:
+        user_db.is_active = True
+        print(f"{user_db.email} is active")
+      else:
+        user_db.is_active = False
+        print(f"{user_db.email} is inactive")
+    
+    db.commit()
+    print("---IS USER ACTIVE CHECKING FINISHED---")
+    return JSONResponse(
+        content={"message": "IS USER ACTIVE CHECKING FINISHED"},
+        status_code=200
     )
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
