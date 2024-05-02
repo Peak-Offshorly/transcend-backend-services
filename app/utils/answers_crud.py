@@ -1,7 +1,7 @@
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 from app.database.models import Answers, Traits
-from app.schemas.models import InitialAnswerSchema
+from app.schemas.models import InitialAnswerSchema, TraitsAnswerSchema
 
 
 async def answers_to_initial_questions_save(db: Session, answers: InitialAnswerSchema):
@@ -48,3 +48,15 @@ async def answers_to_initial_questions_save(db: Session, answers: InitialAnswerS
         
     db.commit()
     return { "message": "Initial question answers saved." }
+
+async def answers_save_one(db: Session, form_id: str, question_id: str, option_id: str, answer: str):
+    new_answer = Answers(
+        form_id=form_id,
+        question_id=question_id,
+        option_id=option_id,
+        answer=answer
+    )
+
+    # Add Answer entry to db
+    db.add(new_answer)
+    db.commit()

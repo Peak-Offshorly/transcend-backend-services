@@ -45,6 +45,7 @@ class AnswerSchema(BaseModel):
     answer: str
     form_id: Optional[UUID] = None
     question_id: Optional[UUID] = None
+    question_rank: Optional[int] = None
     option_id: Optional[UUID] = None
     trait_name: Optional[str] = None
 
@@ -90,6 +91,23 @@ class ChosenTraitsSchema(BaseModel):
     class Config:
         orm_mode = True
         from_attributes = True
+
+class TraitsAnswerSchema(BaseModel):
+    form_id: UUID
+    form_name: str
+    user_id: str
+    answers: List[AnswerSchema]
+    class Config:
+        orm_mode = True
+        from_attributes = True
+
+class PracticeSchema(BaseModel):
+    user_id: str
+    question_id: UUID
+    class Config:
+        orm_mode = True
+        from_attributes = True
+
 
 class DataFormSchema(BaseModel):
     form_name: str

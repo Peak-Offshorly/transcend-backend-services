@@ -18,6 +18,8 @@ class Users(Base):
 
     traits = relationship('Traits', back_populates='users')
     chosen_traits = relationship('ChosenTraits', back_populates='users')
+    practices = relationship('Practices', back_populates='users')
+    chosen_practices = relationship('ChosenPractices', back_populates='users')
 
 class Sprints(Base):
     __tablename__ = 'sprints'
@@ -53,6 +55,7 @@ class Forms(Base):
     answers = relationship('Answers', back_populates='forms') 
     sprints = relationship('Sprints', back_populates='forms')
     chosen_traits = relationship('ChosenTraits', back_populates='forms')
+    chosen_practices = relationship('ChosenPractices', back_populates='forms')
 
 class ChosenTraits(Base):
     __tablename__ = 'chosen_traits'
@@ -62,13 +65,14 @@ class ChosenTraits(Base):
     name = Column(String, index=True)
     trait_id = Column(UUID(as_uuid=True), ForeignKey("traits.id"))
     trait_type = Column(String, index=True)
+    chosen_practice_id = Column(UUID(as_uuid=True), ForeignKey("chosen_practices.id"))
     form_id = Column(UUID(as_uuid=True), ForeignKey("forms.id"))
-    practice_id = Column(UUID(as_uuid=True), ForeignKey("practices.id"))
     t_score = Column(Integer, index=True)
 
     users = relationship('Users', back_populates='chosen_traits')
     traits = relationship('Traits', back_populates='chosen_traits')
     practices = relationship('Practices', back_populates='chosen_traits')
+    chosen_practices = relationship('ChosenPractices', back_populates='chosen_traits')
     forms = relationship('Forms', back_populates='chosen_traits')
 
 class Questions(Base):
@@ -128,10 +132,27 @@ class Practices(Base):
     __tablename__ = 'practices'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(String, ForeignKey("users.id"))
+    chosen_trait_id = Column(UUID(as_uuid=True), ForeignKey("chosen_traits.id"))
     name = Column(String, index=True)
-    score = Column(Integer, index=True)
 
+    users = relationship('Users', back_populates='practices')
     chosen_traits = relationship('ChosenTraits', back_populates='practices')
+    chosen_practices = relationship('ChosenPractices', back_populates='practices')
+
+class ChosenPractices(Base):
+    __tablename__ = 'chosen_practices'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(String, ForeignKey("users.id"))
+    name = Column(String, index=True)
+    practice_id = Column(UUID(as_uuid=True), ForeignKey("practices.id"))
+    form_id = Column(UUID(as_uuid=True), ForeignKey("forms.id"))
+
+    users = relationship('Users', back_populates='chosen_practices')
+    practices = relationship('Practices', back_populates='chosen_practices')
+    chosen_traits = relationship('ChosenTraits', back_populates='chosen_practices')
+    forms = relationship('Forms', back_populates='chosen_practices')
 
 
 Base.metadata.create_all(engine)

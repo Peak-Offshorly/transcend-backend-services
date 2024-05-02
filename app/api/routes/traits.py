@@ -1,10 +1,13 @@
 import json
+from collections import defaultdict
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from typing import Annotated
-from app.schemas.models import ChosenTraitsSchema
+from app.schemas.models import ChosenTraitsSchema, TraitsAnswerSchema, PracticeSchema
 from app.database.connection import get_db
 from app.utils.forms_crud import form_questions_options_get_all, forms_create_one, forms_with_questions_options_get_all
+from app.utils.answers_crud import answers_save_one
+from app.utils.practices_crud import practice_save_one, practices_by_trait_type_get
 from app.utils.traits_crud import(
     traits_get_top_bottom_five,
     chosen_traits_create,
@@ -16,7 +19,7 @@ router = APIRouter(prefix="/traits", tags=["traits"])
 
 # Get Traits (Strengths and Weaknesses with the Scores)
 @router.get("/all-strengths-weaknesses")
-async def get_strengths_weaknesses(user_id: str ,db: db_dependency):
+async def get_strengths_weaknesses(user_id: str, db: db_dependency):
   try:
     return traits_get_top_bottom_five(db=db, user_id=user_id)
   except Exception as error:
@@ -101,7 +104,7 @@ async def get_traits_chosen(user_id: str, db: db_dependency):
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
   
-# Get Form questions and options for trait
+# Get Form questions and options for trait strength/weakness
 @router.get("/get-trait-questions")
 async def get_trait_questions(user_id: str, form_name: str, db: db_dependency):
   try:
@@ -110,18 +113,66 @@ async def get_trait_questions(user_id: str, form_name: str, db: db_dependency):
     raise HTTPException(status_code=400, detail=str(error))
 
 # Post Save Followup Trait Answers; would have calculations based on answers to determine which practices to recommend
-@router.post("/save-answers/{user_id}")
-async def save_traits_answers(user_id, db: db_dependency):
+@router.post("/save-trait-questions-answers")
+async def save_traits_answers(answers: TraitsAnswerSchema, db: db_dependency):
+  form_id = answers.form_id
+  user_id = answers.user_id
+  recommended_practices = []
+
+  # Dictionary to store answers categorized by extent
+  extent_answers = defaultdict(list)
+
   try:
-    return None
+    for answer in answers.answers:
+      # Add all answers in DB and in extent_answers dict
+      await answers_save_one(
+        db=db,
+        form_id=form_id,
+        question_id=answer.question_id,
+        option_id=answer.option_id,
+        answer=answer.answer
+      )
+      extent_answers[answer.answer].append(answer)
+
+    # First, sort the "Not at All" or "To a Small Extent" answers  by rank
+    sorted_answers_1 = sorted(extent_answers["Not at All"] + extent_answers["To a Small Extent"], key=lambda x: x.question_rank)
+    # Select the first 5 practices as recommended
+    recommended_practices = sorted_answers_1[:5]
+
+    # Check "To a Moderate Extent" answers if practices are still less than 5
+    if len(recommended_practices) < 5 and extent_answers["To a Moderate Extent"]:
+      # Sort the answers by rank
+      sorted_answers_2 = sorted(extent_answers["To a Moderate Extent"], key=lambda x: x.question_rank)
+      # Add to recommended practices until we have 5
+      recommended_practices += sorted_answers_2[:5 - len(recommended_practices)]
+    
+    # Check "To a Large Extent" answers if needed
+    if len(recommended_practices) < 5 and extent_answers["To a Large Extent"]:
+      # Sort the answers by rank
+      sorted_answers_3 = sorted(extent_answers["To a Large Extent"], key=lambda x: x.question_rank)
+      # Add to recommended practices until we have 5
+      recommended_practices += sorted_answers_3[:5 - len(recommended_practices)]
+
+    for practice in recommended_practices:
+      practice_data = PracticeSchema(
+        user_id=user_id,
+        question_id=practice.question_id
+      )
+      
+      await practice_save_one(
+        db=db,
+        practice=practice_data
+      )
+    
+    return {'message': 'Answers and Recommended Practices saved.'}
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
 
 # Get Trait Practice;
-@router.get("/get-practices/{user_id}")
-async def get_trait_practices(id, db: db_dependency):
+@router.get("/get-trait-practices")
+async def get_trait_practices(user_id: str, trait_type: str, db: db_dependency):
   try:
-    return None
+    return await practices_by_trait_type_get(db=db, user_id=user_id, trait_type=trait_type)
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
 
