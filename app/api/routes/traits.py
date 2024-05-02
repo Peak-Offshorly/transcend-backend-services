@@ -3,7 +3,7 @@ from collections import defaultdict
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from typing import Annotated
-from app.schemas.models import ChosenTraitsSchema, TraitsAnswerSchema, PracticeSchema
+from app.schemas.models import ChosenTraitsSchema, TraitsAnswerSchema, PracticeSchema, ChosenPracticesSchema
 from app.database.connection import get_db
 from app.utils.forms_crud import form_questions_options_get_all, forms_create_one, forms_with_questions_options_get_all
 from app.utils.answers_crud import answers_save_one
@@ -177,9 +177,11 @@ async def get_trait_practices(user_id: str, trait_type: str, db: db_dependency):
     raise HTTPException(status_code=400, detail=str(error))
 
 # Post Save Trait Practices 
-@router.post("/save-practices-answers/{user_id}")
-async def save_trait_practices_answers(user_id, db: db_dependency):
+@router.post("/save-chosen-practices")
+async def save_trait_chosen_practices(chosen_practices: ChosenPracticesSchema, db: db_dependency):
   try:
+    # Should save the practices and create the Form for the user input questions after the chosen practice was saved
+    
     return None
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))

@@ -102,8 +102,19 @@ class TraitsAnswerSchema(BaseModel):
         from_attributes = True
 
 class PracticeSchema(BaseModel):
+    id: Optional[UUID] = None
+    name: Optional[str] = None
+    user_id: Optional[str] = None
+    question_id: Optional[UUID] = None
+    chosen_trait_id: Optional[UUID] = None
+    class Config:
+        orm_mode = True
+        from_attributes = True
+
+class ChosenPracticesSchema(BaseModel):
     user_id: str
-    question_id: UUID
+    strength_practice: PracticeSchema
+    weakness_practice: PracticeSchema
     class Config:
         orm_mode = True
         from_attributes = True
