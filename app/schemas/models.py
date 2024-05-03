@@ -70,6 +70,7 @@ class FormSchema(BaseModel):
     id: Optional[UUID] = None
     name: str
     user_id: Optional[str] = None
+    sprint_number: Optional[int] = 1
     questions: Optional[List[QuestionSchema]] = None
     class Config:
         orm_mode = True
@@ -113,8 +114,8 @@ class PracticeSchema(BaseModel):
 
 class ChosenPracticesSchema(BaseModel):
     user_id: str
-    strength_practice: PracticeSchema
-    weakness_practice: PracticeSchema
+    strength_practice: Optional[PracticeSchema] = None
+    weakness_practice: Optional[PracticeSchema] = None
     class Config:
         orm_mode = True
         from_attributes = True

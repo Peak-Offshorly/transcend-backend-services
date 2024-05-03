@@ -62,8 +62,8 @@ def forms_create_one_initial_questions_form(db: Session, form: FormSchema):
   return form_data
 
 # Creating FormSchema for other set of questions/options
-def form_questions_options_get_all(form_name: str, user_id: str, questions: List[str], options: List[str],
-                                   option_type: str, category: str, trait_name: str, ranks: Optional[List[int]]) -> FormSchema:
+def form_questions_options_get_all(form_name: str, user_id: str, questions: List[str], category: str, ranks: List[int], sprint_number: Optional[int] = 1,
+                                    options: Optional[List[str]] = None, option_type: Optional[str] = None, trait_name: Optional[str] = None) -> FormSchema:
     
   question_schemas = []
   
@@ -96,13 +96,14 @@ def form_questions_options_get_all(form_name: str, user_id: str, questions: List
   form_data = FormSchema(
       name=form_name,
       user_id=user_id,
-      questions=question_schemas
+      questions=question_schemas,
+      sprint_number=sprint_number
   )
   return form_data
 
 # Creating Form for other set of questions/options
 async def forms_create_one(db: Session, form: FormSchema):
-  db_form = Forms(name=form.name, user_id=form.user_id)
+  db_form = Forms(name=form.name, user_id=form.user_id, sprint_number=form.sprint_number)
   db.add(db_form)
   db.flush()
 

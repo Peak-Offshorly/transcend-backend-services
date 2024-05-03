@@ -28,7 +28,6 @@ class Sprints(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     name = Column(Integer, index=True)
 
-    forms = relationship('Forms', back_populates='sprints')
 
 class DevelopmentPlan(Base):
     __tablename__ = 'development_plan'
@@ -49,12 +48,11 @@ class Forms(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     name = Column(String, index=True)
     user_id = Column(String, ForeignKey("users.id"))
-    sprint_id = Column(UUID(as_uuid=True), ForeignKey("sprints.id"))
+    sprint_number = Column(Integer, index=True)
 
     users = relationship('Users', backref='forms', foreign_keys=[user_id])
     questions = relationship('Questions', back_populates='forms')
     answers = relationship('Answers', back_populates='forms') 
-    sprints = relationship('Sprints', back_populates='forms')
     chosen_traits = relationship('ChosenTraits', back_populates='forms')
     chosen_practices = relationship('ChosenPractices', back_populates='forms')
 
@@ -66,7 +64,6 @@ class ChosenTraits(Base):
     name = Column(String, index=True)
     trait_id = Column(UUID(as_uuid=True), ForeignKey("traits.id"))
     trait_type = Column(String, index=True)
-    chosen_practice_id = Column(UUID(as_uuid=True), ForeignKey("chosen_practices.id"))
     form_id = Column(UUID(as_uuid=True), ForeignKey("forms.id"))
     t_score = Column(Integer, index=True)
 
@@ -148,7 +145,9 @@ class ChosenPractices(Base):
     user_id = Column(String, ForeignKey("users.id"))
     name = Column(String, index=True)
     practice_id = Column(UUID(as_uuid=True), ForeignKey("practices.id"))
+    chosen_trait_id = Column(UUID(as_uuid=True), ForeignKey("chosen_traits.id"))
     form_id = Column(UUID(as_uuid=True), ForeignKey("forms.id"))
+    sprint_number = Column(Integer, index=True)
 
     users = relationship('Users', back_populates='chosen_practices')
     practices = relationship('Practices', back_populates='chosen_practices')

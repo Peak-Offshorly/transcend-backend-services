@@ -7,7 +7,7 @@ from app.schemas.models import ChosenTraitsSchema, TraitsAnswerSchema, PracticeS
 from app.database.connection import get_db
 from app.utils.forms_crud import form_questions_options_get_all, forms_create_one, forms_with_questions_options_get_all
 from app.utils.answers_crud import answers_save_one
-from app.utils.practices_crud import practice_save_one, practices_by_trait_type_get
+from app.utils.practices_crud import practice_save_one, practices_by_trait_type_get, chosen_practices_get_max_sprint, chosen_practices_save_one
 from app.utils.traits_crud import(
     traits_get_top_bottom_five,
     chosen_traits_create,
@@ -168,22 +168,114 @@ async def save_traits_answers(answers: TraitsAnswerSchema, db: db_dependency):
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
 
-# Get Trait Practice;
+# Get Trait Practices
 @router.get("/get-trait-practices")
 async def get_trait_practices(user_id: str, trait_type: str, db: db_dependency):
   try:
     return await practices_by_trait_type_get(db=db, user_id=user_id, trait_type=trait_type)
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
+  
+# Post Save Trait Practices - SEPERATE FOR STRENGTH AND WEAKNESS
+@router.post("/save-strength-practice")
+async def save_chosen_strength_practice(chosen_practices: ChosenPracticesSchema, db: db_dependency):
+  user_id = chosen_practices.user_id
+  strength_practice = chosen_practices.strength_practice
 
-# Post Save Trait Practices 
-@router.post("/save-chosen-practices")
-async def save_trait_chosen_practices(chosen_practices: ChosenPracticesSchema, db: db_dependency):
-  try:
-    # Should save the practices and create the Form for the user input questions after the chosen practice was saved
-    
-    return None
+  # Form questions, ranks and options at most 3; placeholders only
+  questions=[
+    "DEVELOPMENT_ACTION_1",
+    "DEVELOPMENT_ACTION_2",
+    "DEVELOPMENT_ACTION_3"
+  ]
+  ranks=[0,0,0]
+  options=[
+    "DEVELOPMENT_ACTION_CHOICE_1"
+  ]
+
+  # Determine which sprint you are in
+  sprint = await chosen_practices_get_max_sprint(db=db, user_id=user_id) or 1 
+  form_name = f"{sprint}_STRENGTH_PRACTICE_QUESTIONS" 
+
+  try: 
+    practice_id = strength_practice.id
+    practice_name = strength_practice.name
+    chosen_trait_id = strength_practice.chosen_trait_id
+    # Create the Form; user input Form of max 3 written inputs/answers
+    form_data = form_questions_options_get_all(
+      user_id=user_id,
+      form_name=form_name,
+      option_type="text_field",
+      category="PRACTICES_QS",
+      questions=questions,
+      options=options,
+      ranks=ranks,
+      sprint_number=sprint
+    )
+    practice_form = await forms_create_one(db=db, form=form_data)
+    # Create ChosenPractice entry with form id
+    chosen_practices_save_one(
+      db=db,
+      user_id=user_id,
+      form_id=practice_form["form_id"],
+      name=practice_name,
+      practice_id=practice_id,
+      chosen_trait_id=chosen_trait_id,
+      sprint_number=sprint
+    )
+
+    return { "message": "Chosen Strength Practice saved and Forms created." }
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
 
+@router.post("/save-weakness-practice")
+async def save_chosen_weakness_practice(chosen_practices: ChosenPracticesSchema, db: db_dependency):
+  user_id = chosen_practices.user_id
+  weakness_practice = chosen_practices.weakness_practice
+
+  # Form questions, ranks and options at most 3; placeholders only
+  questions=[
+    "DEVELOPMENT_ACTION_1",
+    "DEVELOPMENT_ACTION_2",
+    "DEVELOPMENT_ACTION_3"
+  ]
+  ranks=[0,0,0]
+  options=[
+    "DEVELOPMENT_ACTION_CHOICE_1"
+  ]
+
+  # Determine which sprint you are in
+  sprint = await chosen_practices_get_max_sprint(db=db, user_id=user_id) or 1 
+  form_name = f"{sprint}_WEAKNESS_PRACTICE_QUESTIONS" 
+
+  try: 
+    practice_id = weakness_practice.id
+    practice_name = weakness_practice.name
+    chosen_trait_id = weakness_practice.chosen_trait_id
+    # Create the Form; user input Form of max 3 written inputs/answers
+    form_data = form_questions_options_get_all(
+      user_id=user_id,
+      form_name=form_name,
+      option_type="text_field",
+      category="PRACTICES_QS",
+      questions=questions,
+      options=options,
+      ranks=ranks,
+      sprint_number=sprint
+    )
+    practice_form = await forms_create_one(db=db, form=form_data)
+    # Create ChosenPractice entry with form id
+    chosen_practices_save_one(
+      db=db,
+      user_id=user_id,
+      form_id=practice_form["form_id"],
+      name=practice_name,
+      practice_id=practice_id,
+      chosen_trait_id=chosen_trait_id,
+      sprint_number=sprint
+    )
+
+    return { "message": "Chosen Weakness Practice saved and Forms created." }
+  except Exception as error:
+    raise HTTPException(status_code=400, detail=str(error))
     

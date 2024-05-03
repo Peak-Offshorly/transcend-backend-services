@@ -1,6 +1,6 @@
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from app.database.models import Practices, Questions, ChosenTraits
+from app.database.models import Practices, Questions, ChosenTraits, ChosenPractices
 from app.schemas.models import PracticeSchema
 
 async def practice_save_one(db: Session, practice: PracticeSchema):
@@ -28,5 +28,35 @@ async def practices_by_trait_type_get(db: Session, user_id: str, trait_type: str
     ).all()
 
     return practices
+
+def chosen_practices_save_one(db: Session, user_id: str, name: str, practice_id: str, chosen_trait_id: str, form_id: str, sprint_number: int):
+    chosen_practice = ChosenPractices(
+        user_id=user_id,
+        name=name,
+        practice_id=practice_id,
+        chosen_trait_id=chosen_trait_id,
+        form_id=form_id,
+        sprint_number=sprint_number
+    )
+    db.add(chosen_practice)
+    db.flush()
+
+    db.commit()
+    
+
+async def chosen_practices_get_max_sprint(db: Session, user_id: str):
+    # get max sprint number, if there are two of the max iterate by 1 the max sprint
+    max_sprint = db.query(func.max(ChosenPractices.sprint_number)).filter(
+        ChosenPractices.user_id == user_id
+    ).scalar()
+
+    if max_sprint is None:
+        return None
+    
+    max_sprint_count = db.query(ChosenPractices).filter(ChosenPractices.sprint_number == max_sprint).count()
+    if max_sprint_count == 2:
+        return max_sprint + 1
+    
+    return max_sprint
 
 
