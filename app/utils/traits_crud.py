@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import func, asc, desc
 from sqlalchemy.orm import Session
 from app.database.models import Traits, ChosenTraits
-from app.schemas.models import TraitsSchema, InitialAnswerSchema, ChosenTraitsSchema
+from app.schemas.models import TraitsSchema, FormAnswerSchema, ChosenTraitsSchema
 
 # Creates set of Traits for a new User
 def traits_create(db: Session, user_id: str):
@@ -31,7 +31,7 @@ def traits_create(db: Session, user_id: str):
 
 # Compute T-Score for user Traits: used in Post Save Initial Answers endpoint
 # Formula: (Count of Traits Choice - Avg)/Stdev*10+50
-def traits_compute_tscore(db: Session, answers: InitialAnswerSchema):
+def traits_compute_tscore(db: Session, answers: FormAnswerSchema):
     user_id = answers.user_id
     user_traits = db.query(Traits).filter(Traits.user_id == user_id).all()
 

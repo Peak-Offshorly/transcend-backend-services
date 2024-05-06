@@ -76,7 +76,7 @@ class FormSchema(BaseModel):
         orm_mode = True
         from_attributes = True
 
-class InitialAnswerSchema(BaseModel):
+class FormAnswerSchema(BaseModel):
     form_id: UUID
     form_name: str
     user_id: str
@@ -89,15 +89,6 @@ class ChosenTraitsSchema(BaseModel):
     user_id: str
     strength: TraitsSchema
     weakness: TraitsSchema
-    class Config:
-        orm_mode = True
-        from_attributes = True
-
-class TraitsAnswerSchema(BaseModel):
-    form_id: UUID
-    form_name: str
-    user_id: str
-    answers: List[AnswerSchema]
     class Config:
         orm_mode = True
         from_attributes = True
@@ -119,7 +110,6 @@ class ChosenPracticesSchema(BaseModel):
     class Config:
         orm_mode = True
         from_attributes = True
-
 
 class DataFormSchema(BaseModel):
     form_name: str

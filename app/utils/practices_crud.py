@@ -45,6 +45,8 @@ async def practices_by_trait_type_get(db: Session, user_id: str, trait_type: str
     return practices
 
 def chosen_practices_save_one(db: Session, user_id: str, name: str, practice_id: str, chosen_trait_id: str, form_id: str, sprint_number: int):
+    #TO ADD(?): checker for sprint para di magduplicate
+
     chosen_practice = ChosenPractices(
         user_id=user_id,
         name=name,

@@ -3,7 +3,7 @@ from collections import defaultdict
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from typing import Annotated
-from app.schemas.models import ChosenTraitsSchema, TraitsAnswerSchema, PracticeSchema, ChosenPracticesSchema
+from app.schemas.models import ChosenTraitsSchema, FormAnswerSchema, PracticeSchema, ChosenPracticesSchema
 from app.database.connection import get_db
 from app.utils.forms_crud import form_questions_options_get_all, forms_create_one, forms_with_questions_options_get_all
 from app.utils.answers_crud import answers_save_one
@@ -120,7 +120,7 @@ async def get_trait_questions(user_id: str, form_name: str, db: db_dependency):
 
 # Post Save Followup Trait Answers; would have calculations based on answers to determine which practices to recommend
 @router.post("/save-trait-questions-answers")
-async def save_traits_answers(answers: TraitsAnswerSchema, db: db_dependency):
+async def save_traits_answers(answers: FormAnswerSchema, db: db_dependency):
   form_id = answers.form_id
   user_id = answers.user_id
   recommended_practices = []

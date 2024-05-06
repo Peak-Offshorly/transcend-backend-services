@@ -1,10 +1,10 @@
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 from app.database.models import Answers, Traits
-from app.schemas.models import InitialAnswerSchema, TraitsAnswerSchema
+from app.schemas.models import FormAnswerSchema
 
 
-async def answers_to_initial_questions_save(db: Session, answers: InitialAnswerSchema):
+async def answers_to_initial_questions_save(db: Session, answers: FormAnswerSchema):
     form_id = answers.form_id
     user_id = answers.user_id
     
