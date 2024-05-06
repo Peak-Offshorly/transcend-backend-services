@@ -7,7 +7,13 @@ from app.schemas.models import ChosenTraitsSchema, TraitsAnswerSchema, PracticeS
 from app.database.connection import get_db
 from app.utils.forms_crud import form_questions_options_get_all, forms_create_one, forms_with_questions_options_get_all
 from app.utils.answers_crud import answers_save_one
-from app.utils.practices_crud import practice_save_one, practices_by_trait_type_get, chosen_practices_get_max_sprint, chosen_practices_save_one
+from app.utils.practices_crud import(
+  practice_save_one, 
+  practices_by_trait_type_get,
+  practices_clear_existing,
+  chosen_practices_get_max_sprint, 
+  chosen_practices_save_one
+) 
 from app.utils.traits_crud import(
     traits_get_top_bottom_five,
     chosen_traits_create,
@@ -153,6 +159,10 @@ async def save_traits_answers(answers: TraitsAnswerSchema, db: db_dependency):
       # Add to recommended practices until we have 5
       recommended_practices += sorted_answers_3[:5 - len(recommended_practices)]
 
+    # Clear if there are existing practices in DB
+    await practices_clear_existing(db=db, user_id=user_id, question_id=recommended_practices[0].question_id)
+
+    # Add each recommended practice in DB
     for practice in recommended_practices:
       practice_data = PracticeSchema(
         user_id=user_id,

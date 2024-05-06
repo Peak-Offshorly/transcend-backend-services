@@ -5,7 +5,6 @@ from app.schemas.models import PracticeSchema
 
 async def practice_save_one(db: Session, practice: PracticeSchema):
     question_id = practice.question_id
-    
     question = db.query(Questions).filter(Questions.id == question_id).first()
     chosen_trait = db.query(ChosenTraits).filter(ChosenTraits.form_id == question.form_id).first()
     new_practice = Practices(
@@ -15,6 +14,22 @@ async def practice_save_one(db: Session, practice: PracticeSchema):
     )
 
     db.add(new_practice)
+    db.commit()
+
+async def practices_clear_existing(db: Session, question_id: str, user_id: str):
+    question = db.query(Questions).filter(Questions.id == question_id).first()
+    chosen_trait = db.query(ChosenTraits).filter(ChosenTraits.form_id == question.form_id).first()
+
+    existing_practices = db.query(Practices).filter(
+        Practices.user_id == user_id,
+        Practices.chosen_trait_id == chosen_trait.id
+    ).all()
+
+    if len(existing_practices) == 5:
+        for existing_practice in existing_practices:
+            db.delete(existing_practice)
+            db.flush()
+
     db.commit()
 
 async def practices_by_trait_type_get(db: Session, user_id: str, trait_type: str):

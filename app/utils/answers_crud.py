@@ -50,13 +50,25 @@ async def answers_to_initial_questions_save(db: Session, answers: InitialAnswerS
     return { "message": "Initial question answers saved." }
 
 async def answers_save_one(db: Session, form_id: str, question_id: str, option_id: str, answer: str):
-    new_answer = Answers(
-        form_id=form_id,
-        question_id=question_id,
-        option_id=option_id,
-        answer=answer
-    )
+    # Check if answer already exists
+    existing_answer = db.query(Answers).filter(
+        Answers.form_id == form_id,
+        Answers.question_id == question_id
+    ).first()
 
-    # Add Answer entry to db
-    db.add(new_answer)
+    if existing_answer:
+        # updates existing answer
+        existing_answer.option_id = option_id
+        existing_answer.answer = answer
+    else:
+        # adds a new Answer
+        new_answer = Answers(
+            form_id=form_id,
+            question_id=question_id,
+            option_id=option_id,
+            answer=answer
+        )
+        # Add Answer entry to db
+        db.add(new_answer)
+
     db.commit()
