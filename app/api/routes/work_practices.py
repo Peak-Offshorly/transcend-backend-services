@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from typing import Annotated
 from app.database.connection import get_db
 from app.utils.forms_crud import forms_with_questions_options_get_all
-from app.utils.answers_crud import answers_save_one
+from app.utils.answers_crud import answers_save_one, answers_get_all
 from app.schemas.models import FormAnswerSchema
 
 db_dependency = Annotated[Session, Depends(get_db)]
@@ -50,9 +50,11 @@ async def save_development_actions(answers: FormAnswerSchema, db: db_dependency)
 # Get Written Development Actions
 @router.get("/development-actions")
 async def get_development_actions(user_id: str, trait_type: str, sprint_number: int, db: db_dependency):
-  # Basically it's gonna fetch from the Answers under the form of strength/weakness practice
-  try:
-    return { "message": "Development Actions Created" }
+  # Fetch from the Answers DB table under the form of strength/weakness practice
+  form_name = f"{sprint_number}_{trait_type}_PRACTICE_QUESTIONS"
+
+  try:   
+    return await answers_get_all(db=db, user_id=user_id, form_name=form_name, sprint_number=sprint_number)
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
 

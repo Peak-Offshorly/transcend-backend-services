@@ -1,6 +1,6 @@
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
-from app.database.models import Answers, Traits
+from app.database.models import Answers, Traits, Forms
 from app.schemas.models import FormAnswerSchema
 
 
@@ -72,3 +72,12 @@ async def answers_save_one(db: Session, form_id: str, question_id: str, option_i
         db.add(new_answer)
 
     db.commit()
+
+async def answers_get_all(db: Session, user_id: str, form_name: str, sprint_number: str):
+    form = db.query(Forms).filter(
+        Forms.user_id == user_id, 
+        Forms.name == form_name, 
+        Forms.sprint_number == sprint_number
+        ).options(joinedload(Forms.answers)).first()
+
+    return form.answers
