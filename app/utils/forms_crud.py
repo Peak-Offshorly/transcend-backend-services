@@ -61,6 +61,51 @@ def forms_create_one_initial_questions_form(db: Session, form: FormSchema):
   # Return Form data with form_id
   return form_data
 
+def mind_body_form_questions_options_get_all(form_name: str, user_id: str, questions: List[str], categories: List[str], weights: List[int], sprint_number: Optional[int] = 1,
+                                    options: Optional[List[str]] = None, option_type: Optional[str] = None, trait_name: Optional[str] = None) -> FormSchema:
+    
+  question_schemas = []
+  
+  # The points for each choice would be put as the type field for the Option
+  option_point = 1
+
+  # for question, weight, category in zip(questions, weights, categories):
+  for index, (question, weight, category) in enumerate(zip(questions, weights, categories)):
+      # Initialize an empty list to hold OptionSchema instances for the current question
+      option_schemas = []
+
+      for option in options[index]:
+        # Create an OptionSchema instance for the current option
+        option_schema = OptionSchema(
+            name=option,
+            type=str(option_point),
+            trait_name=trait_name
+        )
+        # Append the OptionSchema instance to the list of option schemas
+        option_schemas.append(option_schema)
+        option_point += 1
+
+      # Create a QuestionSchema instance for the current question with its options
+      question_schema = QuestionSchema(
+          name=question,
+          option_type=option_type,
+          category=category,
+          options=option_schemas,
+          rank=weight
+      )
+      # Append the QuestionSchema instance to the list of question schemas
+      question_schemas.append(question_schema)
+      option_point = 1
+
+  # Create a FormSchema instance with the fetched questions and options
+  form_data = FormSchema(
+      name=form_name,
+      user_id=user_id,
+      questions=question_schemas,
+      sprint_number=sprint_number
+  )
+  return form_data
+
 # Creating FormSchema for other set of questions/options
 def form_questions_options_get_all(form_name: str, user_id: str, questions: List[str], category: str, ranks: List[int], sprint_number: Optional[int] = 1,
                                     options: Optional[List[str]] = None, option_type: Optional[str] = None, trait_name: Optional[str] = None) -> FormSchema:

@@ -1,54 +1,115 @@
 {
-  "EXERCISE": {
-    "question": "How much aerobic exercise do you do on average each week? (running, walking, biking, hiking, etc.)",
-    "weight": 3,
-    "options": {
-      "1": "None",
-      "2": "1 - 50 minutes",
-      "3": "50 - 100 minutes",
-      "4": "100 - 150 minutes",
-      "5": "150+ minutes"
+  "EXERCISE": [
+    {
+      "question": "How much aerobic exercise do you do on average each week? (running, walking, biking, hiking, etc.)",
+      "weight": 3,
+      "options": [
+        "None",
+        "1 - 50 minutes",
+        "50 - 100 minutes",
+        "100 - 150 minutes",
+        "150+ minutes"
+      ]
+    },
+    {
+      "question": "How many times do you do strength training on average each week? (situps, squats, lifting weights, etc.)",
+      "weight": 1,
+      "options": [
+        "None",
+        "1 time",
+        "2 times",
+        "3 or more times"
+      ]
     }
-  },
-  "NUTRITION": {
-    "question": "How often do you eat home cooked meals with fresh vegetables?",
-    "weight": 1,
-    "options": {
-      "1": "Not at all",
-      "2": "Some days",
-      "3": "Most days",
-      "4": "Every day"
+  ],
+  "NUTRITION": [
+    {
+      "question": "How often do you eat home cooked meals with fresh vegetables?",
+      "weight": 1,
+      "options": [
+        "Not at all",
+        "Some days",
+        "Most days",
+        "Every day"
+      ]
+    },
+    {
+      "question": "I avoid or minimize sugary foods and drinks.",
+      "weight": 1,
+      "options": [
+        "Never",
+        "Sometimes",
+        "Often",
+        "Always"
+      ]
     }
-  },
-  "SLEEP": {
-    "question": "How many hours of sleep do you get on average each night?",
-    "weight": 1,
-    "options": {
-      "1": "Less than 4 hours",
-      "2": "4-5 hours",
-      "3": "5-6 hours",
-      "4": "6-7 hours",
-      "5": "7-9 hours"
+  ],
+  "SLEEP": [
+    {
+      "question": "How many hours of sleep do you get on average each night?",
+      "weight": 1,
+      "options": [
+        "Less than 4 hours",
+        "4-5 hours",
+        "5-6 hours",
+        "6-7 hours",
+        "7-9 hours"
+      ]
+    },
+    {
+      "question": "My sleep quality over the past week has been...",
+      "weight": 1,
+      "options": [
+        "Very poor",
+        "Poor",
+        "Fair",
+        "Good",
+        "Very good"
+      ]
     }
-  },
-  "STRESS REDUCTION": {
-    "question": "I do mental renewal activities (e.g., walk in nature, meditation, yoga, tai chi)",
-    "weight": 2,
-    "options": {
-      "1": "Not at all",
-      "2": "Some days",
-      "3": "Most days",
-      "4": "Every day"
+  ],
+  "STRESS REDUCTION": [
+    {
+      "question": "I do mental renewal activities (e.g., walk in nature, meditation, yoga, tai chi)",
+      "weight": 2,
+      "options": [
+        "Not at all",
+        "Some days",
+        "Most days",
+        "Every day"
+      ]
+    },
+    {
+      "question": "I spent quality time with people who are important to me",
+      "weight": 1,
+      "options": [
+        "Not at all",
+        "Some days",
+        "Most days",
+        "Every day"
+      ]
     }
-  },
-  "ROUTINES": {
-    "question": "I go to sleep and wake up at consistent times",
-    "weight": 1,
-    "options": {
-      "1": "Not at all",
-      "2": "Some days",
-      "3": "Most days",
-      "4": "Every day"
+  ],
+  "ROUTINES": [
+    {
+      "question": "I go to sleep and wake up at consistent times",
+      "weight": 1,
+      "options": [
+        "Not at all",
+        "Some days",
+        "Most days",
+        "Every day"
+      ]
+    },
+    {
+      "question": "I eat at consistent times",
+      "weight": 1,
+      "options": [
+        "Not at all",
+        "Some days",
+        "Most days",
+        "Every day"
+      ]
     }
-  }
+  ]
 }
