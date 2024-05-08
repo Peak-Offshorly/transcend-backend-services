@@ -8,7 +8,7 @@ from app.schemas.models import DataFormSchema, FormAnswerSchema
 from app.database.connection import get_db
 from app.utils.forms_crud import mind_body_form_questions_options_get_all, forms_with_questions_options_get_all, forms_create_one
 from app.utils.answers_crud import answers_save_one
-from app.utils.practices_crud import personal_practice_category_save_one
+from app.utils.practices_crud import personal_practice_category_save_one, personal_practice_category_get_one
 
 db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/personal-practices", tags=["personal-practices"])
@@ -118,10 +118,19 @@ async def save_answers(answers: FormAnswerSchema, db: db_dependency):
     raise HTTPException(status_code=400, detail=str(error))
 
 # Get Mind Body Practice Recommendation
-@router.get("/recommendations/{user_id}")
-async def get_recommendations():
+@router.get("/recommendations")
+async def get_recommendations(user_id: str, db: db_dependency):
   try:
-    return { "message": "Get Recommendations" }
+    with open("app/utils/data/mind_body_practices.json", "r") as file:
+      mind_body_practices = json.load(file)
+
+    category = await personal_practice_category_get_one(db=db, user_id=user_id)
+    recommendations = mind_body_practices[category.name]
+    
+    return { 
+      "recommended_mind_body_category": category.name,
+      "recommendations": recommendations
+    }
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
 

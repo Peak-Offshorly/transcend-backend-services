@@ -94,3 +94,8 @@ async def personal_practice_category_save_one(db: Session, user_id: str, name: s
         db.flush()
 
     db.commit()
+
+async def personal_practice_category_get_one(db: Session, user_id: str):
+    return db.query(PersonalPracticeCategory).filter(
+        PersonalPracticeCategory.user_id == user_id
+    ).first()
