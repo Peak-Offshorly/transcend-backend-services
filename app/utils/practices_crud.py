@@ -77,12 +77,20 @@ async def chosen_practices_get_max_sprint(db: Session, user_id: str):
     return max_sprint
 
 async def personal_practice_category_save_one(db: Session, user_id: str, name: str):
-    recommended_category = PersonalPracticeCategory(
-        user_id=user_id,
-        name=name
-    )
-    
-    db.add(recommended_category)
-    db.flush()
+    # check if user already has an existing category 
+    existing_category = db.query(PersonalPracticeCategory).filter(
+        PersonalPracticeCategory.user_id == user_id
+    ).first()
+
+    if existing_category:
+        existing_category.name = name
+    else:
+        recommended_category = PersonalPracticeCategory(
+            user_id=user_id,
+            name=name
+        )
+        
+        db.add(recommended_category)
+        db.flush()
 
     db.commit()
