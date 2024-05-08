@@ -21,6 +21,8 @@ class Users(Base):
     chosen_traits = relationship('ChosenTraits', back_populates='users')
     practices = relationship('Practices', back_populates='users')
     chosen_practices = relationship('ChosenPractices', back_populates='users')
+    personal_practice_category = relationship('PersonalPracticeCategory', back_populates='users')
+    chosen_personal_practices = relationship('ChosenPersonalPractices', back_populates='users')
 
 class Sprints(Base):
     __tablename__ = 'sprints'
@@ -153,6 +155,27 @@ class ChosenPractices(Base):
     practices = relationship('Practices', back_populates='chosen_practices')
     chosen_traits = relationship('ChosenTraits', back_populates='chosen_practices')
     forms = relationship('Forms', back_populates='chosen_practices')
+
+class PersonalPracticeCategory(Base):
+    __tablename__ = 'personal_practice_category'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(String, ForeignKey("users.id"))
+    name = Column(String, index=True)
+
+    users = relationship('Users', back_populates='personal_practice_category')
+    chosen_personal_practices = relationship('ChosenPersonalPractices', back_populates='personal_practice_category')
+
+class ChosenPersonalPractices(Base):
+    __tablename__ = 'chosen_personal_practices'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(String, ForeignKey("users.id"))
+    name = Column(String, index=True)
+    personal_practice_category_id = Column(UUID(as_uuid=True), ForeignKey("personal_practice_category.id"))
+
+    users = relationship('Users', back_populates='chosen_personal_practices')
+    personal_practice_category = relationship('PersonalPracticeCategory', back_populates='chosen_personal_practices')
 
 
 Base.metadata.create_all(engine)

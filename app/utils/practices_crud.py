@@ -1,6 +1,6 @@
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from app.database.models import Practices, Questions, ChosenTraits, ChosenPractices
+from app.database.models import Practices, Questions, ChosenTraits, ChosenPractices, PersonalPracticeCategory, ChosenPersonalPractices
 from app.schemas.models import PracticeSchema
 
 async def practice_save_one(db: Session, practice: PracticeSchema):
@@ -76,4 +76,13 @@ async def chosen_practices_get_max_sprint(db: Session, user_id: str):
     
     return max_sprint
 
+async def personal_practice_category_save_one(db: Session, user_id: str, name: str):
+    recommended_category = PersonalPracticeCategory(
+        user_id=user_id,
+        name=name
+    )
+    
+    db.add(recommended_category)
+    db.flush()
 
+    db.commit()

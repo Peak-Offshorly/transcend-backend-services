@@ -1,11 +1,14 @@
 import json
+from collections import defaultdict
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from typing import Annotated
-from app.schemas.models import DataFormSchema
+from app.schemas.models import DataFormSchema, FormAnswerSchema
 from app.database.connection import get_db
 from app.utils.forms_crud import mind_body_form_questions_options_get_all, forms_with_questions_options_get_all, forms_create_one
+from app.utils.answers_crud import answers_save_one
+from app.utils.practices_crud import personal_practice_category_save_one
 
 db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/personal-practices", tags=["personal-practices"])
@@ -62,10 +65,55 @@ async def create_get_personal_practices_form(data: DataFormSchema, db: db_depend
     raise HTTPException(status_code=400, detail=str(error))
 
 # Post Save Mind Body Practices Answers 
-@router.post("/save-answers/{user_id}")
-async def save_answers():
+@router.post("/save-form-answers")
+async def save_answers(answers: FormAnswerSchema, db: db_dependency):
+  form_id = answers.form_id
+  user_id = answers.user_id
+
+  category_scores = defaultdict(int)
+  category_total_possible_points = {
+    'EXERCISE': 19,
+    'NUTRITION': 8,
+    'SLEEP': 10,
+    'STRESS REDUCTION': 12,
+    'ROUTINES': 18
+  }
+
   try:
-    return { "message": "Development Actions Saved" }
+    for answer in answers.answers:
+      # Add all answers in DB 
+      await answers_save_one(
+        db=db,
+        form_id=form_id,
+        question_id=answer.question_id,
+        option_id=answer.option_id,
+        answer=answer.answer
+      )
+
+      # Calculate the score for each answer; option_type would be the option_point, question_rank would be the weight
+      score = int(answer.option_type) * int(answer.question_rank)
+      # Add the score to the respective category
+      category_scores[answer.question_category] += score
+    
+    # Calculate the average score for each category
+    category_avg_scores = {}
+    for category, score in category_scores.items():
+        count = category_total_possible_points[category]
+        category_avg_scores[category] = score / count 
+    # Find the category with the lowest average score
+    recommended_category = min(category_avg_scores, key=category_avg_scores.get)
+
+    # Save recommended category in DB
+    await personal_practice_category_save_one(
+      db=db,
+      name=recommended_category,
+      user_id=user_id
+    )
+
+    return {
+      "message": "Mind-body Practice area saved and calculations done.", 
+      "recommended_mind_body_category": recommended_category 
+    }
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
 

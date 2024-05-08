@@ -46,7 +46,9 @@ class AnswerSchema(BaseModel):
     form_id: Optional[UUID] = None
     question_id: Optional[UUID] = None
     question_rank: Optional[int] = None
+    question_category: Optional[str] = None
     option_id: Optional[UUID] = None
+    option_type: Optional[str] = None
     trait_name: Optional[str] = None
 
     class Config:
