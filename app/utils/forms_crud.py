@@ -108,7 +108,7 @@ def mind_body_form_questions_options_get_all(form_name: str, user_id: str, quest
 
 # Creating FormSchema for other set of questions/options
 def form_questions_options_get_all(form_name: str, user_id: str, questions: List[str], category: str, ranks: List[int], sprint_number: Optional[int] = 1,
-                                    options: Optional[List[str]] = None, option_type: Optional[str] = None, trait_name: Optional[str] = None) -> FormSchema:
+                                    sprint_id: Optional[UUID] = None, options: Optional[List[str]] = None, option_type: Optional[str] = None, trait_name: Optional[str] = None) -> FormSchema:
     
   question_schemas = []
   
@@ -142,13 +142,14 @@ def form_questions_options_get_all(form_name: str, user_id: str, questions: List
       name=form_name,
       user_id=user_id,
       questions=question_schemas,
-      sprint_number=sprint_number
+      sprint_number=sprint_number,
+      sprint_id = sprint_id
   )
   return form_data
 
 # Creating Form for other set of questions/options
 async def forms_create_one(db: Session, form: FormSchema):
-  db_form = Forms(name=form.name, user_id=form.user_id, sprint_number=form.sprint_number)
+  db_form = Forms(name=form.name, user_id=form.user_id, sprint_number=form.sprint_number, sprint_id=form.sprint_id)
   db.add(db_form)
   db.flush()
 
@@ -172,6 +173,14 @@ def forms_with_questions_options_get_all(db: Session, name: str, user_id: str):
   form = db.query(Forms).options(
     joinedload(Forms.questions).subqueryload(Questions.options)
     ).filter(Forms.name == name, Forms.user_id == user_id).first()
+
+  return form
+
+# 1 form, all questions, all options for that question with sprint_id
+def forms_with_questions_options_sprint_id_get_all(db: Session, name: str, user_id: str, sprint_id: UUID):
+  form = db.query(Forms).options(
+    joinedload(Forms.questions).subqueryload(Questions.options)
+    ).filter(Forms.name == name, Forms.user_id == user_id, Forms.sprint_id == sprint_id).first()
 
   return form
 

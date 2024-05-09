@@ -1,14 +1,19 @@
 import json
 from collections import defaultdict
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import Annotated
-from app.schemas.models import DataFormSchema, FormAnswerSchema
+from app.schemas.models import DataFormSchema, FormAnswerSchema, ChosenPersonalPracticesSchema
 from app.database.connection import get_db
 from app.utils.forms_crud import mind_body_form_questions_options_get_all, forms_with_questions_options_get_all, forms_create_one
 from app.utils.answers_crud import answers_save_one
-from app.utils.practices_crud import personal_practice_category_save_one, personal_practice_category_get_one
+from app.utils.practices_crud import (
+    personal_practice_category_save_one, 
+    personal_practice_category_get_one, 
+    chosen_personal_practices_clear_existing,
+    chosen_personal_practices_save_one,
+    chosen_personal_practices_get_all
+)
 
 db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/personal-practices", tags=["personal-practices"])
@@ -128,6 +133,7 @@ async def get_recommendations(user_id: str, db: db_dependency):
     recommendations = mind_body_practices[category.name]
     
     return { 
+      "recommended_mind_body_category_id": category.id,
       "recommended_mind_body_category": category.name,
       "recommendations": recommendations
     }
@@ -135,9 +141,37 @@ async def get_recommendations(user_id: str, db: db_dependency):
     raise HTTPException(status_code=400, detail=str(error))
 
 # Post Save Mind Body Practice Chosen Recommendation (min 1, max 2 answers)
-@router.post("/save-selected-recommendations/{user_id}")
-async def save_selected_recommendations():
+@router.post("/save-selected-recommendations")
+async def save_selected_recommendations(chosen_personal_practices: ChosenPersonalPracticesSchema, db: db_dependency):
+  user_id = chosen_personal_practices.user_id
+  recommended_mind_body_category_id = chosen_personal_practices.recommended_mind_body_category_id
+  chosen_recommendations = chosen_personal_practices.chosen_practices
   try:
-    return { "message": "Save Selected Recommendations" }
+    # Save selected recommendations
+    if len(chosen_recommendations) <= 2:
+      # Clear if there are existing mind body practices in DB
+      await chosen_personal_practices_clear_existing(db=db, user_id=user_id, recommended_mind_body_category_id=recommended_mind_body_category_id)
+
+      for recommendation in chosen_recommendations:
+        await chosen_personal_practices_save_one(db=db, user_id=user_id, name=recommendation.name, recommended_mind_body_category_id=recommended_mind_body_category_id)
+    
+    else:
+      return { "error": "Cannot save more than 2 recommendations." }
+
+    return { "message": "Selected Mind-body recommendations saved." }
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
+  
+@router.get("/get-selected-recommendations")
+async def get_selected_recommendations(user_id: str, db: db_dependency):
+  try:
+    category = await personal_practice_category_get_one(db=db, user_id=user_id)
+    chosen_recommendations = await chosen_personal_practices_get_all(db=db, user_id=user_id, recommended_mind_body_category_id=category.id)
+
+    return { 
+      "recommended_mind_body_category": category.name,
+      "chosen_recommendations": chosen_recommendations
+    }
+  except Exception as error:
+    raise HTTPException(status_code=400, detail=str(error))
+  

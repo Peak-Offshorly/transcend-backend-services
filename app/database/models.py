@@ -28,7 +28,11 @@ class Sprints(Base):
     __tablename__ = 'sprints'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    name = Column(Integer, index=True)
+    number = Column(Integer, index=True)
+    user_id = Column(String, ForeignKey("users.id"))
+    strength_practice_form_id = Column(UUID(as_uuid=True), ForeignKey("forms.id"))
+    weakness_practice_form_id = Column(UUID(as_uuid=True), ForeignKey("forms.id"))
+    is_finished = Column(Boolean, default=False)
 
 
 class DevelopmentPlan(Base):
@@ -51,6 +55,7 @@ class Forms(Base):
     name = Column(String, index=True)
     user_id = Column(String, ForeignKey("users.id"))
     sprint_number = Column(Integer, index=True)
+    sprint_id = Column(UUID(as_uuid=True), ForeignKey("sprints.id"))
 
     users = relationship('Users', backref='forms', foreign_keys=[user_id])
     questions = relationship('Questions', back_populates='forms')
@@ -150,6 +155,7 @@ class ChosenPractices(Base):
     chosen_trait_id = Column(UUID(as_uuid=True), ForeignKey("chosen_traits.id"))
     form_id = Column(UUID(as_uuid=True), ForeignKey("forms.id"))
     sprint_number = Column(Integer, index=True)
+    sprint_id = Column(UUID(as_uuid=True), ForeignKey("sprints.id"))
 
     users = relationship('Users', back_populates='chosen_practices')
     practices = relationship('Practices', back_populates='chosen_practices')

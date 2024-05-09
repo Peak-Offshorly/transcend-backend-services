@@ -72,7 +72,8 @@ class FormSchema(BaseModel):
     id: Optional[UUID] = None
     name: str
     user_id: Optional[str] = None
-    sprint_number: Optional[int] = 1
+    sprint_number: Optional[int] = None
+    sprint_id: Optional[UUID] = None
     questions: Optional[List[QuestionSchema]] = None
     class Config:
         orm_mode = True
@@ -109,6 +110,20 @@ class ChosenPracticesSchema(BaseModel):
     user_id: str
     strength_practice: Optional[PracticeSchema] = None
     weakness_practice: Optional[PracticeSchema] = None
+    class Config:
+        orm_mode = True
+        from_attributes = True
+
+class PersonalPracticeSchema(BaseModel):
+    name: Optional[str] = None
+    class Config:
+        orm_mode = True
+        from_attributes = True
+
+class ChosenPersonalPracticesSchema(BaseModel):
+    user_id: str
+    recommended_mind_body_category_id: UUID
+    chosen_practices: Optional[List[PersonalPracticeSchema]] = None
     class Config:
         orm_mode = True
         from_attributes = True

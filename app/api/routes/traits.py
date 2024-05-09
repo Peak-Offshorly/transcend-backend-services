@@ -5,13 +5,13 @@ from sqlalchemy.orm import Session
 from typing import Annotated
 from app.schemas.models import ChosenTraitsSchema, FormAnswerSchema, PracticeSchema, ChosenPracticesSchema
 from app.database.connection import get_db
-from app.utils.forms_crud import form_questions_options_get_all, forms_create_one, forms_with_questions_options_get_all
+from app.utils.forms_crud import form_questions_options_get_all, forms_create_one, forms_with_questions_options_get_all, forms_with_questions_options_sprint_id_get_all
 from app.utils.answers_crud import answers_save_one
+from app.utils.sprints_crud import sprint_create_get_one, sprint_update_strength_form_id, sprint_update_weakness_form_id
 from app.utils.practices_crud import(
-  practice_save_one, 
+  practice_save_one,
   practices_by_trait_type_get,
   practices_clear_existing,
-  chosen_practices_get_max_sprint, 
   chosen_practices_save_one
 ) 
 from app.utils.traits_crud import(
@@ -204,34 +204,48 @@ async def save_chosen_strength_practice(chosen_practices: ChosenPracticesSchema,
   ]
 
   # Determine which sprint you are in
-  sprint = await chosen_practices_get_max_sprint(db=db, user_id=user_id) or 1 
-  form_name = f"{sprint}_STRENGTH_PRACTICE_QUESTIONS" 
+  sprint = await sprint_create_get_one(db=db, user_id=user_id)
+  sprint_number = sprint["sprint_number"] 
+  sprint_id = sprint["sprint_id"] 
+  form_name = f"{sprint_number}_STRENGTH_PRACTICE_QUESTIONS" 
 
   try: 
     practice_id = strength_practice.id
     practice_name = strength_practice.name
     chosen_trait_id = strength_practice.chosen_trait_id
-    # Create the Form; user input Form of max 3 written inputs/answers
-    form_data = form_questions_options_get_all(
-      user_id=user_id,
-      form_name=form_name,
-      option_type="text_field",
-      category="PRACTICES_QS",
-      questions=questions,
-      options=options,
-      ranks=ranks,
-      sprint_number=sprint
-    )
-    practice_form = await forms_create_one(db=db, form=form_data)
+    
+    form_exists = forms_with_questions_options_sprint_id_get_all(db=db, name=form_name, user_id=user_id, sprint_id=sprint_id)
+    if form_exists:
+      form_id = form_exists.id
+    else:
+      # Create the Form; user input Form of max 3 written inputs/answers
+      form_data = form_questions_options_get_all(
+        user_id=user_id,
+        form_name=form_name,
+        option_type="text_field",
+        category="PRACTICES_QS",
+        questions=questions,
+        options=options,
+        ranks=ranks,
+        sprint_number=sprint_number,
+        sprint_id=sprint_id
+      )
+      practice_form = await forms_create_one(db=db, form=form_data)
+      form_id = practice_form["form_id"]
+
+    # Update Sprint with strength practice form_id
+    await sprint_update_strength_form_id(db=db, user_id=user_id, sprint_id=sprint_id, strength_form_id=form_id)
+
     # Create ChosenPractice entry with form id
     chosen_practices_save_one(
       db=db,
       user_id=user_id,
-      form_id=practice_form["form_id"],
+      form_id=form_id,
       name=practice_name,
       practice_id=practice_id,
       chosen_trait_id=chosen_trait_id,
-      sprint_number=sprint
+      sprint_number=sprint_number,
+      sprint_id=sprint_id
     )
 
     return { "message": "Chosen Strength Practice saved and Forms created." }
@@ -255,34 +269,48 @@ async def save_chosen_weakness_practice(chosen_practices: ChosenPracticesSchema,
   ]
 
   # Determine which sprint you are in
-  sprint = await chosen_practices_get_max_sprint(db=db, user_id=user_id) or 1 
-  form_name = f"{sprint}_WEAKNESS_PRACTICE_QUESTIONS" 
+  sprint = await sprint_create_get_one(db=db, user_id=user_id)
+  sprint_number = sprint["sprint_number"] 
+  sprint_id = sprint["sprint_id"] 
+  form_name = f"{sprint_number}_WEAKNESS_PRACTICE_QUESTIONS"
 
   try: 
     practice_id = weakness_practice.id
     practice_name = weakness_practice.name
     chosen_trait_id = weakness_practice.chosen_trait_id
-    # Create the Form; user input Form of max 3 written inputs/answers
-    form_data = form_questions_options_get_all(
-      user_id=user_id,
-      form_name=form_name,
-      option_type="text_field",
-      category="PRACTICES_QS",
-      questions=questions,
-      options=options,
-      ranks=ranks,
-      sprint_number=sprint
-    )
-    practice_form = await forms_create_one(db=db, form=form_data)
+    
+    form_exists = forms_with_questions_options_sprint_id_get_all(db=db, name=form_name, user_id=user_id, sprint_id=sprint_id)
+    if form_exists:
+      form_id = form_exists.id
+    else:
+      # Create the Form; user input Form of max 3 written inputs/answers
+      form_data = form_questions_options_get_all(
+        user_id=user_id,
+        form_name=form_name,
+        option_type="text_field",
+        category="PRACTICES_QS",
+        questions=questions,
+        options=options,
+        ranks=ranks,
+        sprint_number=sprint_number,
+        sprint_id=sprint_id
+      )
+      practice_form = await forms_create_one(db=db, form=form_data)
+      form_id = practice_form["form_id"]
+
+    # Update Sprint with weakness practice form_id
+    await sprint_update_weakness_form_id(db=db, user_id=user_id, sprint_id=sprint_id, weakness_form_id=form_id)
+
     # Create ChosenPractice entry with form id
     chosen_practices_save_one(
       db=db,
       user_id=user_id,
-      form_id=practice_form["form_id"],
+      form_id=form_id,
       name=practice_name,
       practice_id=practice_id,
       chosen_trait_id=chosen_trait_id,
-      sprint_number=sprint
+      sprint_number=sprint_number,
+      sprint_id=sprint_id
     )
 
     return { "message": "Chosen Weakness Practice saved and Forms created." }

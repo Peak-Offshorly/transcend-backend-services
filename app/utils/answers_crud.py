@@ -81,3 +81,8 @@ async def answers_get_all(db: Session, user_id: str, form_name: str, sprint_numb
         ).options(joinedload(Forms.answers)).first()
 
     return form.answers
+
+async def answers_all_forms_get_all(db: Session, user_id: str):
+    all_forms = db.query(Forms).filter(
+        Forms.user_id == user_id
+    ).all()
