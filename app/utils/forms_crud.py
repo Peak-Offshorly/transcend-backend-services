@@ -61,7 +61,7 @@ def forms_create_one_initial_questions_form(db: Session, form: FormSchema):
   # Return Form data with form_id
   return form_data
 
-def mind_body_form_questions_options_get_all(form_name: str, user_id: str, questions: List[str], categories: List[str], weights: List[int], sprint_number: Optional[int] = 1,
+def mind_body_form_questions_options_get_all(form_name: str, user_id: str, questions: List[str], categories: List[str], weights: List[int], sprint_number: Optional[int] = None,
                                     options: Optional[List[str]] = None, option_type: Optional[str] = None, trait_name: Optional[str] = None) -> FormSchema:
     
   question_schemas = []
@@ -107,7 +107,7 @@ def mind_body_form_questions_options_get_all(form_name: str, user_id: str, quest
   return form_data
 
 # Creating FormSchema for other set of questions/options
-def form_questions_options_get_all(form_name: str, user_id: str, questions: List[str], category: str, ranks: List[int], sprint_number: Optional[int] = 1,
+def form_questions_options_get_all(form_name: str, user_id: str, questions: List[str], category: str, ranks: List[int], sprint_number: Optional[int] = None,
                                     sprint_id: Optional[UUID] = None, options: Optional[List[str]] = None, option_type: Optional[str] = None, trait_name: Optional[str] = None) -> FormSchema:
     
   question_schemas = []
