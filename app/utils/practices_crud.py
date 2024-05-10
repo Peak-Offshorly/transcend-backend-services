@@ -71,7 +71,27 @@ def chosen_practices_save_one(db: Session, user_id: str, name: str, practice_id:
         db.add(chosen_practice)
         db.flush()
 
-    db.commit()   
+    db.commit()
+
+async def chosen_practices_get(db: Session, user_id: str, sprint_number: int):
+    chosen_strength_practice = db.query(ChosenPractices).join(
+        ChosenTraits, ChosenPractices.chosen_trait_id == ChosenTraits.id
+    ).filter(
+        ChosenTraits.trait_type == "STRENGTH", 
+        ChosenPractices.user_id == user_id,
+        ChosenPractices.sprint_number == sprint_number
+    ).all()
+
+    chosen_weakness_practice = db.query(ChosenPractices).join(
+        ChosenTraits, ChosenPractices.chosen_trait_id == ChosenTraits.id
+    ).filter(
+        ChosenTraits.trait_type == "WEAKNESS", 
+        ChosenPractices.user_id == user_id,
+        ChosenPractices.sprint_number == sprint_number
+    ).all()
+
+    return { "chosen_strength_practice": chosen_strength_practice, "chosen_weakness_practice": chosen_weakness_practice }
+
 
 async def personal_practice_category_save_one(db: Session, user_id: str, name: str):
     # check if user already has an existing category 
@@ -123,5 +143,6 @@ async def chosen_personal_practices_save_one(db: Session, user_id: str, name: st
 
 async def chosen_personal_practices_get_all(db: Session, user_id: str, recommended_mind_body_category_id: str):
     return db.query(ChosenPersonalPractices).filter(
-        ChosenPersonalPractices.user_id == user_id
+        ChosenPersonalPractices.user_id == user_id, 
+        ChosenPersonalPractices.personal_practice_category_id == recommended_mind_body_category_id
     ).all()
