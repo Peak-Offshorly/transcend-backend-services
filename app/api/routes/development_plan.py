@@ -20,7 +20,6 @@ async def get_gantt_chart():
 @router.get("/review-details/{user_id}")
 async def get_review_details():
   try:
-      
     return { "message": "Review Details" }
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
