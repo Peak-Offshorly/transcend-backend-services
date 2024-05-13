@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import Annotated
 from app.database.connection import get_db
-from app.api.routes.user import firebaseAdminAuth
 from app.utils.traits_crud import chosen_traits_get
 from app.utils.answers_crud import answers_get_all
 from app.utils.practices_crud import chosen_personal_practices_get_all, personal_practice_category_get_one, chosen_practices_get
