@@ -12,7 +12,7 @@ router = APIRouter(prefix="/development-plan", tags=["development-plan"])
 
 # Get Development Plan Gantt Chart
 @router.get("/gantt-chart-data")
-async def get_gantt_chart(sprint_number: int, db: db_dependency, user_id: str = Depends(firebaseAdminAuth)):
+async def get_gantt_chart(sprint_number: int, db: db_dependency, user_id: str):
   chosen_traits = chosen_traits_get(db=db, user_id=user_id)
   
   chosen_trait_practices = await chosen_practices_get(db=db, user_id=user_id, sprint_number=sprint_number)
