@@ -1,7 +1,5 @@
-from uuid import UUID
-from typing import Optional, List
 from sqlalchemy import func
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 from app.database.models import Sprints
 
 async def sprint_create_get_one(db: Session, user_id: str):

@@ -8,7 +8,7 @@ db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/progress-check", tags=["progress-check"])
 
 # Get Written Development Actions as Questions (Strength, Weakness)
-@router.get("/development-progress-questions/{user_id}")
+@router.get("/development-progress-questions/")
 async def get_development_progress_questions():
   try:
     return { "message": "Guide Qeuestions" }

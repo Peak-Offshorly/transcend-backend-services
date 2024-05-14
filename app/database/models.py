@@ -24,6 +24,13 @@ class Users(Base):
     personal_practice_category = relationship('PersonalPracticeCategory', back_populates='users')
     chosen_personal_practices = relationship('ChosenPersonalPractices', back_populates='users')
 
+class UserColleagues(Base):
+    __tablename__ = 'user_colleagues'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    email = Column(String, index=True)
+    user_id = Column(String, ForeignKey("users.id"))
+
 class Sprints(Base):
     __tablename__ = 'sprints'
 

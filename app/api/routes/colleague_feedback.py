@@ -1,12 +1,25 @@
-
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import Annotated
+from app.schemas.models import UserColleagueEmailsSchema
 from app.database.connection import get_db
+from app.utils.user_colleagues_crud import colleague_email_save_one
 
 db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/colleague-feedback", tags=["colleague-feedback"])
+
+# Save Colleague Emails
+@router.post("/save-emails")
+async def save_colleague_emails(data: UserColleagueEmailsSchema, db: db_dependency):
+  user_id = data.user_id
+  emails = data.emails
+  try:
+    for email in emails:
+      await colleague_email_save_one(db=db, user_id=user_id, email=email)
+      
+    return { "message": "Colleague emails saved." }
+  except Exception as error:
+    raise HTTPException(status_code=400, detail=str(error))
 
 # Get Colleague Feedback Questions
 @router.get("/questions")

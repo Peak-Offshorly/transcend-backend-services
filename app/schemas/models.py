@@ -128,6 +128,10 @@ class ChosenPersonalPracticesSchema(BaseModel):
         orm_mode = True
         from_attributes = True
 
+class UserColleagueEmailsSchema(BaseModel):
+    user_id: str
+    emails: List[str]
+
 class DataFormSchema(BaseModel):
     form_name: Optional[str] = None
     user_id: str
