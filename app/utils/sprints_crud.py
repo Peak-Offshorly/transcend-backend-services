@@ -74,3 +74,34 @@ async def sprint_update_weakness_form_id(db: Session, user_id: str, sprint_id: s
         existing_sprint.weakness_practice_form_id = weakness_form_id
 
     db.commit()
+
+# Get based on sprint_id
+async def get_sprint_start_end_date(db: Session, user_id: str, sprint_id: str):
+    existing_sprint =  db.query(Sprints).filter(
+        Sprints.user_id == user_id,
+        Sprints.id == sprint_id,
+    ).first()
+
+    return {
+        "sprint_id": sprint_id, 
+        "sprint_number": existing_sprint.number, 
+        "start_date": existing_sprint.start_date,
+        "end_date": existing_sprint.end_date
+    }
+
+# Get based on sprint_number
+async def get_sprint_start_end_date_sprint_number(db: Session, user_id: str, sprint_number: int):
+    existing_sprint =  db.query(Sprints).filter(
+        Sprints.user_id == user_id,
+        Sprints.number == sprint_number,
+    ).first()
+
+    if existing_sprint is None:
+        return None
+
+    return {
+        "sprint_id": existing_sprint.id, 
+        "sprint_number": existing_sprint.number, 
+        "start_date": existing_sprint.start_date,
+        "end_date": existing_sprint.end_date
+    }

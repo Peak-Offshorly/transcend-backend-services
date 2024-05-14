@@ -33,7 +33,8 @@ class Sprints(Base):
     strength_practice_form_id = Column(UUID(as_uuid=True), ForeignKey("forms.id"))
     weakness_practice_form_id = Column(UUID(as_uuid=True), ForeignKey("forms.id"))
     is_finished = Column(Boolean, default=False)
-
+    start_date = Column(DateTime(timezone=True), index=True)
+    end_date = Column(DateTime(timezone=True), index=True)
 
 class DevelopmentPlan(Base):
     __tablename__ = 'development_plan'
@@ -73,6 +74,8 @@ class ChosenTraits(Base):
     trait_type = Column(String, index=True)
     form_id = Column(UUID(as_uuid=True), ForeignKey("forms.id"))
     t_score = Column(Integer, index=True)
+    start_date = Column(DateTime(timezone=True), index=True)
+    end_date = Column(DateTime(timezone=True), index=True)
 
     users = relationship('Users', back_populates='chosen_traits')
     traits = relationship('Traits', back_populates='chosen_traits')
@@ -168,6 +171,8 @@ class PersonalPracticeCategory(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     user_id = Column(String, ForeignKey("users.id"))
     name = Column(String, index=True)
+    start_date = Column(DateTime(timezone=True), index=True)
+    end_date = Column(DateTime(timezone=True), index=True)
 
     users = relationship('Users', back_populates='personal_practice_category')
     chosen_personal_practices = relationship('ChosenPersonalPractices', back_populates='personal_practice_category')

@@ -129,5 +129,5 @@ class ChosenPersonalPracticesSchema(BaseModel):
         from_attributes = True
 
 class DataFormSchema(BaseModel):
-    form_name: str
+    form_name: Optional[str] = None
     user_id: str
