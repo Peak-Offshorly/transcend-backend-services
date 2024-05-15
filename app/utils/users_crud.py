@@ -1,6 +1,6 @@
 from uuid import UUID
 from sqlalchemy.orm import Session
-from app.database.models import Users, Forms, Traits, ChosenTraits, UserDevelopmentPlan, Questions, Options, Answers, Practices
+from app.database.models import Users, Forms, Traits, ChosenTraits, Questions, Options, Answers, Practices, DevelopmentPlan
 
 async def get_all_users(db: Session) -> Users:
     return db.query(Users).all()
@@ -64,11 +64,11 @@ def delete_user(db: Session, user_id):
                 db.delete(chosen_trait)
 
         traits = db.query(Traits).filter(Traits.user_id == db_user.id).all()
-        user_development_plans = db.query(UserDevelopmentPlan).filter(UserDevelopmentPlan.user_id == db_user.id).all()
+        development_plans = db.query(DevelopmentPlan).filter(DevelopmentPlan.user_id == db_user.id).all()
         for trait in traits:
             db.delete(trait)
-        for udp in user_development_plans:
-            db.delete(udp)
+        for dp in development_plans:
+            db.delete(dp)
     
         db.delete(db_user)
         db.commit()

@@ -47,14 +47,20 @@ class DevelopmentPlan(Base):
     __tablename__ = 'development_plan'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    name = Column(String, index=True)
-
-class UserDevelopmentPlan(Base):
-    __tablename__ = 'user_development_plan'
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     user_id = Column(String, ForeignKey("users.id"))
-    development_plan_id = Column(UUID(as_uuid=True), ForeignKey("development_plan.id"))
+    number = Column(Integer, index=True)
+    chosen_strength_id = Column(UUID(as_uuid=True), ForeignKey("chosen_traits.id"))
+    chosen_weakness_id = Column(UUID(as_uuid=True), ForeignKey("chosen_traits.id"))
+    sprint_1_id = Column(UUID(as_uuid=True), ForeignKey("sprints.id"))
+    chosen_strength_practice_1_id = Column(UUID(as_uuid=True), ForeignKey("sprints.id"))
+    chosen_weakness_practice_1_id = Column(UUID(as_uuid=True), ForeignKey("sprints.id"))
+    sprint_2_id = Column(UUID(as_uuid=True), ForeignKey("sprints.id"))
+    chosen_strength_practice_2_id = Column(UUID(as_uuid=True), ForeignKey("sprints.id"))
+    chosen_weakness_practice_2_id = Column(UUID(as_uuid=True), ForeignKey("sprints.id"))
+    personal_practice_category_id = Column(UUID(as_uuid=True), ForeignKey("personal_practice_category.id"))
+    start_date = Column(DateTime(timezone=True), index=True)
+    end_date = Column(DateTime(timezone=True), index=True)
+    is_finished = Column(Boolean, default=False)
 
 class Forms(Base):
     __tablename__ = 'forms'

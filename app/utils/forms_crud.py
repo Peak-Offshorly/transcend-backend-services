@@ -1,8 +1,10 @@
 from uuid import UUID
 from typing import Optional, List
+from sqlalchemy import delete
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.future import select
 from app.database.models import Forms, Questions, Options, Answers
-from app.schemas.models import FormSchema, QuestionSchema, OptionSchema, AnswerSchema
+from app.schemas.models import FormSchema, QuestionSchema, OptionSchema
 
 
 def form_initial_questions_with_options_get_all(db: Session, form_name: str, user_id: str, form_id: Optional[str]) -> FormSchema:
@@ -202,3 +204,40 @@ def forms_get_all(db: Session, name: str, user_id: str):
 def forms_get_one(db: Session, id: UUID):
   
   return db.query(Forms).filter_by(id=id).one()
+
+def delete_form_and_associations(db: Session, form_id: UUID):
+    # Find the form
+    form = db.execute(select(Forms).where(Forms.id == form_id)).scalar_one_or_none()
+    
+    if not form:
+        raise ValueError("Form not found")
+
+    # Find all questions associated with the form
+    questions = db.execute(
+        select(Questions).where(Questions.form_id == form_id)
+    ).scalars().all()
+
+    # Collect question IDs
+    question_ids = [question.id for question in questions]
+
+    # Delete answers associated with the form and its questions
+    db.execute(
+        delete(Answers).where((Answers.form_id == form_id))
+    )
+
+    # Delete options associated with each question
+    db.execute(
+        delete(Options).where(Options.question_id.in_(question_ids))
+    )
+
+    # Delete questions associated with the form
+    db.execute(
+        delete(Questions).where(Questions.form_id == form_id)
+    )
+
+    # Finally, delete the form itself
+    db.execute(
+        delete(Forms).where(Forms.id == form_id)
+    )
+
+    db.commit()
