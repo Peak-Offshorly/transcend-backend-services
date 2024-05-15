@@ -47,14 +47,18 @@ class DevelopmentPlan(Base):
     __tablename__ = 'development_plan'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    name = Column(String, index=True)
-
-class UserDevelopmentPlan(Base):
-    __tablename__ = 'user_development_plan'
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     user_id = Column(String, ForeignKey("users.id"))
-    development_plan_id = Column(UUID(as_uuid=True), ForeignKey("development_plan.id"))
+    name = Column(String, index=True)
+    chosen_strength_id = Column(UUID(as_uuid=True), ForeignKey("chosen_traits.id"))
+    chosen_weakness_id = Column(UUID(as_uuid=True), ForeignKey("chosen_traits.id"))
+    sprint_1_id = Column(UUID(as_uuid=True), ForeignKey("sprints.id"))
+    chosen_strength_practice_1_id = Column(UUID(as_uuid=True), ForeignKey("sprints.id"))
+    chosen_weakness_practice_1_id = Column(UUID(as_uuid=True), ForeignKey("sprints.id"))
+    sprint_2_id = Column(UUID(as_uuid=True), ForeignKey("sprints.id"))
+    chosen_strength_practice_2_id = Column(UUID(as_uuid=True), ForeignKey("sprints.id"))
+    chosen_weakness_practice_2_id = Column(UUID(as_uuid=True), ForeignKey("sprints.id"))
+    start_date = Column(DateTime(timezone=True), index=True)
+    end_date = Column(DateTime(timezone=True), index=True)
 
 class Forms(Base):
     __tablename__ = 'forms'
@@ -81,6 +85,7 @@ class ChosenTraits(Base):
     trait_type = Column(String, index=True)
     form_id = Column(UUID(as_uuid=True), ForeignKey("forms.id"))
     t_score = Column(Integer, index=True)
+    dev_plan_id = Column(UUID(as_uuid=True), ForeignKey("development_plan.id"))
     start_date = Column(DateTime(timezone=True), index=True)
     end_date = Column(DateTime(timezone=True), index=True)
 
