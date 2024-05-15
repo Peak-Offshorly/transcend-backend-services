@@ -48,7 +48,7 @@ class DevelopmentPlan(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     user_id = Column(String, ForeignKey("users.id"))
-    name = Column(String, index=True)
+    number = Column(Integer, index=True)
     chosen_strength_id = Column(UUID(as_uuid=True), ForeignKey("chosen_traits.id"))
     chosen_weakness_id = Column(UUID(as_uuid=True), ForeignKey("chosen_traits.id"))
     sprint_1_id = Column(UUID(as_uuid=True), ForeignKey("sprints.id"))
@@ -57,8 +57,10 @@ class DevelopmentPlan(Base):
     sprint_2_id = Column(UUID(as_uuid=True), ForeignKey("sprints.id"))
     chosen_strength_practice_2_id = Column(UUID(as_uuid=True), ForeignKey("sprints.id"))
     chosen_weakness_practice_2_id = Column(UUID(as_uuid=True), ForeignKey("sprints.id"))
+    personal_practice_category_id = Column(UUID(as_uuid=True), ForeignKey("personal_practice_category.id"))
     start_date = Column(DateTime(timezone=True), index=True)
     end_date = Column(DateTime(timezone=True), index=True)
+    is_finished = Column(Boolean, default=False)
 
 class Forms(Base):
     __tablename__ = 'forms'

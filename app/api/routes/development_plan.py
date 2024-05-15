@@ -21,6 +21,8 @@ async def create_gantt_chart_dates(data: DataFormSchema, db: db_dependency):
     recommended_mind_body_category_data = await personal_practice_category_get_one(db=db, user_id=user_id)
     chosen_trait_practices = await chosen_practices_get(db=db, user_id=user_id, sprint_number=1)
 
+    # Create Dev Plan
+
     await add_dates(
       db=db,
       chosen_traits_data=chosen_traits_data,

@@ -90,11 +90,13 @@ def chosen_traits_get(db: Session, user_id: str):
     return {
         "user_id": user_id,
         "chosen_strength": {
+            "id": user_strength.id,
             "name": user_strength.name,
             "start_date": user_strength.start_date,
             "end_date": user_strength.end_date
         },
         "chosen_weakness": {
+            "id": user_weakness.id,
             "name": user_weakness.name,
             "start_date": user_weakness.start_date,
             "end_date": user_weakness.end_date
