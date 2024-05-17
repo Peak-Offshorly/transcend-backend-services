@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
 from sqlalchemy.orm import Session
 from typing import Annotated
-from app.schemas.models import UserColleagueEmailsSchema
+from app.schemas.models import UserColleagueEmailsSchema, DataFormSchema
+from app.email.send_email import send_email_background, send_email_async
 from app.database.connection import get_db
-from app.utils.user_colleagues_crud import colleague_email_save_one
+from app.utils.user_colleagues_crud import colleague_email_save_one, user_colleagues_get_all
 
 db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/colleague-feedback", tags=["colleague-feedback"])
@@ -18,6 +19,32 @@ async def save_colleague_emails(data: UserColleagueEmailsSchema, db: db_dependen
       await colleague_email_save_one(db=db, user_id=user_id, email=email)
       
     return { "message": "Colleague emails saved." }
+  except Exception as error:
+    raise HTTPException(status_code=400, detail=str(error))
+
+@router.post("/send-initial-emails")
+async def send_initial_emails(db: db_dependency, background_tasks: BackgroundTasks, data: DataFormSchema):
+  user_id = data.user_id
+  try:
+    body = { 
+      "title": "Hello World", 
+      "name": "Test User" 
+    }
+    emails = await user_colleagues_get_all(db=db, user_id=user_id)
+    for email in emails:
+      await send_email_async(
+        subject="Test Initial Colleague Email",
+        email_to=email.email,
+        body=body
+      )
+      # send_email_background
+      #   background_tasks=background_tasks, 
+      #   body=body, 
+      #   email_to=email.email, 
+      #   subject="Test Initial Colleague Email"
+      # )
+      
+    return { "message": "Colleague Initial emails sent." }
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
 
