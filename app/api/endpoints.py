@@ -8,6 +8,7 @@ from app.api.routes.personal_practices import router as personal_practices
 from app.api.routes.answers import router as answers
 from app.api.routes.development_plan import router as development_plan
 from app.api.routes.colleague_feedback import router as colleague_feedback
+from app.api.routes.progress_check import router as progress_check
 
 router = APIRouter()
 router.include_router(router=user_router)
@@ -18,6 +19,7 @@ router.include_router(router=personal_practices)
 router.include_router(router=answers)
 router.include_router(router=development_plan)
 router.include_router(router=colleague_feedback)
+router.include_router(router=progress_check)
 
 @router.get("/")
 async def health_check():
