@@ -64,6 +64,28 @@ async def sprint_create_get_one(db: Session, user_id: str):
         "end_date": end_date
     }
 
+async def get_current_sprint(db: Session, user_id: str):
+    # get max sprint number of user
+    max_sprint = db.query(func.max(Sprints.number)).filter(
+        Sprints.user_id == user_id
+    ).scalar()
+
+    # no sprint yet, first sprint
+    if max_sprint is None:
+        return{
+            "sprint_number": 1
+        }
+
+    existing_sprint = db.query(Sprints).filter(
+        Sprints.user_id == user_id,
+        Sprints.number == max_sprint
+    ).first()
+
+    return { 
+        "sprint_number": existing_sprint.number, 
+        "sprint_id": existing_sprint.id
+    }
+
 async def sprint_update_strength_form_id(db: Session, user_id: str, sprint_id: str, strength_form_id: str):
     existing_sprint =  db.query(Sprints).filter(
         Sprints.user_id == user_id,
