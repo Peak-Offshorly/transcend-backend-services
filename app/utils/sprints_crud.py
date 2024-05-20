@@ -64,7 +64,7 @@ async def sprint_create_get_one(db: Session, user_id: str):
         "end_date": end_date
     }
 
-async def get_current_sprint(db: Session, user_id: str):
+async def sprint_get_current(db: Session, user_id: str):
     # get max sprint number of user
     max_sprint = db.query(func.max(Sprints.number)).filter(
         Sprints.user_id == user_id
