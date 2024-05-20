@@ -30,19 +30,14 @@ async def send_initial_emails(db: db_dependency, background_tasks: BackgroundTas
       "title": "Hello World", 
       "name": "Test User" 
     }
-    emails = await user_colleagues_get_all(db=db, user_id=user_id)
-    for email in emails:
-      await send_email_async(
-        subject="Test Initial Colleague Email",
-        email_to=email.email,
-        body=body
+    user_colleagues = await user_colleagues_get_all(db=db, user_id=user_id)
+    for colleague in user_colleagues:
+      send_email_background(
+        background_tasks=background_tasks, 
+        body=body, 
+        email_to=colleague.email, 
+        subject="Test Initial Colleague Email Background Task"
       )
-      # send_email_background
-      #   background_tasks=background_tasks, 
-      #   body=body, 
-      #   email_to=email.email, 
-      #   subject="Test Initial Colleague Email"
-      # )
       
     return { "message": "Colleague Initial emails sent." }
   except Exception as error:
