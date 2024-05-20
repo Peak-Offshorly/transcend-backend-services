@@ -20,3 +20,7 @@ async def colleague_email_save_one(db: Session, user_id: str, email: str):
     
     db.commit()
 
+async def user_colleagues_get_all(db: Session, user_id: str):
+    return db.query(UserColleagues).filter(
+        UserColleagues.user_id == user_id
+    ).all()

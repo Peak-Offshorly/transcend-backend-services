@@ -2,6 +2,7 @@ import json
 from uuid import UUID
 from sqlalchemy import func, asc, desc
 from sqlalchemy.orm import Session
+from app.utils.forms_crud import delete_form_and_associations
 from app.database.models import Traits, ChosenTraits
 from app.schemas.models import TraitsSchema, FormAnswerSchema, ChosenTraitsSchema
 
@@ -62,6 +63,21 @@ def traits_get_top_bottom_five(db: Session, user_id: str):
     }
 
 def chosen_traits_create(db: Session, user_id: str, trait_id: str, trait_name: str, trait_type: str, t_score: int, form_id: str):
+    # Check existing chosen_traits with same trait_type (strength or weakness)
+    existing_chosen_trait = db.query(ChosenTraits).filter(
+        ChosenTraits.user_id == user_id,
+        ChosenTraits.trait_type == trait_type.upper()
+    ).first()
+
+    if existing_chosen_trait:
+        existing_chosen_trait_form_id = existing_chosen_trait.form_id
+        # Delete the trait itself first
+        db.delete(existing_chosen_trait)
+        db.flush()
+
+        # Delete Form, questions, options, answers under the existing_chosen_trait
+        delete_form_and_associations(db=db, form_id=existing_chosen_trait_form_id)
+    
     # Create ChosenTrait entry
     chosen_trait = ChosenTraits(
         user_id=user_id,

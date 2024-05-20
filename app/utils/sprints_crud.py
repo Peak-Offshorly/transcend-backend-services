@@ -18,7 +18,12 @@ async def sprint_create_get_one(db: Session, user_id: str):
         db.flush()
         db.commit()
         
-        return { "sprint_number": first_sprint.number, "sprint_id": first_sprint.id }
+        return { 
+            "sprint_number": first_sprint.number, 
+            "sprint_id": first_sprint.id,
+            "start_date": first_sprint.start_date,
+            "end_date": first_sprint.end_date
+        }
 
     # check if user has max Sprint that is finished
     has_finished_sprint = db.query(Sprints).filter(
@@ -38,6 +43,8 @@ async def sprint_create_get_one(db: Session, user_id: str):
 
         sprint_number = next_sprint.number
         sprint_id = next_sprint.id
+        start_date = next_sprint.start_date
+        end_date = next_sprint.end_date
     else:
         # get existing max sprint that is not finished
         existing_sprint = db.query(Sprints).filter(
@@ -47,9 +54,37 @@ async def sprint_create_get_one(db: Session, user_id: str):
         
         sprint_number = existing_sprint.number
         sprint_id = existing_sprint.id
+        start_date = existing_sprint.start_date
+        end_date = existing_sprint.end_date
     
-    
-    return { "sprint_number": sprint_number, "sprint_id": sprint_id }
+    return { 
+        "sprint_number": sprint_number, 
+        "sprint_id": sprint_id,
+        "start_date": start_date,
+        "end_date": end_date
+    }
+
+async def sprint_get_current(db: Session, user_id: str):
+    # get max sprint number of user
+    max_sprint = db.query(func.max(Sprints.number)).filter(
+        Sprints.user_id == user_id
+    ).scalar()
+
+    # no sprint yet, first sprint
+    if max_sprint is None:
+        return{
+            "sprint_number": 1
+        }
+
+    existing_sprint = db.query(Sprints).filter(
+        Sprints.user_id == user_id,
+        Sprints.number == max_sprint
+    ).first()
+
+    return { 
+        "sprint_number": existing_sprint.number, 
+        "sprint_id": existing_sprint.id
+    }
 
 async def sprint_update_strength_form_id(db: Session, user_id: str, sprint_id: str, strength_form_id: str):
     existing_sprint =  db.query(Sprints).filter(
