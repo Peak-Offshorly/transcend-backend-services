@@ -157,7 +157,7 @@ async def save_development_progress_answers(db: db_dependency, answers: FormAnsw
 
 # Get answers for Progress Check - might be used for weekly email nudge to user
 @router.get("/get-answers")
-async def save_development_progress_answers(db: db_dependency, trait_type: str, sprint_number: int, week_number: int, user_id: str):
+async def get_development_progress_answers(db: db_dependency, trait_type: str, sprint_number: int, week_number: int, user_id: str):
   try:
     if week_number > 6:
       return { "message": "Week number too big." }
