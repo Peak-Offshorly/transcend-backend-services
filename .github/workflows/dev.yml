@@ -1,6 +1,4 @@
-#main.yml
-#This workflow will install Python dependencies, lint using Black, run tests using Pytest
-name: fastapi-github-actions-test
+name: Dev Environment
 
 on:
   #Trigger the workflow on a push event to the master branch only
