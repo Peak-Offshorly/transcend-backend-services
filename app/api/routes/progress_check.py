@@ -175,6 +175,10 @@ async def get_development_progress_answers(db: db_dependency, trait_type: str, s
     # <SPRINT_NUM>_PROGRESS_WEAKNESS_WEEK_<WEEK NUMBER>
     form_name = f"{sprint_number}_PROGRESS_{trait_type.upper()}_WEEK_{week_number}"
 
-    return await answers_get_all(db=db, user_id=user_id, form_name=form_name, sprint_number=sprint_number)
+    # Get current dev plan
+    dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
+    dev_plan_id=dev_plan["dev_plan_id"]
+
+    return await answers_get_all(db=db, user_id=user_id, form_name=form_name, sprint_number=sprint_number, dev_plan_id=dev_plan_id)
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
