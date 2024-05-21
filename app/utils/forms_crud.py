@@ -63,8 +63,8 @@ def forms_create_one_initial_questions_form(db: Session, form: FormSchema):
   # Return Form data with form_id
   return form_data
 
-def mind_body_form_questions_options_get_all(form_name: str, user_id: str, questions: List[str], categories: List[str], weights: List[int], sprint_number: Optional[int] = None,
-                                    options: Optional[List[str]] = None, option_type: Optional[str] = None, trait_name: Optional[str] = None) -> FormSchema:
+def mind_body_form_questions_options_get_all(form_name: str, user_id: str, questions: List[str], categories: List[str], weights: List[int], dev_plan_id: Optional[UUID] = None,
+                                             sprint_number: Optional[int] = None, options: Optional[List[str]] = None, option_type: Optional[str] = None, trait_name: Optional[str] = None) -> FormSchema:
     
   question_schemas = []
   
@@ -104,12 +104,13 @@ def mind_body_form_questions_options_get_all(form_name: str, user_id: str, quest
       name=form_name,
       user_id=user_id,
       questions=question_schemas,
-      sprint_number=sprint_number
+      sprint_number=sprint_number,
+      development_plan_id=dev_plan_id
   )
   return form_data
 
 # Creating FormSchema for other set of questions/options
-def form_questions_options_get_all(form_name: str, user_id: str, questions: List[str], category: str, ranks: List[int], sprint_number: Optional[int] = None,
+def form_questions_options_get_all(form_name: str, user_id: str, questions: List[str], category: str, ranks: List[int], dev_plan_id: Optional[UUID] = None, sprint_number: Optional[int] = None,
                                     sprint_id: Optional[UUID] = None, options: Optional[List[str]] = None, option_type: Optional[str] = None, trait_name: Optional[str] = None) -> FormSchema:
     
   question_schemas = []
@@ -145,13 +146,14 @@ def form_questions_options_get_all(form_name: str, user_id: str, questions: List
       user_id=user_id,
       questions=question_schemas,
       sprint_number=sprint_number,
-      sprint_id = sprint_id
+      sprint_id = sprint_id,
+      development_plan_id = dev_plan_id
   )
   return form_data
 
 # Creating Form for other set of questions/options
 async def forms_create_one(db: Session, form: FormSchema):
-  db_form = Forms(name=form.name, user_id=form.user_id, sprint_number=form.sprint_number, sprint_id=form.sprint_id)
+  db_form = Forms(name=form.name, user_id=form.user_id, sprint_number=form.sprint_number, sprint_id=form.sprint_id, development_plan_id=form.development_plan_id)
   db.add(db_form)
   db.flush()
 
@@ -171,10 +173,10 @@ async def forms_create_one(db: Session, form: FormSchema):
   return { "form": form, "form_id": db_form.id }
 
 # 1 form, all questions, all options for that question
-def forms_with_questions_options_get_all(db: Session, name: str, user_id: str):
+def forms_with_questions_options_get_all(db: Session, name: str, user_id: str, dev_plan_id: str):
   form = db.query(Forms).options(
     joinedload(Forms.questions).subqueryload(Questions.options)
-    ).filter(Forms.name == name, Forms.user_id == user_id).first()
+    ).filter(Forms.name == name, Forms.user_id == user_id, Forms.development_plan_id == dev_plan_id).first()
 
   return form
 

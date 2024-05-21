@@ -62,17 +62,18 @@ def traits_get_top_bottom_five(db: Session, user_id: str):
         } for trait in bottom_user_traits]
     }
 
-def chosen_traits_create(db: Session, user_id: str, trait_id: str, trait_name: str, trait_type: str, t_score: int, form_id: str):
-    # Check existing chosen_traits with same trait_type (strength or weakness)
-    existing_chosen_trait = db.query(ChosenTraits).filter(
+def chosen_traits_create(db: Session, user_id: str, trait_id: str, trait_name: str, trait_type: str, t_score: int, form_id: str, dev_plan_id: UUID):
+    # Check existing chosen_traits with same trait_type and dev plan id (strength or weakness)
+    existing_chosen_trait_dev_plan = db.query(ChosenTraits).filter(
         ChosenTraits.user_id == user_id,
-        ChosenTraits.trait_type == trait_type.upper()
+        ChosenTraits.trait_type == trait_type.upper(),
+        ChosenTraits.development_plan_id == dev_plan_id
     ).first()
 
-    if existing_chosen_trait:
-        existing_chosen_trait_form_id = existing_chosen_trait.form_id
+    if existing_chosen_trait_dev_plan:
+        existing_chosen_trait_form_id = existing_chosen_trait_dev_plan.form_id
         # Delete the trait itself first
-        db.delete(existing_chosen_trait)
+        db.delete(existing_chosen_trait_dev_plan)
         db.flush()
 
         # Delete Form, questions, options, answers under the existing_chosen_trait
@@ -85,22 +86,25 @@ def chosen_traits_create(db: Session, user_id: str, trait_id: str, trait_name: s
         trait_id=trait_id,
         trait_type=trait_type.upper(),
         form_id=form_id,
-        t_score=t_score
+        t_score=t_score,
+        development_plan_id=dev_plan_id
     )
     db.add(chosen_trait)
     db.flush()
 
     db.commit()
 
-def chosen_traits_get(db: Session, user_id: str):
+def chosen_traits_get(db: Session, user_id: str, dev_plan_id: str):
     user_strength = db.query(ChosenTraits).filter(
         ChosenTraits.user_id == user_id,
-        ChosenTraits.trait_type == "STRENGTH"
+        ChosenTraits.trait_type == "STRENGTH",
+        ChosenTraits.development_plan_id == dev_plan_id
         ).first()
     
     user_weakness = db.query(ChosenTraits).filter(
         ChosenTraits.user_id == user_id,
-        ChosenTraits.trait_type == "WEAKNESS"
+        ChosenTraits.trait_type == "WEAKNESS",
+        ChosenTraits.development_plan_id == dev_plan_id
         ).first()
     
     return {

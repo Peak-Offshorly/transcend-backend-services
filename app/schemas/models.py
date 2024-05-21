@@ -75,6 +75,7 @@ class FormSchema(BaseModel):
     sprint_number: Optional[int] = None
     sprint_id: Optional[UUID] = None
     questions: Optional[List[QuestionSchema]] = None
+    development_plan_id: Optional[UUID] = None
     class Config:
         orm_mode = True
         from_attributes = True
@@ -102,6 +103,7 @@ class PracticeSchema(BaseModel):
     user_id: Optional[str] = None
     question_id: Optional[UUID] = None
     chosen_trait_id: Optional[UUID] = None
+    development_plan_id: Optional[UUID] = None
     class Config:
         orm_mode = True
         from_attributes = True

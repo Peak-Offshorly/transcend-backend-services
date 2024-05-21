@@ -2,17 +2,19 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.database.models import Sprints
 
-async def sprint_create_get_one(db: Session, user_id: str):
-    # get max sprint number of user
+async def sprint_create_get_one(db: Session, user_id: str, dev_plan_id: str):
+    # get max sprint number of user for that dev plan id
     max_sprint = db.query(func.max(Sprints.number)).filter(
-        Sprints.user_id == user_id
+        Sprints.user_id == user_id,
+        Sprints.development_plan_id == dev_plan_id
     ).scalar()
     
-    # no sprint yet, first sprint
+    # no sprint yet under that dev plan id, first sprint for that dev plan
     if max_sprint is None:
         first_sprint = Sprints(
             user_id=user_id,
-            number=1
+            number=1,
+            development_plan_id=dev_plan_id
         )
         db.add(first_sprint)
         db.flush()
@@ -25,26 +27,29 @@ async def sprint_create_get_one(db: Session, user_id: str):
             "end_date": first_sprint.end_date
         }
 
-    # check if user has max Sprint that is finished
+    # user has max Sprint, check if it is finished
     has_finished_sprint = db.query(Sprints).filter(
         Sprints.user_id == user_id,
+        Sprints.development_plan_id == dev_plan_id,
         Sprints.number == max_sprint,
         Sprints.is_finished == True
     ).first()
 
     if has_finished_sprint:
-        next_sprint = Sprints(
-            user_id=user_id,
-            number=has_finished_sprint.number + 1 # iterate by one to signify next sprint
-        )
-        db.add(next_sprint)
-        db.flush()
-        db.commit()
+        if max_sprint < 2: # sprint 1 is finished
+            next_sprint = Sprints(
+                user_id=user_id,
+                development_plan_id=dev_plan_id,
+                number=2 # sprint number 2 now, since it is safe to assume the finished sprint is sprint 1
+            )
+            db.add(next_sprint)
+            db.flush()
+            db.commit()
 
-        sprint_number = next_sprint.number
-        sprint_id = next_sprint.id
-        start_date = next_sprint.start_date
-        end_date = next_sprint.end_date
+            sprint_number = next_sprint.number
+            sprint_id = next_sprint.id
+            start_date = next_sprint.start_date
+            end_date = next_sprint.end_date
     else:
         # get existing max sprint that is not finished
         existing_sprint = db.query(Sprints).filter(
@@ -64,10 +69,11 @@ async def sprint_create_get_one(db: Session, user_id: str):
         "end_date": end_date
     }
 
-async def sprint_get_current(db: Session, user_id: str):
-    # get max sprint number of user
+async def sprint_get_current(db: Session, user_id: str, dev_plan_id: str):
+    # get max sprint number of user with certain dev plan id
     max_sprint = db.query(func.max(Sprints.number)).filter(
-        Sprints.user_id == user_id
+        Sprints.user_id == user_id,
+        Sprints.development_plan_id == dev_plan_id
     ).scalar()
 
     # no sprint yet, first sprint
@@ -78,6 +84,7 @@ async def sprint_get_current(db: Session, user_id: str):
 
     existing_sprint = db.query(Sprints).filter(
         Sprints.user_id == user_id,
+        Sprints.development_plan_id == dev_plan_id,
         Sprints.number == max_sprint
     ).first()
 

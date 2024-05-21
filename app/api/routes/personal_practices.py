@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from typing import Annotated
 from app.schemas.models import DataFormSchema, FormAnswerSchema, ChosenPersonalPracticesSchema
 from app.database.connection import get_db
+from app.utils.dev_plan_crud import dev_plan_create_get_one, dev_plan_update_personal_practice_category
 from app.utils.forms_crud import mind_body_form_questions_options_get_all, forms_with_questions_options_get_all, forms_create_one
 from app.utils.answers_crud import answers_save_one
 from app.utils.practices_crud import (
@@ -29,7 +30,9 @@ async def create_get_personal_practices_form(data: DataFormSchema, db: db_depend
   options = []
   categories = []
   try:
-    form_exists = forms_with_questions_options_get_all(db=db, name=form_name, user_id=user_id)
+    dev_plan = await dev_plan_create_get_one(db=db, user_id=user_id)
+    dev_plan_id = dev_plan["dev_plan_id"]
+    form_exists = forms_with_questions_options_get_all(db=db, name=form_name, user_id=user_id, dev_plan_id=dev_plan_id)
     
     # return if Form exists already
     if form_exists:
@@ -61,10 +64,11 @@ async def create_get_personal_practices_form(data: DataFormSchema, db: db_depend
       questions=questions,
       options=options,
       weights=weights,
+      dev_plan_id=dev_plan_id
     )
 
     await forms_create_one(db=db, form=form_data)
-    return forms_with_questions_options_get_all(db, name=form_name, user_id=user_id)
+    return forms_with_questions_options_get_all(db, name=form_name, user_id=user_id, dev_plan_id=dev_plan_id)
   
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
@@ -109,12 +113,22 @@ async def save_answers(answers: FormAnswerSchema, db: db_dependency):
     recommended_category = min(category_avg_scores, key=category_avg_scores.get)
 
     # Save recommended category in DB
-    await personal_practice_category_save_one(
+    dev_plan = await dev_plan_create_get_one(db=db, user_id=user_id)
+    dev_plan_id = dev_plan["dev_plan_id"]
+    category = await personal_practice_category_save_one(
       db=db,
       name=recommended_category,
-      user_id=user_id
+      user_id=user_id,
+      dev_plan_id=dev_plan_id
     )
 
+    # Update current dev plan personal practice category id
+    await dev_plan_update_personal_practice_category(
+      db=db, 
+      user_id=user_id, 
+      personal_practice_category_id=category["personal_practice_category_id"]
+    )
+    
     return {
       "message": "Mind-body Practice area saved and calculations done.", 
       "recommended_mind_body_category": recommended_category 
@@ -129,7 +143,9 @@ async def get_recommendations(user_id: str, db: db_dependency):
     with open("app/utils/data/mind_body_practices.json", "r") as file:
       mind_body_practices = json.load(file)
 
-    category = await personal_practice_category_get_one(db=db, user_id=user_id)
+    dev_plan = await dev_plan_create_get_one(db=db, user_id=user_id)
+    dev_plan_id = dev_plan["dev_plan_id"]
+    category = await personal_practice_category_get_one(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
     recommendations = mind_body_practices[category.name]
     
     return { 
@@ -165,7 +181,9 @@ async def save_selected_recommendations(chosen_personal_practices: ChosenPersona
 @router.get("/get-selected-recommendations")
 async def get_selected_recommendations(user_id: str, db: db_dependency):
   try:
-    category = await personal_practice_category_get_one(db=db, user_id=user_id)
+    dev_plan = await dev_plan_create_get_one(db=db, user_id=user_id)
+    dev_plan_id = dev_plan["dev_plan_id"]
+    category = await personal_practice_category_get_one(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
     chosen_recommendations = await chosen_personal_practices_get_all(db=db, user_id=user_id, recommended_mind_body_category_id=category.id)
 
     return { 

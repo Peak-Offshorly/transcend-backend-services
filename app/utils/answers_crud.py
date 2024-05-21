@@ -73,18 +73,20 @@ async def answers_save_one(db: Session, form_id: str, question_id: str, option_i
 
     db.commit()
 
-async def answers_get_all(db: Session, user_id: str, form_name: str, sprint_number: str):
+async def answers_get_all(db: Session, user_id: str, form_name: str, sprint_number: str, dev_plan_id: str):
     form = db.query(Forms).filter(
         Forms.user_id == user_id, 
         Forms.name == form_name, 
-        Forms.sprint_number == sprint_number
+        Forms.sprint_number == sprint_number,
+        Forms.development_plan_id == dev_plan_id
         ).options(joinedload(Forms.answers)).first()
 
     return form.answers
 
-async def answers_all_forms_get_all(db: Session, user_id: str):
+async def answers_all_forms_get_all(db: Session, user_id: str, dev_plan_id: str):
     all_forms_with_answers = db.query(Forms).filter(
-        Forms.user_id == user_id
+        Forms.user_id == user_id,
+        Forms.development_plan_id == dev_plan_id
     ).options(joinedload(Forms.answers)).all()
 
     return all_forms_with_answers

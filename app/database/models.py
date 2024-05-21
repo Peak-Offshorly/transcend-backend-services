@@ -42,6 +42,7 @@ class Sprints(Base):
     is_finished = Column(Boolean, default=False)
     start_date = Column(DateTime(timezone=True), index=True)
     end_date = Column(DateTime(timezone=True), index=True)
+    development_plan_id = Column(UUID(as_uuid=True), ForeignKey("development_plan.id"))
 
 class DevelopmentPlan(Base):
     __tablename__ = 'development_plan'
@@ -52,11 +53,11 @@ class DevelopmentPlan(Base):
     chosen_strength_id = Column(UUID(as_uuid=True), ForeignKey("chosen_traits.id"))
     chosen_weakness_id = Column(UUID(as_uuid=True), ForeignKey("chosen_traits.id"))
     sprint_1_id = Column(UUID(as_uuid=True), ForeignKey("sprints.id"))
-    chosen_strength_practice_1_id = Column(UUID(as_uuid=True), ForeignKey("sprints.id"))
-    chosen_weakness_practice_1_id = Column(UUID(as_uuid=True), ForeignKey("sprints.id"))
+    chosen_strength_practice_1_id = Column(UUID(as_uuid=True), ForeignKey("chosen_practices.id"))
+    chosen_weakness_practice_1_id = Column(UUID(as_uuid=True), ForeignKey("chosen_practices.id"))
     sprint_2_id = Column(UUID(as_uuid=True), ForeignKey("sprints.id"))
-    chosen_strength_practice_2_id = Column(UUID(as_uuid=True), ForeignKey("sprints.id"))
-    chosen_weakness_practice_2_id = Column(UUID(as_uuid=True), ForeignKey("sprints.id"))
+    chosen_strength_practice_2_id = Column(UUID(as_uuid=True), ForeignKey("chosen_practices.id"))
+    chosen_weakness_practice_2_id = Column(UUID(as_uuid=True), ForeignKey("chosen_practices.id"))
     personal_practice_category_id = Column(UUID(as_uuid=True), ForeignKey("personal_practice_category.id"))
     start_date = Column(DateTime(timezone=True), index=True)
     end_date = Column(DateTime(timezone=True), index=True)
@@ -70,6 +71,7 @@ class Forms(Base):
     user_id = Column(String, ForeignKey("users.id"))
     sprint_number = Column(Integer, index=True)
     sprint_id = Column(UUID(as_uuid=True), ForeignKey("sprints.id"))
+    development_plan_id = Column(UUID(as_uuid=True), ForeignKey("development_plan.id"))
 
     users = relationship('Users', backref='forms', foreign_keys=[user_id])
     questions = relationship('Questions', back_populates='forms')
@@ -87,9 +89,9 @@ class ChosenTraits(Base):
     trait_type = Column(String, index=True)
     form_id = Column(UUID(as_uuid=True), ForeignKey("forms.id"))
     t_score = Column(Integer, index=True)
-    dev_plan_id = Column(UUID(as_uuid=True), ForeignKey("development_plan.id"))
     start_date = Column(DateTime(timezone=True), index=True)
     end_date = Column(DateTime(timezone=True), index=True)
+    development_plan_id = Column(UUID(as_uuid=True), ForeignKey("development_plan.id"))
 
     users = relationship('Users', back_populates='chosen_traits')
     traits = relationship('Traits', back_populates='chosen_traits')
@@ -173,6 +175,7 @@ class ChosenPractices(Base):
     form_id = Column(UUID(as_uuid=True), ForeignKey("forms.id"))
     sprint_number = Column(Integer, index=True)
     sprint_id = Column(UUID(as_uuid=True), ForeignKey("sprints.id"))
+    development_plan_id = Column(UUID(as_uuid=True), ForeignKey("development_plan.id"))
 
     users = relationship('Users', back_populates='chosen_practices')
     practices = relationship('Practices', back_populates='chosen_practices')
@@ -187,6 +190,7 @@ class PersonalPracticeCategory(Base):
     name = Column(String, index=True)
     start_date = Column(DateTime(timezone=True), index=True)
     end_date = Column(DateTime(timezone=True), index=True)
+    development_plan_id = Column(UUID(as_uuid=True), ForeignKey("development_plan.id"))
 
     users = relationship('Users', back_populates='personal_practice_category')
     chosen_personal_practices = relationship('ChosenPersonalPractices', back_populates='personal_practice_category')

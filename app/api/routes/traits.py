@@ -1,10 +1,12 @@
 import json
+from uuid import UUID
 from collections import defaultdict
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import Annotated
 from app.schemas.models import ChosenTraitsSchema, FormAnswerSchema, PracticeSchema, ChosenPracticesSchema
 from app.database.connection import get_db
+from app.utils.dev_plan_crud import dev_plan_create_get_one, dev_plan_get_current, dev_plan_update_chosen_traits, dev_plan_update_sprint, dev_plan_update_chosen_strength_practice, dev_plan_update_chosen_weakness_practice
 from app.utils.forms_crud import form_questions_options_get_all, forms_create_one, forms_with_questions_options_get_all, forms_with_questions_options_sprint_id_get_all
 from app.utils.answers_crud import answers_save_one
 from app.utils.sprints_crud import sprint_create_get_one, sprint_update_strength_form_id, sprint_update_weakness_form_id
@@ -40,6 +42,10 @@ async def save_traits_chosen(chosen_traits: ChosenTraitsSchema, db: db_dependenc
       "weakness": chosen_traits.weakness
   }
   try:
+    # Make dev plan for user
+    dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db) 
+    dev_plan_id = dev_plan["dev_plan_id"]
+
     # Iterate over strength and weakness
     for trait_type, data in trait_data.items():
       trait_id = data.id
@@ -47,7 +53,7 @@ async def save_traits_chosen(chosen_traits: ChosenTraitsSchema, db: db_dependenc
       t_score = data.t_score
     
       # Create Form for certain trait
-      trait_form = await create_trait_form(db=db, user_id=user_id, trait=trait_name, trait_type=trait_type)
+      trait_form = await create_trait_form(db=db, user_id=user_id, trait=trait_name, dev_plan_id=dev_plan_id, trait_type=trait_type)
 
       # Create ChosenTrait entry, attach form id for certain trait Form
       chosen_traits_create(
@@ -57,15 +63,21 @@ async def save_traits_chosen(chosen_traits: ChosenTraitsSchema, db: db_dependenc
         trait_id=trait_id, 
         trait_name=trait_name, 
         t_score=t_score, 
-        trait_type=trait_type
+        trait_type=trait_type,
+        dev_plan_id=dev_plan_id
       )
+    
+    chosen_traits = chosen_traits_get(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
+    chosen_strength_id = chosen_traits["chosen_strength"]["id"]
+    chosen_weakness_id = chosen_traits["chosen_weakness"]["id"]
+    await dev_plan_update_chosen_traits(user_id=user_id, chosen_strength_id=chosen_strength_id, chosen_weakness_id=chosen_weakness_id, db=db)
 
     return { "message": "Strength and Weakness added and Forms created." }
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
   
 # Create Form questions and options for trait; used in Post Save Chosen Strength and Weakness
-async def create_trait_form(user_id: str, trait: str, trait_type: str, db: db_dependency):
+async def create_trait_form(user_id: str, trait: str, trait_type: str, dev_plan_id: UUID, db: db_dependency):
   form_name = f"1_{trait_type.upper()}_QUESTIONS" 
   questions=[]
   ranks=[]
@@ -93,7 +105,8 @@ async def create_trait_form(user_id: str, trait: str, trait_type: str, db: db_de
       questions=questions,
       options=options,
       ranks=ranks,
-      trait_name=trait
+      trait_name=trait,
+      dev_plan_id=dev_plan_id
     )
 
     trait_form = await forms_create_one(db=db, form=form_data)
@@ -106,7 +119,8 @@ async def create_trait_form(user_id: str, trait: str, trait_type: str, db: db_de
 @router.get("/get-strength-weakness")
 async def get_traits_chosen(user_id: str, db: db_dependency):
   try:
-    return chosen_traits_get(db=db, user_id=user_id)
+    dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
+    return chosen_traits_get(db=db, user_id=user_id, dev_plan_id=dev_plan["dev_plan_id"])
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
   
@@ -114,7 +128,8 @@ async def get_traits_chosen(user_id: str, db: db_dependency):
 @router.get("/get-trait-questions")
 async def get_trait_questions(user_id: str, form_name: str, db: db_dependency):
   try:
-    return forms_with_questions_options_get_all(db, name=form_name, user_id=user_id)
+    dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
+    return forms_with_questions_options_get_all(db, name=form_name, user_id=user_id, dev_plan_id = dev_plan["dev_plan_id"])
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
 
@@ -182,7 +197,8 @@ async def save_traits_answers(answers: FormAnswerSchema, db: db_dependency):
 @router.get("/get-trait-practices")
 async def get_trait_practices(user_id: str, trait_type: str, db: db_dependency):
   try:
-    return await practices_by_trait_type_get(db=db, user_id=user_id, trait_type=trait_type)
+    dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
+    return await practices_by_trait_type_get(db=db, user_id=user_id, trait_type=trait_type, dev_plan_id=dev_plan["dev_plan_id"])
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
   
@@ -203,11 +219,17 @@ async def save_chosen_strength_practice(chosen_practices: ChosenPracticesSchema,
     "DEVELOPMENT_ACTION_CHOICE_1"
   ]
 
+  # Get current dev plan 
+  dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
+
   # Determine which sprint you are in
-  sprint = await sprint_create_get_one(db=db, user_id=user_id)
+  sprint = await sprint_create_get_one(db=db, user_id=user_id, dev_plan_id=dev_plan["dev_plan_id"])
   sprint_number = sprint["sprint_number"] 
   sprint_id = sprint["sprint_id"] 
-  form_name = f"{sprint_number}_STRENGTH_PRACTICE_QUESTIONS" 
+  form_name = f"{sprint_number}_STRENGTH_PRACTICE_QUESTIONS"
+
+  # Update current dev plan with sprint id
+  await dev_plan_update_sprint(db=db, user_id=user_id, sprint_number=sprint_number, sprint_id=sprint_id)
 
   try: 
     practice_id = strength_practice.id
@@ -228,7 +250,8 @@ async def save_chosen_strength_practice(chosen_practices: ChosenPracticesSchema,
         options=options,
         ranks=ranks,
         sprint_number=sprint_number,
-        sprint_id=sprint_id
+        sprint_id=sprint_id,
+        dev_plan_id=dev_plan["dev_plan_id"]
       )
       practice_form = await forms_create_one(db=db, form=form_data)
       form_id = practice_form["form_id"]
@@ -237,7 +260,7 @@ async def save_chosen_strength_practice(chosen_practices: ChosenPracticesSchema,
     await sprint_update_strength_form_id(db=db, user_id=user_id, sprint_id=sprint_id, strength_form_id=form_id)
 
     # Create ChosenPractice entry with form id
-    chosen_practices_save_one(
+    chosen_practice = chosen_practices_save_one(
       db=db,
       user_id=user_id,
       form_id=form_id,
@@ -245,7 +268,16 @@ async def save_chosen_strength_practice(chosen_practices: ChosenPracticesSchema,
       practice_id=practice_id,
       chosen_trait_id=chosen_trait_id,
       sprint_number=sprint_number,
-      sprint_id=sprint_id
+      sprint_id=sprint_id,
+      dev_plan_id=dev_plan["dev_plan_id"]
+    )
+
+    # Update dev plan chosen strength practice id
+    await dev_plan_update_chosen_strength_practice(
+      user_id=user_id, 
+      sprint_number=sprint_number, 
+      chosen_strength_id=chosen_practice["chosen_practice_id"],
+      db=db
     )
 
     return { "message": "Chosen Strength Practice saved and Forms created." }
@@ -268,11 +300,17 @@ async def save_chosen_weakness_practice(chosen_practices: ChosenPracticesSchema,
     "DEVELOPMENT_ACTION_CHOICE_1"
   ]
 
+  # Get current dev plan 
+  dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
+
   # Determine which sprint you are in
-  sprint = await sprint_create_get_one(db=db, user_id=user_id)
+  sprint = await sprint_create_get_one(db=db, user_id=user_id, dev_plan_id=dev_plan["dev_plan_id"])
   sprint_number = sprint["sprint_number"] 
   sprint_id = sprint["sprint_id"] 
   form_name = f"{sprint_number}_WEAKNESS_PRACTICE_QUESTIONS"
+
+  # Update current dev plan with sprint id
+  await dev_plan_update_sprint(db=db, user_id=user_id, sprint_number=sprint_number, sprint_id=sprint_id) 
 
   try: 
     practice_id = weakness_practice.id
@@ -293,7 +331,8 @@ async def save_chosen_weakness_practice(chosen_practices: ChosenPracticesSchema,
         options=options,
         ranks=ranks,
         sprint_number=sprint_number,
-        sprint_id=sprint_id
+        sprint_id=sprint_id,
+        dev_plan_id=dev_plan["dev_plan_id"]
       )
       practice_form = await forms_create_one(db=db, form=form_data)
       form_id = practice_form["form_id"]
@@ -302,7 +341,7 @@ async def save_chosen_weakness_practice(chosen_practices: ChosenPracticesSchema,
     await sprint_update_weakness_form_id(db=db, user_id=user_id, sprint_id=sprint_id, weakness_form_id=form_id)
 
     # Create ChosenPractice entry with form id
-    chosen_practices_save_one(
+    chosen_practice = chosen_practices_save_one(
       db=db,
       user_id=user_id,
       form_id=form_id,
@@ -310,7 +349,16 @@ async def save_chosen_weakness_practice(chosen_practices: ChosenPracticesSchema,
       practice_id=practice_id,
       chosen_trait_id=chosen_trait_id,
       sprint_number=sprint_number,
-      sprint_id=sprint_id
+      sprint_id=sprint_id,
+      dev_plan_id=dev_plan["dev_plan_id"]
+    )
+
+    # Update dev plan chosen weakness practice id
+    await dev_plan_update_chosen_weakness_practice(
+      user_id=user_id, 
+      sprint_number=sprint_number, 
+      chosen_weakness_id=chosen_practice["chosen_practice_id"],
+      db=db
     )
 
     return { "message": "Chosen Weakness Practice saved and Forms created." }

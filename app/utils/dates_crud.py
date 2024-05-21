@@ -1,18 +1,18 @@
 from uuid import UUID
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from app.database.models import ChosenTraits, PersonalPracticeCategory, Sprints
+from app.database.models import ChosenTraits, PersonalPracticeCategory, Sprints, DevelopmentPlan
 
-async def add_dates(chosen_traits_data, recommended_mind_body_category_data, chosen_trait_practices, db: Session):
+async def add_dates(chosen_traits_data, recommended_mind_body_category_data, chosen_trait_practices, dev_plan, db: Session):
     # Add dates for chosen_traits(strength/weakness) and mind body area
     # Both span 12 weeks 
 
     # Get the current date and end date which is 12 weeks from the start date
-    start_date = datetime.now()
+    start_date = datetime.now(tz=timezone.utc)
     end_date = start_date + timedelta(weeks=12)
 
-    # Add dates to chosen_traits(strength/weakness) and mind body area
+    # Add dates to chosen_traits(strength/weakness), mind body area and dev plan
     chosen_strength = db.query(ChosenTraits).filter(
         ChosenTraits.user_id == chosen_traits_data["user_id"],
         ChosenTraits.name == chosen_traits_data["chosen_strength"]["name"],
@@ -34,6 +34,12 @@ async def add_dates(chosen_traits_data, recommended_mind_body_category_data, cho
     ).first()
     mind_body_area.start_date = start_date
     mind_body_area.end_date = end_date
+
+    current_dev_plan = db.query(DevelopmentPlan).filter(
+        DevelopmentPlan.id == dev_plan["dev_plan_id"]
+    ).first()
+    current_dev_plan.start_date = start_date
+    current_dev_plan.end_date = end_date
 
     # Add start_date and start_to_mid_date for Sprint 1
     start_to_mid_date = start_date + timedelta(weeks=6)

@@ -1,11 +1,11 @@
-import pytz
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
+from datetime import datetime, timezone
 from typing import Annotated
 from app.schemas.models import DataFormSchema, FormAnswerSchema
 from app.database.connection import get_db
+from app.utils.dev_plan_crud import dev_plan_create_get_one
 from app.utils.sprints_crud import sprint_create_get_one
 from app.utils.answers_crud import answers_get_all, answers_save_one
 from app.utils.forms_crud import form_questions_options_get_all, forms_with_questions_options_sprint_id_get_all, forms_create_one
@@ -18,14 +18,18 @@ router = APIRouter(prefix="/progress-check", tags=["progress-check"])
 @router.post("/questions-strength-practice")
 async def get_development_progress_questions_strength_practice(db: db_dependency, data: DataFormSchema):
   user_id = data.user_id
+  # Get current dev plan
+  dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
+  dev_plan_id=dev_plan["dev_plan_id"]
+
   # Determine which sprint you are in
-  sprint = await sprint_create_get_one(db=db, user_id=user_id)
+  sprint = await sprint_create_get_one(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
   sprint_number = sprint["sprint_number"]
   sprint_id = sprint["sprint_id"]
 
   # Calculate current week number
   start_date =  sprint["start_date"]
-  current_date = datetime.now(pytz.utc)
+  current_date = datetime.now(timezone.utc)
   delta = current_date - start_date
   week_number = (delta.days // 7) + 1  # Adding 1 to make week_number start from 1
   if week_number > 6:
@@ -50,7 +54,7 @@ async def get_development_progress_questions_strength_practice(db: db_dependency
     else:
       # Fetch from the Answers DB table under the form of strength/weakness practice
       dev_actions_form_name = f"{sprint_number}_STRENGTH_PRACTICE_QUESTIONS"
-      dev_actions = await answers_get_all(db=db, user_id=user_id, form_name=dev_actions_form_name, sprint_number=sprint_number)
+      dev_actions = await answers_get_all(db=db, user_id=user_id, form_name=dev_actions_form_name, sprint_number=sprint_number, dev_plan_id=dev_plan_id)
 
       for action in dev_actions:
         questions.append(action.answer)
@@ -65,7 +69,8 @@ async def get_development_progress_questions_strength_practice(db: db_dependency
         options=options,
         ranks=ranks,
         sprint_id=sprint_id,
-        sprint_number=sprint_number
+        sprint_number=sprint_number,
+        dev_plan_id=dev_plan_id
       )
       await forms_create_one(db=db, form=form_data)
 
@@ -78,14 +83,18 @@ async def get_development_progress_questions_strength_practice(db: db_dependency
 @router.post("/questions-weakness-practice")
 async def get_development_progress_questions_weakness_practice(db: db_dependency, data: DataFormSchema):
   user_id = data.user_id
+  # Get current dev plan
+  dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
+  dev_plan_id=dev_plan["dev_plan_id"]
+
   # Determine which sprint you are in
-  sprint = await sprint_create_get_one(db=db, user_id=user_id)
+  sprint = await sprint_create_get_one(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
   sprint_number = sprint["sprint_number"]
   sprint_id = sprint["sprint_id"]
 
   # Calculate current week number
   start_date =  sprint["start_date"]
-  current_date = datetime.now(pytz.utc)
+  current_date = datetime.now(timezone.utc)
   delta = current_date - start_date
   week_number = (delta.days // 7) + 1  # Adding 1 to make week_number start from 1
   if week_number > 6:
@@ -110,7 +119,7 @@ async def get_development_progress_questions_weakness_practice(db: db_dependency
     else:
       # Fetch from the Answers DB table under the form of strength/weakness practice
       dev_actions_form_name = f"{sprint_number}_WEAKNESS_PRACTICE_QUESTIONS"
-      dev_actions = await answers_get_all(db=db, user_id=user_id, form_name=dev_actions_form_name, sprint_number=sprint_number)
+      dev_actions = await answers_get_all(db=db, user_id=user_id, form_name=dev_actions_form_name, sprint_number=sprint_number, dev_plan_id=dev_plan_id)
 
       for action in dev_actions:
         questions.append(action.answer)
@@ -125,7 +134,8 @@ async def get_development_progress_questions_weakness_practice(db: db_dependency
         options=options,
         ranks=ranks,
         sprint_id=sprint_id,
-        sprint_number=sprint_number
+        sprint_number=sprint_number,
+        dev_plan_id=dev_plan_id
       )
       await forms_create_one(db=db, form=form_data)
 
