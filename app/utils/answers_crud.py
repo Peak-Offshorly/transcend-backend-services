@@ -80,13 +80,23 @@ async def answers_get_all(db: Session, user_id: str, form_name: str, sprint_numb
         Forms.sprint_number == sprint_number,
         Forms.development_plan_id == dev_plan_id
         ).options(joinedload(Forms.answers)).first()
-
-    return form.answers
+    
+    if form:
+        return form.answers
+    return None
 
 async def answers_all_forms_get_all(db: Session, user_id: str, dev_plan_id: str):
     all_forms_with_answers = db.query(Forms).filter(
         Forms.user_id == user_id,
         Forms.development_plan_id == dev_plan_id
+    ).options(joinedload(Forms.answers)).all()
+
+    return all_forms_with_answers
+
+async def initial_questions_answers_all_forms_get_all(db: Session, user_id: str):
+    all_forms_with_answers = db.query(Forms).filter(
+        Forms.user_id == user_id,
+        Forms.name == "1_INITIAL_QUESTIONS"
     ).options(joinedload(Forms.answers)).all()
 
     return all_forms_with_answers

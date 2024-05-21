@@ -71,26 +71,31 @@ def chosen_traits_create(db: Session, user_id: str, trait_id: str, trait_name: s
     ).first()
 
     if existing_chosen_trait_dev_plan:
+        # Save old form id of old chosen trait  
         existing_chosen_trait_form_id = existing_chosen_trait_dev_plan.form_id
-        # Delete the trait itself first
-        db.delete(existing_chosen_trait_dev_plan)
+        
+        # Update the existing chosen trait
+        existing_chosen_trait_dev_plan.name = trait_name
+        existing_chosen_trait_dev_plan.trait_id = trait_id
+        existing_chosen_trait_dev_plan.form_id = form_id
+        existing_chosen_trait_dev_plan.t_score = t_score
         db.flush()
 
-        # Delete Form, questions, options, answers under the existing_chosen_trait
+        # Delete Form, questions, options, answers under the old chosen trait
         delete_form_and_associations(db=db, form_id=existing_chosen_trait_form_id)
-    
-    # Create ChosenTrait entry
-    chosen_trait = ChosenTraits(
-        user_id=user_id,
-        name=trait_name,
-        trait_id=trait_id,
-        trait_type=trait_type.upper(),
-        form_id=form_id,
-        t_score=t_score,
-        development_plan_id=dev_plan_id
-    )
-    db.add(chosen_trait)
-    db.flush()
+    else:
+        # Create ChosenTrait entry
+        chosen_trait = ChosenTraits(
+            user_id=user_id,
+            name=trait_name,
+            trait_id=trait_id,
+            trait_type=trait_type.upper(),
+            form_id=form_id,
+            t_score=t_score,
+            development_plan_id=dev_plan_id
+        )
+        db.add(chosen_trait)
+        db.flush()
 
     db.commit()
 
