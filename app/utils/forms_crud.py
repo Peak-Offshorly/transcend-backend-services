@@ -172,6 +172,14 @@ async def forms_create_one(db: Session, form: FormSchema):
   # Return the created form with its questions and options
   return { "form": form, "form_id": db_form.id }
 
+# FOR INITIAL QUESTIONS - 1 form, all questions, all options for that question
+def initial_questions_forms_with_questions_options_get_all(db: Session, name: str, user_id: str):
+  form = db.query(Forms).options(
+    joinedload(Forms.questions).subqueryload(Questions.options)
+    ).filter(Forms.name == name, Forms.user_id == user_id).first()
+
+  return form
+
 # 1 form, all questions, all options for that question
 def forms_with_questions_options_get_all(db: Session, name: str, user_id: str, dev_plan_id: str):
   form = db.query(Forms).options(

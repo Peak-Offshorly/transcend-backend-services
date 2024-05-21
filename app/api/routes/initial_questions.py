@@ -4,12 +4,14 @@ from sqlalchemy.orm import Session
 from typing import Annotated
 from app.database.connection import get_db
 from app.schemas.models import DataFormSchema, FormSchema, FormAnswerSchema
+from app.utils.dev_plan_crud import dev_plan_create_get_one
 from app.utils.traits_crud import traits_create, traits_compute_tscore
 from app.utils.answers_crud import answers_to_initial_questions_save
 from app.utils.forms_crud import (
     forms_with_questions_options_get_all,
     forms_create_one_initial_questions_form, 
-    form_initial_questions_with_options_get_all
+    form_initial_questions_with_options_get_all,
+    initial_questions_forms_with_questions_options_get_all
 )
 
 db_dependency = Annotated[Session, Depends(get_db)]
@@ -23,7 +25,7 @@ async def create_get_traits_and_form_questions_options(data: DataFormSchema, db:
     form_name = data.form_name
     user_id = data.user_id
     
-    form_exists = forms_with_questions_options_get_all(db=db, name=form_name, user_id=user_id)
+    form_exists = initial_questions_forms_with_questions_options_get_all(db=db, name=form_name, user_id=user_id)
     
     # return form schema with form_id if Form exists already
     if form_exists:
