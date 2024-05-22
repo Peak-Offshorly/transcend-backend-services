@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import Annotated
@@ -49,7 +50,7 @@ async def get_gantt_chart(user_id: str, db: db_dependency):
     sprint_1_dates = await get_sprint_start_end_date(db=db, user_id=user_id, sprint_id=chosen_trait_practices_1["chosen_strength_practice"][0].sprint_id)
 
     # Get or Compute Sprint 2 start/end date
-    existing_sprint_2_dates = await get_sprint_start_end_date_sprint_number(db=db, user_id=user_id, sprint_number=2)
+    existing_sprint_2_dates = await get_sprint_start_end_date_sprint_number(db=db, user_id=user_id, sprint_number=2, dev_plan_id=dev_plan_id)
     if existing_sprint_2_dates:
       sprint_2_dates = existing_sprint_2_dates
       chosen_trait_practices_2 = await chosen_practices_get(db=db, user_id=user_id, sprint_number=2)
@@ -141,5 +142,24 @@ async def get_review_details(user_id: str, sprint_number: int, db: db_dependency
       "mind_body_practice": recommended_mind_body_category,
       "mind_body_chosen_recommendations": chosen_recommendations
     }
+  except Exception as error:
+    raise HTTPException(status_code=400, detail=str(error))
+  
+# Get Current Week
+@router.get("/current-week")
+async def get_current_week(user_id: str, db: db_dependency):
+  try:
+    dev_plan = await dev_plan_create_get_one(db=db, user_id=user_id)
+
+    # Calculate current week number
+    start_date = dev_plan["start_date"]
+    current_date = datetime.now(timezone.utc)
+    delta = current_date - start_date
+    week_number = (delta.days // 7) + 1  # Adding 1 to make week_number start from 1
+
+    return{
+      "week_number": week_number
+    }
+
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
