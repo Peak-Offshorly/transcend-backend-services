@@ -1,3 +1,4 @@
+import random
 from uuid import UUID
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -45,6 +46,38 @@ async def practices_by_trait_type_get(db: Session, user_id: str, trait_type: str
     ).all()
 
     return practices
+
+async def practices_by_trait_type_get_2nd_sprint(db: Session, user_id: str, trait_type: str, dev_plan_id: str):
+    chosen_trait_id = db.query(ChosenTraits.id).filter(
+        ChosenTraits.user_id == user_id,
+        ChosenTraits.development_plan_id == dev_plan_id,
+        ChosenTraits.trait_type == trait_type,
+    ).scalar()
+
+    practices = db.query(Practices).filter(
+        Practices.chosen_trait_id == chosen_trait_id
+    ).all()
+
+    # Check how many practices are already recommended
+    recommended_practices = [practice for practice in practices if practice.is_recommended]
+    
+    if len(recommended_practices) >= 2:
+        # If there are already two or more practices recommended, return practices as is
+        return practices
+
+    # Randomly select two practices
+    recommended_practices = random.sample(practices, 2)
+
+    for practice in recommended_practices:
+        practice.is_recommended = True
+        db.flush()
+    db.commit()
+
+    practices_updated = db.query(Practices).filter(
+        Practices.chosen_trait_id == chosen_trait_id
+    ).all()
+
+    return practices_updated
 
 def chosen_practices_save_one(db: Session, user_id: str, name: str, practice_id: str, chosen_trait_id: str, form_id: str, sprint_number: int, sprint_id: UUID, dev_plan_id: UUID):
     # check if user has existing chosen practices with same sprint id, dev plan id, and chosen trait id

@@ -6,13 +6,15 @@ from sqlalchemy.orm import Session
 from typing import Annotated
 from app.schemas.models import ChosenTraitsSchema, FormAnswerSchema, PracticeSchema, ChosenPracticesSchema
 from app.database.connection import get_db
+from app.utils.dates_crud import compute_second_sprint_dates
 from app.utils.dev_plan_crud import dev_plan_create_get_one, dev_plan_get_current, dev_plan_update_chosen_traits, dev_plan_update_sprint, dev_plan_update_chosen_strength_practice, dev_plan_update_chosen_weakness_practice
 from app.utils.forms_crud import form_questions_options_get_all, forms_create_one, forms_with_questions_options_get_all, forms_with_questions_options_sprint_id_get_all
 from app.utils.answers_crud import answers_save_one
-from app.utils.sprints_crud import sprint_create_get_one, sprint_update_strength_form_id, sprint_update_weakness_form_id
+from app.utils.sprints_crud import sprint_create_get_one, sprint_update_strength_form_id, sprint_update_weakness_form_id, sprint_update_second_sprint_dates, get_sprint_start_end_date_sprint_number, sprint_get_current
 from app.utils.practices_crud import(
   practice_save_one,
   practices_by_trait_type_get,
+  practices_by_trait_type_get_2nd_sprint,
   practices_clear_existing,
   chosen_practices_save_one
 ) 
@@ -198,6 +200,12 @@ async def save_traits_answers(answers: FormAnswerSchema, db: db_dependency):
 async def get_trait_practices(user_id: str, trait_type: str, db: db_dependency):
   try:
     dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
+    sprint = await sprint_get_current(db=db, user_id=user_id, dev_plan_id=dev_plan["dev_plan_id"])
+    
+    # If 2nd sprint, set 2 random practices to is_recommended to True
+    if sprint["sprint_number"] == 2:
+      return await practices_by_trait_type_get_2nd_sprint(db=db, user_id=user_id, trait_type=trait_type, dev_plan_id=dev_plan["dev_plan_id"])
+    
     return await practices_by_trait_type_get(db=db, user_id=user_id, trait_type=trait_type, dev_plan_id=dev_plan["dev_plan_id"])
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
@@ -230,6 +238,19 @@ async def save_chosen_strength_practice(chosen_practices: ChosenPracticesSchema,
 
   # Update current dev plan with sprint id
   await dev_plan_update_sprint(db=db, user_id=user_id, sprint_number=sprint_number, sprint_id=sprint_id)
+  
+  # If 2nd sprint, add start_date and end_date of second sprint
+  if sprint_number == 2:
+    sprint_1 = await get_sprint_start_end_date_sprint_number(db=db, user_id=user_id, sprint_number=1, dev_plan_id=dev_plan["dev_plan_id"])
+    sprint_2_dates = await compute_second_sprint_dates(start_to_mid_date=sprint_1["end_date"], end_date=dev_plan["end_date"])
+    await sprint_update_second_sprint_dates(
+      db=db, 
+      user_id=user_id, 
+      sprint_id=sprint_id, 
+      dev_plan_id=dev_plan["dev_plan_id"],
+      start_date=sprint_2_dates["start_date"],
+      end_date=sprint_2_dates["end_date"]
+    )
 
   try: 
     practice_id = strength_practice.id

@@ -163,6 +163,7 @@ class Practices(Base):
     user_id = Column(String, ForeignKey("users.id"))
     chosen_trait_id = Column(UUID(as_uuid=True), ForeignKey("chosen_traits.id"))
     name = Column(String, index=True)
+    is_recommended = Column(Boolean, default=False)
 
     users = relationship('Users', back_populates='practices')
     chosen_traits = relationship('ChosenTraits', back_populates='practices')
