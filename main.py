@@ -29,7 +29,7 @@ scheduler = AsyncIOScheduler()
 # Run check_user_activity every 3 weeks
 scheduler.add_job(check_user_activity, "interval", weeks=3)
 # Run the send_weekly_emails job to run daily
-scheduler.add_job(send_weekly_emails_job, "cron", hour=23, minute=50, timezone=timezone.utc)
+scheduler.add_job(send_weekly_emails_job, "cron", hour=0, minute=0, timezone=timezone.utc)
 
 scheduler.start()
 print("Started CRON jobs")
@@ -40,11 +40,11 @@ if __name__ == "__main__":
     app="main:app",
     
     # Server Host and Port used for Render 
-    # host=os.environ.get("SERVER_HOST", "0.0.0.0"),
-    # port=os.environ.get("SERVER_PORT", 10000),
+    host=os.environ.get("SERVER_HOST", "0.0.0.0"),
+    port=os.environ.get("SERVER_PORT", 10000),
 
-    host=os.environ.get("SERVER_HOST", "127.0.0.1"),
-    port=os.environ.get("SERVER_PORT", 9001),
+    # host=os.environ.get("SERVER_HOST", "127.0.0.1"),
+    # port=os.environ.get("SERVER_PORT", 9001),
     log_level="info",
     reload=True,
   )

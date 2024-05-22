@@ -38,7 +38,7 @@ def send_email_background(background_tasks: BackgroundTasks, subject: str, email
         template_name=template_name
     )
 
-async def send_email_async(subject: str, email_to: str, body: Dict[str, Any]):
+async def send_email_async(subject: str, email_to: str, body: Dict[str, Any], template_name: str):
     message = MessageSchema(
         subject=subject,
         recipients=[email_to],
@@ -47,4 +47,4 @@ async def send_email_async(subject: str, email_to: str, body: Dict[str, Any]):
     )
 
     fm = FastMail(conf)
-    await fm.send_message(message, template_name="sample.html")
+    await fm.send_message(message, template_name=template_name)
