@@ -13,6 +13,14 @@ def get_one_user(db: Session, email: str):
         return db_account
     return None
 
+# Gets one account based from user_id; returns Users object if it exists
+def get_one_user_id(db: Session, user_id: str):
+    db_account = db.query(Users).filter(Users.id == user_id).first()
+
+    if db_account:
+        return db_account
+    return None
+
 def create_user(db: Session, user: Users):
     db_user = Users(
         id = user.id,

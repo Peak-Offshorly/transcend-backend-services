@@ -35,7 +35,7 @@ def send_email_background(background_tasks: BackgroundTasks, subject: str, email
     background_tasks.add_task(
         fm.send_message,
         message,
-        template_name="sample.html"
+        template_name="sample-inline.html"
     )
 
 async def send_email_async(subject: str, email_to: str, body: Dict[str, Any]):
