@@ -73,7 +73,8 @@ async def send_initial_emails(db: db_dependency, background_tasks: BackgroundTas
         background_tasks=background_tasks, 
         body=body, 
         email_to=colleague.email, 
-        subject="Test - Initial Colleague Email"
+        subject="Test - Initial Colleague Email",
+        template_name="sample-inline.html"
       )
       
     return { "message": "Colleague Initial emails sent." }
