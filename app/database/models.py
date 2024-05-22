@@ -30,6 +30,7 @@ class UserColleagues(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     email = Column(String, index=True)
     user_id = Column(String, ForeignKey("users.id"))
+    development_plan_id = Column(UUID(as_uuid=True), ForeignKey("development_plan.id"))
 
 class Sprints(Base):
     __tablename__ = 'sprints'
