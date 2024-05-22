@@ -41,7 +41,7 @@ async def answers_get_all(user_id: str, db: db_dependency):
       "forms_and_answers": forms_answers,
       "practices_sprint_1": {
         "strength_practice": chosen_trait_practices_1["chosen_strength_practice"][0].name if chosen_trait_practices_1["chosen_strength_practice"] else None,
-        "weakness_practice": chosen_trait_practices_1["chosen_weakness_practice"][0].name if chosen_trait_practices_2["chosen_weakness_practice"] else None,
+        "weakness_practice": chosen_trait_practices_1["chosen_weakness_practice"][0].name if chosen_trait_practices_1["chosen_weakness_practice"] else None,
       },
       "practices_sprint_2": {
         "strength_practice": chosen_trait_practices_2["chosen_strength_practice"][0].name if chosen_trait_practices_2["chosen_strength_practice"] else None,
