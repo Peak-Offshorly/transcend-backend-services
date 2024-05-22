@@ -31,6 +31,9 @@ class UserColleagues(Base):
     email = Column(String, index=True)
     user_id = Column(String, ForeignKey("users.id"))
     development_plan_id = Column(UUID(as_uuid=True), ForeignKey("development_plan.id"))
+    week_5_date = Column(DateTime(timezone=True), index=True)
+    week_9_date = Column(DateTime(timezone=True), index=True)
+    week_12_date = Column(DateTime(timezone=True), index=True)
 
 class Sprints(Base):
     __tablename__ = 'sprints'

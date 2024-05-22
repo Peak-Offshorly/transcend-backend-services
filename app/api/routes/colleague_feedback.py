@@ -5,9 +5,10 @@ from app.schemas.models import UserColleagueEmailsSchema, DataFormSchema
 from app.email.send_email import send_email_background, send_email_async
 from app.database.connection import get_db
 from app.utils.sprints_crud import sprint_get_current
+from app.utils.dates_crud import compute_colleague_message_dates
 from app.utils.users_crud import get_one_user_id
 from app.utils.dev_plan_crud import dev_plan_create_get_one
-from app.utils.user_colleagues_crud import colleague_email_save_one, user_colleagues_get_all, user_colleagues_clear_all
+from app.utils.user_colleagues_crud import colleague_email_save_one, user_colleagues_get_all, user_colleagues_clear_all, user_colleagues_add_dates
 from app.api.routes.development_plan import get_review_details 
 
 db_dependency = Annotated[Session, Depends(get_db)]
@@ -21,7 +22,12 @@ async def save_colleague_emails(data: UserColleagueEmailsSchema, db: db_dependen
   try:
     # Get current dev plan
     dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
-    dev_plan_id=dev_plan["dev_plan_id"]
+    dev_plan_id = dev_plan["dev_plan_id"]
+    start_date = dev_plan["start_date"]
+    end_date = dev_plan["end_date"]
+
+    # Compute dates for Colleague messages
+    colleague_message_dates = await compute_colleague_message_dates(start_date=start_date, end_date=end_date)
     
     if len(emails) > 5: 
       return { "message": "Cannot save more than 5 emails." }
@@ -29,6 +35,14 @@ async def save_colleague_emails(data: UserColleagueEmailsSchema, db: db_dependen
     await user_colleagues_clear_all(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
     for email in emails:
       await colleague_email_save_one(db=db, user_id=user_id, email=email, dev_plan_id=dev_plan_id)
+      await user_colleagues_add_dates(
+        db=db, 
+        user_id=user_id, 
+        dev_plan_id=dev_plan_id,
+        week_5_date=colleague_message_dates["week_5"][0],
+        week_9_date=colleague_message_dates["week_9"][0],
+        week_12_date=colleague_message_dates["week_12"][0]
+      )
       
     return { "message": "Colleague emails saved." }
   except Exception as error:
