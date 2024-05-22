@@ -4,9 +4,11 @@ from typing import Annotated
 from app.schemas.models import UserColleagueEmailsSchema, DataFormSchema
 from app.email.send_email import send_email_background, send_email_async
 from app.database.connection import get_db
+from app.utils.sprints_crud import sprint_get_current
 from app.utils.users_crud import get_one_user_id
 from app.utils.dev_plan_crud import dev_plan_create_get_one
 from app.utils.user_colleagues_crud import colleague_email_save_one, user_colleagues_get_all, user_colleagues_clear_all
+from app.api.routes.development_plan import get_review_details 
 
 db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/colleague-feedback", tags=["colleague-feedback"])
@@ -39,6 +41,8 @@ async def send_initial_emails(db: db_dependency, background_tasks: BackgroundTas
     # Get current dev plan
     dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
     dev_plan_id=dev_plan["dev_plan_id"]
+    current_sprint = await sprint_get_current(user_id=user_id, db=db, dev_plan_id=dev_plan_id)
+    dev_plan_details = await get_review_details(user_id=user_id, sprint_number=current_sprint["sprint_number"], db=db)
 
     user = get_one_user_id(db=db, user_id=user_id)
     user_colleagues = await user_colleagues_get_all(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
