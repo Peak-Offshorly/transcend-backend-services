@@ -21,10 +21,12 @@ async def send_week_5_9_emails(db: Session):
         user_email_href = f"https://mail.google.com/mail/u/0/?view=cm&fs=1&tf=1&to={user.email}"
         
         subject = f"{user.first_name}'s Development Plan - Week 5" if colleague.week_5_date.date() == today else f"{user.first_name}'s Development Plan - Week 9"
+        week_number = 5 if colleague.week_5_date.date() == today else 9
         body = {
             "colleague_email": colleague.email,
             "user_name": user.first_name,
-            "user_email_href": user_email_href
+            "user_email_href": user_email_href,
+            "week_number": week_number
         }
         
         await send_email_async(
