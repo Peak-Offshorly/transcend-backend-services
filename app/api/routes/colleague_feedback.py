@@ -68,7 +68,18 @@ async def send_initial_emails(db: db_dependency, background_tasks: BackgroundTas
       body = { 
         "colleague_email": colleague.email, 
         "user_name": user.first_name,
-        "user_email_href": user_email_href
+        "user_email_href": user_email_href,
+        "strength": dev_plan_details["chosen_strength"]["name"],
+        "weakness": dev_plan_details["chosen_weakness"]["name"],
+        "strength_practice": dev_plan_details["strength_practice"][0].name,
+        "weakness_practice": dev_plan_details["weakness_practice"][0].name,
+        "strength_practice_dev_action_1": dev_plan_details["strength_practice_dev_actions"][0].answer,
+        "strength_practice_dev_action_2": dev_plan_details["strength_practice_dev_actions"][1].answer,
+        "weakness_practice_dev_action_1": dev_plan_details["weakness_practice_dev_actions"][0].answer,
+        "weakness_practice_dev_action_2": dev_plan_details["weakness_practice_dev_actions"][1].answer,
+        "recommended_category": dev_plan_details["mind_body_practice"].name,
+        "chosen_personal_practice_1": dev_plan_details["mind_body_chosen_recommendations"][0].name,
+        "chosen_personal_practice_2": dev_plan_details["mind_body_chosen_recommendations"][1].name
       }
 
       send_email_background(
