@@ -26,3 +26,19 @@ async def survey_save_one(db: Session, user_colleague_id: str, q1_answer: int, q
     db.commit()
 
     return { "message": "Colleague survey entry saved" }
+
+async def survey_get_all(db: Session, user_id: str, dev_plan_id: str):
+    all_user_colleagues = db.query(UserColleagues).filter(
+        UserColleagues.user_id == user_id,
+        UserColleagues.development_plan_id == dev_plan_id
+    ).all()
+
+    # Extract colleague_ids
+    colleague_ids = [colleague.id for colleague in all_user_colleagues]
+
+    # Get all UserColleaguesSurvey for the colleague_ids
+    user_colleagues_surveys = db.query(UserColleaguesSurvey).filter(
+        UserColleaguesSurvey.user_colleague_id.in_(colleague_ids)
+    ).all()
+
+    return user_colleagues_surveys

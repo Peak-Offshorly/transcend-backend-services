@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
 from sqlalchemy.orm import Session
 from typing import Annotated
+from collections import Counter
 from app.schemas.models import UserColleagueEmailsSchema, DataFormSchema, UserColleagueSurveyAnswersSchema
 from app.email.send_email import send_email_background
 from app.database.connection import get_db
@@ -10,7 +11,7 @@ from app.utils.users_crud import get_one_user_id
 from app.utils.traits_crud import chosen_traits_get
 from app.utils.dev_plan_crud import dev_plan_create_get_one
 from app.utils.user_colleagues_crud import colleague_email_save_one, user_colleagues_get_all, user_colleagues_clear_all, user_colleagues_add_dates, user_colleagues_get_one_survey_token
-from app.utils.user_colleagues_survey_crud import survey_save_one
+from app.utils.user_colleagues_survey_crud import survey_save_one, survey_get_all
 from app.api.routes.development_plan import get_review_details 
 
 db_dependency = Annotated[Session, Depends(get_db)]
@@ -159,5 +160,50 @@ async def save_colleague_feedback(data: UserColleagueSurveyAnswersSchema, db: db
 async def get_colleague_feedback_status():
   try:
     return { "message": "Colleague Feedback Status" }
+  except Exception as error:
+    raise HTTPException(status_code=400, detail=str(error))
+  
+# Get All Colleague Feedback for user
+@router.get("/all")
+async def get_colleague_feedback_summary(user_id: str, db: db_dependency):
+  try:
+    # Get current dev plan
+    dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
+    dev_plan_id = dev_plan["dev_plan_id"]
+
+    user_colleague_surveys = await survey_get_all(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
+
+    # Initialize counters and lists
+    effective_leader_counter = Counter()
+    effective_strength_area_counter = Counter()
+    effective_weakness_area_counter = Counter()
+    particularly_effective_list = []
+    more_effective_list = []  
+
+    # Process each survey
+    for survey in user_colleague_surveys:
+        effective_leader_counter[survey.effective_leader] += 1
+        effective_strength_area_counter[survey.effective_strength_area] += 1
+        effective_weakness_area_counter[survey.effective_weakness_area] += 1
+        particularly_effective_list.append(survey.particularly_effective)
+        more_effective_list.append(survey.more_effective)
+
+    user = get_one_user_id(db=db, user_id=user_id)
+    chosen_traits = chosen_traits_get(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
+    strength = chosen_traits["chosen_strength"]["name"]
+    weakness = chosen_traits["chosen_weakness"]["name"]
+    q1 = f"Over the past 12 weeks, has {user.first_name} become a more (or less) effective leader?"
+    q2 = f"Over the past 12 weeks, has {user.first_name} become more (or less) effective in the area of {strength}?"
+    q3 = f"Over the past 12 weeks has {user.first_name} become more (or less) effective in the area of {weakness}?"
+    q4 = f"What is {user.first_name} doing that is particularly effective?"
+    q5 = f"What could {user.first_name} do to be even more effective?"
+
+    return {
+            q1 : effective_leader_counter,
+            q2 : effective_strength_area_counter,
+            q3 : effective_weakness_area_counter,
+            q4 : particularly_effective_list,
+            q5 : more_effective_list
+        }
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
