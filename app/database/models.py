@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Float 
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Float
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from app.database.connection import Base, engine
@@ -34,6 +34,19 @@ class UserColleagues(Base):
     week_5_date = Column(DateTime(timezone=True), index=True)
     week_9_date = Column(DateTime(timezone=True), index=True)
     week_12_date = Column(DateTime(timezone=True), index=True)
+    survey_token = Column(String, index=True, unique=True, nullable=True, default=uuid.uuid4)
+    survey_completed = Column(Boolean, default=False)
+
+class UserColleaguesSurvey(Base):
+    __tablename__ = 'user_colleagues_survey'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_colleague_id = Column(UUID(as_uuid=True), ForeignKey("user_colleagues.id"))
+    effective_leader = Column(Integer, index=True)
+    effective_strength_area = Column(Integer, index=True)
+    effective_weakness_area = Column(Integer, index=True)
+    particularly_effective = Column(String, index=True)
+    more_effective = Column(String, index=True)
 
 class Sprints(Base):
     __tablename__ = 'sprints'

@@ -134,6 +134,14 @@ class UserColleagueEmailsSchema(BaseModel):
     user_id: str
     emails: List[str]
 
+class UserColleagueSurveyAnswersSchema(BaseModel):
+    user_colleague_id: str
+    q1_answer: int
+    q2_answer: int
+    q3_answer: int
+    q4_answer: Optional[str]
+    q5_answer: Optional[str]
+
 class DataFormSchema(BaseModel):
     form_name: Optional[str] = None
     user_id: str

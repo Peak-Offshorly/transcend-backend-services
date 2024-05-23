@@ -1,14 +1,16 @@
 from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
 from sqlalchemy.orm import Session
 from typing import Annotated
-from app.schemas.models import UserColleagueEmailsSchema, DataFormSchema
-from app.email.send_email import send_email_background, send_email_async
+from app.schemas.models import UserColleagueEmailsSchema, DataFormSchema, UserColleagueSurveyAnswersSchema
+from app.email.send_email import send_email_background
 from app.database.connection import get_db
 from app.utils.sprints_crud import sprint_get_current
 from app.utils.dates_crud import compute_colleague_message_dates
 from app.utils.users_crud import get_one_user_id
+from app.utils.traits_crud import chosen_traits_get
 from app.utils.dev_plan_crud import dev_plan_create_get_one
-from app.utils.user_colleagues_crud import colleague_email_save_one, user_colleagues_get_all, user_colleagues_clear_all, user_colleagues_add_dates
+from app.utils.user_colleagues_crud import colleague_email_save_one, user_colleagues_get_all, user_colleagues_clear_all, user_colleagues_add_dates, user_colleagues_get_one_survey_token
+from app.utils.user_colleagues_survey_crud import survey_save_one
 from app.api.routes.development_plan import get_review_details 
 
 db_dependency = Annotated[Session, Depends(get_db)]
@@ -83,33 +85,61 @@ async def send_initial_emails(db: db_dependency, background_tasks: BackgroundTas
 
 # Get Colleague Feedback Questions
 @router.get("/questions")
-async def get_questions():
+async def get_questions(survey_token: str, db: db_dependency):
   try:
-    return { "message": "Colleague Feedback Questions" }
+    user_colleague = await user_colleagues_get_one_survey_token(db=db, survey_token=survey_token)
+    
+    if user_colleague.survey_completed:
+      raise HTTPException(status_code=400, detail="Survey already completed")
+    
+    user = get_one_user_id(db=db, user_id=user_colleague.user_id)
+    chosen_traits = chosen_traits_get(db=db, user_id=user_colleague.user_id, dev_plan_id=user_colleague.development_plan_id)
+    strength = chosen_traits["chosen_strength"]["name"]
+    weakness = chosen_traits["chosen_weakness"]["name"]
+    
+    # Questions and options
+    q1 = f"Over the past 12 weeks, has {user.first_name} become a more (or less) effective leader?"
+    q2 = f"Over the past 12 weeks, has {user.first_name} become more (or less) effective in the area of {strength}?"
+    q3 = f"Over the past 12 weeks has {user.first_name} become more (or less) effective in the area of {weakness}?"
+    q4 = f"What is {user.first_name} doing that is particularly effective?"
+    q5 = f"What could {user.first_name} do to be even more effective?"
+    integer_options = [-3, -2, -1, 0, 1, 2, 3]
+
+    return {
+      "user_colleague_id": user_colleague.id,
+      "user_id": user_colleague.user_id,
+      "development_plan_id": user_colleague.development_plan_id,
+      "q1": q1,
+      "q1_options": integer_options,
+      "q2": q2,
+      "q2_options": integer_options,
+      "q3": q3,
+      "q3_options": integer_options,
+      "q4" : q4,
+      "q5" : q5
+    }
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
-
-# Get Individual Colleague Feedback
-@router.get("/{id}")
-async def get_one_colleague_feedback():
-  try:
-    return { "message": "One Colleague Feedback" }
-  except Exception as error:
-    raise HTTPException(status_code=400, detail=str(error))
-
-# Get All Colleague Feedbacks
-@router.get("/all")
-async def get_all_colleague_feedbacks():
-  try:
-    return { "message": "All Colleague Feedback" }
-  except Exception as error:
-    raise HTTPException(status_code=400, detail=str(error))
-
+  
 # Post Save Colleague Feedback
-@router.post("/save/{id}")
-async def save_colleague_feedback():
+@router.post("/save")
+async def save_colleague_feedback(data: UserColleagueSurveyAnswersSchema, db: db_dependency):
+  user_colleague_id = data.user_colleague_id
+  q1_answer = data.q1_answer
+  q2_answer = data.q2_answer
+  q3_answer = data.q3_answer
+  q4_answer = data.q4_answer
+  q5_answer = data.q5_answer
   try:
-    return { "message": "Colleague Feedback Saved" }
+    return await survey_save_one(
+      db=db,
+      user_colleague_id=user_colleague_id,
+      q1_answer=q1_answer,
+      q2_answer=q2_answer,
+      q3_answer=q3_answer,
+      q4_answer=q4_answer,
+      q5_answer=q5_answer
+    ) 
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error)) 
 

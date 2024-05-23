@@ -46,3 +46,8 @@ async def user_colleagues_get_all(db: Session, user_id: str, dev_plan_id: str):
     return db.query(UserColleagues).filter(
         UserColleagues.user_id == user_id
     ).all()
+
+async def user_colleagues_get_one_survey_token(db: Session, survey_token: str):
+    return db.query(UserColleagues).filter(
+        UserColleagues.survey_token == survey_token
+    ).first()
