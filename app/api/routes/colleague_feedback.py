@@ -78,8 +78,7 @@ async def send_initial_emails(db: db_dependency, background_tasks: BackgroundTas
         "strength_practice_dev_actions": dev_plan_details["strength_practice_dev_actions"],
         "weakness_practice_dev_actions": dev_plan_details["weakness_practice_dev_actions"],
         "recommended_category": dev_plan_details["mind_body_practice"].name,
-        "chosen_personal_practice_1": dev_plan_details["mind_body_chosen_recommendations"][0].name,
-        "chosen_personal_practice_2": dev_plan_details["mind_body_chosen_recommendations"][1].name,
+        "chosen_personal_practices": dev_plan_details["mind_body_chosen_recommendations"],
         "sprint_number": current_sprint["sprint_number"]
       }
 
@@ -156,9 +155,12 @@ async def save_colleague_feedback(data: UserColleagueSurveyAnswersSchema, db: db
     raise HTTPException(status_code=400, detail=str(error)) 
 
 # Get Colleague Feedback Status
-@router.get("/status/{user_id}")
-async def get_colleague_feedback_status():
+@router.get("/status")
+async def get_colleague_feedback_status(user_id: str, db: db_dependency):
   try:
+    # Get current dev plan
+    dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
+    dev_plan_id=dev_plan["dev_plan_id"]
     return { "message": "Colleague Feedback Status" }
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))

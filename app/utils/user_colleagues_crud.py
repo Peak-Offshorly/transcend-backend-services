@@ -42,6 +42,10 @@ async def user_colleagues_add_dates(db: Session, user_id: str, dev_plan_id: str,
 
     db.commit()
 
+# async def user_colleagues_check_survey_completed(db: Session, user_id: str, dev_plan_id: str):
+    
+
+
 async def user_colleagues_get_all(db: Session, user_id: str, dev_plan_id: str):
     return db.query(UserColleagues).filter(
         UserColleagues.user_id == user_id
