@@ -66,29 +66,29 @@ async def send_initial_emails(db: db_dependency, background_tasks: BackgroundTas
     user_email_href = f"https://mail.google.com/mail/u/0/?view=cm&fs=1&tf=1&to={user.email}"
     
     for colleague in user_colleagues:
+      colleague_email = colleague.email.split("@")
       body = { 
-        "colleague_email": colleague.email, 
+        "colleague_email": colleague_email[0], 
         "user_name": user.first_name,
         "user_email_href": user_email_href,
         "strength": dev_plan_details["chosen_strength"]["name"],
         "weakness": dev_plan_details["chosen_weakness"]["name"],
         "strength_practice": dev_plan_details["strength_practice"][0].name,
         "weakness_practice": dev_plan_details["weakness_practice"][0].name,
-        "strength_practice_dev_action_1": dev_plan_details["strength_practice_dev_actions"][0].answer,
-        "strength_practice_dev_action_2": dev_plan_details["strength_practice_dev_actions"][1].answer,
-        "weakness_practice_dev_action_1": dev_plan_details["weakness_practice_dev_actions"][0].answer,
-        "weakness_practice_dev_action_2": dev_plan_details["weakness_practice_dev_actions"][1].answer,
+        "strength_practice_dev_actions": dev_plan_details["strength_practice_dev_actions"],
+        "weakness_practice_dev_actions": dev_plan_details["weakness_practice_dev_actions"],
         "recommended_category": dev_plan_details["mind_body_practice"].name,
         "chosen_personal_practice_1": dev_plan_details["mind_body_chosen_recommendations"][0].name,
-        "chosen_personal_practice_2": dev_plan_details["mind_body_chosen_recommendations"][1].name
+        "chosen_personal_practice_2": dev_plan_details["mind_body_chosen_recommendations"][1].name,
+        "sprint_number": current_sprint["sprint_number"]
       }
 
       send_email_background(
         background_tasks=background_tasks, 
         body=body, 
         email_to=colleague.email, 
-        subject="Test - Initial Colleague Email",
-        template_name="sample-inline.html"
+        subject=f"Peak - Colleague Invite for {user.first_name}'s Development Plan",
+        template_name="initial-colleague-email.html"
       )
       
     return { "message": "Colleague Initial emails sent." }
