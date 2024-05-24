@@ -45,8 +45,7 @@ async def send_week_5_9_emails(db: Session):
             "strength_practice_dev_actions": dev_plan_details["strength_practice_dev_actions"],
             "weakness_practice_dev_actions": dev_plan_details["weakness_practice_dev_actions"],
             "recommended_category": dev_plan_details["mind_body_practice"].name,
-            "chosen_personal_practice_1": dev_plan_details["mind_body_chosen_recommendations"][0].name,
-            "chosen_personal_practice_2": dev_plan_details["mind_body_chosen_recommendations"][1].name,
+            "chosen_personal_practices": dev_plan_details["mind_body_chosen_recommendations"],
             "sprint_number": current_sprint["sprint_number"]
         }
         

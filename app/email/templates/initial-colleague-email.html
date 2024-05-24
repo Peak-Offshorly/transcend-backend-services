@@ -453,42 +453,23 @@
                                           <p class="color-000001" style="font-size: 18px; font-weight: 600; color: black; margin: 0; padding: 0; line-height: 24px; mso-line-height-rule: exactly">{{recommended_category}}</p>
                                         </td>
                                       </tr>
+                                      {% for personal_practice in chosen_personal_practices %}
                                       <tr>
-                                        <td align="center" valign="top" height="83" style="padding-top: 5px; height: 83px">
-                                          <table cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-spacing: 0">
+                                        <td align="left" valign="top" height="31" style="padding-top: 5px; padding-left: 29.95px; height: 31px; mso-padding-left-alt: 0; margin-left: 29.95px">
+                                          <table cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin: 0; border-spacing: 0">
                                             <tr>
-                                              <!--[if mso]><td valign="top"><table role="presentation" border="0" cellspacing="0" cellpadding="0"><tr><![endif]-->
-                                              <td valign="top" style="padding-top: 5.5px">
+                                              <td valign="middle">
                                                 <img src="https://i.imgur.com/vsNlspV.png" alt="a blue circle with a square in the middle on a white background." width="15.00" height="15.00" style="width: 15px; height: 15px; display: block" />
                                               </td>
-                                              <!--[if mso]></tr></table></td><![endif]-->
-                                              <td valign="top" style="padding-left: 8px; mso-padding-left-alt: 0; margin-left: 8px">
-                                                <!--[if mso]> <table role="presentation" border="0" cellspacing="0" cellpadding="0" width="437.1" style="width:437.1px;"> <tr> <td> <![endif]-->
-                                                <p class="color-000001" width="437.1" style="font-size: 16px; font-weight: 500; text-align: left; line-height: 26px; color: black; mso-line-height-rule: exactly; margin: 0; padding: 0; width: 437.1px">{{chosen_personal_practice_1}}</p>
-                                                <!--[if mso]></td></tr></table><![endif]-->
+                                              <td valign="middle" style="padding-left: 8px; mso-padding-left-alt: 0; margin-left: 8px">
+                                                <p class="color-000001" style="font-size: 16px; font-weight: 500; color: black; margin: 0; padding: 0; line-height: 26px; mso-line-height-alt: normal">{{ personal_practice.name }}</p>
                                               </td>
                                             </tr>
                                           </table>
                                         </td>
                                       </tr>
                                       <tr>
-                                        <td align="center" valign="top" height="66.75" style="padding-top: 5px; height: 66.75px">
-                                          <table cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-spacing: 0">
-                                            <tr>
-                                              <!--[if mso]><td valign="top"><table role="presentation" border="0" cellspacing="0" cellpadding="0"><tr><![endif]-->
-                                              <td valign="top" style="padding-top: 5.5px">
-                                                <img src="https://i.imgur.com/vsNlspV.png" alt="a blue circle with a square in the middle on a white background." width="15.00" height="15.00" style="width: 15px; height: 15px; display: block" />
-                                              </td>
-                                              <!--[if mso]></tr></table></td><![endif]-->
-                                              <td valign="top" style="padding-left: 8px; mso-padding-left-alt: 0; margin-left: 8px">
-                                                <!--[if mso]> <table role="presentation" border="0" cellspacing="0" cellpadding="0" width="437.1" style="width:437.1px;"> <tr> <td> <![endif]-->
-                                                <p class="color-000001" width="437.1" style="font-size: 16px; font-weight: 500; text-align: left; line-height: 26px; color: black; mso-line-height-rule: exactly; margin: 0; padding: 0; width: 437.1px">{{chosen_personal_practice_2}}</p>
-                                                <!--[if mso]></td></tr></table><![endif]-->
-                                              </td>
-                                            </tr>
-                                          </table>
-                                        </td>
-                                      </tr>
+                                      {% endfor %}
                                       <tr>
                                         <td align="center" valign="top" height="15.75" style="padding-top: 14.75px; height: 15.75px">
                                           <!--[if mso]> <table role="presentation" border="0" cellspacing="0" cellpadding="0" align="center" width="461" style="width:461px; border-top:1px solid #bbcedc;"> <tr> <td align="center"> <![endif]-->
