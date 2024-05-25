@@ -3,7 +3,6 @@ import os
 import fastapi
 from app import create_app
 from dotenv import load_dotenv
-from fastapi import BackgroundTasks
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from httpx import AsyncClient
 from datetime import timezone
@@ -22,8 +21,7 @@ async def check_user_activity():
 
 async def send_weekly_emails_job():
     db = next(get_db())
-    background_tasks = BackgroundTasks()
-    await send_week_5_9_emails(db=db, background_tasks=background_tasks)
+    await send_week_5_9_emails(db=db)
 
 scheduler = AsyncIOScheduler()
 # Run check_user_activity every 3 weeks
