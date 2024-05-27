@@ -17,10 +17,10 @@ from app.utils.users_crud import (
 db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/accounts", tags=["accounts"])
 
-@router.get("/user")
-async def get_user_account():
+@router.get("/get-user")
+async def get_user_account(email: str, db: db_dependency):
   try:
-    return { "message": "User Account" }
+    return get_one_user(db=db, email=email)
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
   
