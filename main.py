@@ -7,7 +7,8 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from httpx import AsyncClient
 from datetime import timezone
 from app.database.connection import get_db
-from app.email.colleague_emails import send_week_5_9_emails
+from app.email.colleague_emails import user_colleague_week_5_9_emails
+from app.email.user_emails import user_weekly_email
 
 load_dotenv()
 print("Started App:", os.environ.get("APP_NAME", "Peak Test App"))
@@ -19,15 +20,16 @@ async def check_user_activity():
     async with AsyncClient(app=app, base_url="http://0.0.0.0:10000") as client:
         await client.get("/accounts/check-if-active")
 
-async def send_weekly_emails_job():
+async def send_emails_job():
     db = next(get_db())
-    await send_week_5_9_emails(db=db)
+    await user_weekly_email(db=db)
+    await user_colleague_week_5_9_emails(db=db)
 
 scheduler = AsyncIOScheduler()
 # Run check_user_activity every 3 weeks
 scheduler.add_job(check_user_activity, "interval", weeks=3)
-# Run the send_weekly_emails job to run daily
-scheduler.add_job(send_weekly_emails_job, "cron", hour=0, minute=0, timezone=timezone.utc)
+# Run the send_emails job to run daily
+scheduler.add_job(send_emails_job, "cron", hour=0, minute=0, timezone=timezone.utc)
 
 scheduler.start()
 print("Started CRON jobs")

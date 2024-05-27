@@ -12,6 +12,7 @@ from app.utils.sprints_crud import sprint_get_current
 
 async def user_weekly_email(db: Session):
     print('---STARTED SEND USER WEEKLY EMAILS FUNCTION---')
+    
     today = datetime.now(timezone.utc).date()
     
     # Query all active development plans
@@ -30,19 +31,22 @@ async def user_weekly_email(db: Session):
         current_week_end_date = start_date + timedelta(days=(week_number * 7) - 1)
 
         if week_number > 0 and week_number <= 12 and today == current_week_end_date:
-            user = await get_one_user_id(user_id=plan.user_id, db=db)
+            user = get_one_user_id(user_id=plan.user_id, db=db)
 
             # Get current dev plan
             dev_plan = await dev_plan_create_get_one(user_id=user.id, db=db)
-            dev_plan_id=dev_plan["dev_plan_id"]
+            dev_plan_id = dev_plan["dev_plan_id"]
             current_sprint = await sprint_get_current(user_id=user.id, db=db, dev_plan_id=dev_plan_id)
             dev_plan_details = await get_review_details(user_id=user.id, sprint_number=current_sprint["sprint_number"], db=db)
+
+            # Sprint first or second variable
+            sprint_first_second = "first" if current_sprint["sprint_number"] == 1 else "second"
             
             # Prep email body and send email to user
             subject = f"Peak - Development Plan Progress Check for Week {week_number}"
             body = {
                 "user_name": user.first_name,
-                "progress_check_link": "link",
+                "progress_check_link": "https://peak-transcend-staging.netlify.app/progress-check",
                 "week_number": week_number,
                 "strength": dev_plan_details["chosen_strength"]["name"],
                 "weakness": dev_plan_details["chosen_weakness"]["name"],
@@ -52,19 +56,17 @@ async def user_weekly_email(db: Session):
                 "weakness_practice_dev_actions": dev_plan_details["weakness_practice_dev_actions"],
                 "recommended_category": dev_plan_details["mind_body_practice"].name,
                 "chosen_personal_practices": dev_plan_details["mind_body_chosen_recommendations"],
-                "sprint_number": current_sprint["sprint_number"]
-            }
-            
-            body = {
-                "user_name": user.first_name,
-                "week_number": week_number
+                "sprint_number": current_sprint["sprint_number"],
+                "sprint_first_second": sprint_first_second
             }
 
             await send_email_async(
                 body=body, 
-                email_to=user.email, 
+                email_to=user.email,
                 subject=subject,
                 template_name="user-weekly-email.html"
             )
+            print(f'sent email to {user.email}')
+
     print('---FINISHED SEND USER WEEKLY EMAILS FUNCTION---')
     
