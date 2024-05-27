@@ -65,12 +65,10 @@ async def user_colleague_week_12_emails(db: Session):
         (cast(UserColleagues.week_12_date, Date) == today)
     ).all()
 
-    for colleague in user_colleagues:
-        print(f'sent email to {colleague.email}')
+    for colleague in user_colleagues: 
         user = get_one_user_id(db=db, user_id=colleague.user_id)
         
         subject = f"Peak - {user.first_name}'s Development Plan Colleague Survey"
-        week_number = 5 if colleague.week_5_date.date() == today else 9
         colleague_email = colleague.email.split("@")
 
         # Get current dev plan
@@ -82,8 +80,7 @@ async def user_colleague_week_12_emails(db: Session):
         body = {
             "colleague_email": colleague_email[0],
             "user_name": user.first_name,
-            "survey_href": "link",
-            "week_number": week_number,
+            "survey_href": f"https://peak-transcend-staging.netlify.app/colleague-survey/{colleague.survey_token}",
             "strength": dev_plan_details["chosen_strength"]["name"],
             "weakness": dev_plan_details["chosen_weakness"]["name"],
             "strength_practice": dev_plan_details["strength_practice"][0].name,
@@ -99,6 +96,8 @@ async def user_colleague_week_12_emails(db: Session):
             body=body, 
             email_to=colleague.email, 
             subject=subject,
-            template_name="colleague-week-five-nine.html"
+            template_name="colleague-week-twelve-survey.html"
         )
+        print(f'sent email to {colleague.email}')
     
+    print('---FINISHED SEND WEEK 12 COLLEAGUE EMAILS FUNCTION---')

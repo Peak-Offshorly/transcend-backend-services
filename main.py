@@ -7,7 +7,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from httpx import AsyncClient
 from datetime import timezone
 from app.database.connection import get_db
-from app.email.colleague_emails import user_colleague_week_5_9_emails
+from app.email.colleague_emails import user_colleague_week_5_9_emails, user_colleague_week_12_emails
 from app.email.user_emails import user_weekly_email
 
 load_dotenv()
@@ -24,6 +24,7 @@ async def send_emails_job():
     db = next(get_db())
     await user_weekly_email(db=db)
     await user_colleague_week_5_9_emails(db=db)
+    await user_colleague_week_12_emails(db=db)
 
 scheduler = AsyncIOScheduler()
 # Run check_user_activity every 3 weeks
