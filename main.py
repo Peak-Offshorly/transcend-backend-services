@@ -28,7 +28,7 @@ scheduler = AsyncIOScheduler()
 # Run check_user_activity every 3 weeks
 scheduler.add_job(check_user_activity, "interval", weeks=3)
 # Run the send_weekly_emails job to run daily
-scheduler.add_job(send_weekly_emails_job, "cron", hour=7, minute=25, timezone=timezone.utc)
+scheduler.add_job(send_weekly_emails_job, "cron", hour=0, minute=0, timezone=timezone.utc)
 
 scheduler.start()
 print("Started CRON jobs")

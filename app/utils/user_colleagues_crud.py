@@ -42,9 +42,26 @@ async def user_colleagues_add_dates(db: Session, user_id: str, dev_plan_id: str,
 
     db.commit()
 
-# async def user_colleagues_check_survey_completed(db: Session, user_id: str, dev_plan_id: str):
-    
+async def user_colleagues_count(db: Session, user_id: str, dev_plan_id: str):
+    existing_colleagues = db.query(UserColleagues).filter(
+        UserColleagues.user_id == user_id,
+        UserColleagues.development_plan_id == dev_plan_id
+    ).all()
 
+    if existing_colleagues:
+        return len(existing_colleagues)
+    return 0
+    
+async def user_colleagues_survey_completed(db: Session, user_id: str, dev_plan_id: str):
+    existing_colleagues_survey_completed = db.query(UserColleagues).filter(
+        UserColleagues.user_id == user_id,
+        UserColleagues.development_plan_id == dev_plan_id,
+        UserColleagues.survey_completed == True
+    ).all()
+
+    if existing_colleagues_survey_completed:
+        return len(existing_colleagues_survey_completed)
+    return 0
 
 async def user_colleagues_get_all(db: Session, user_id: str, dev_plan_id: str):
     return db.query(UserColleagues).filter(
