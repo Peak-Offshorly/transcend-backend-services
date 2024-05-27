@@ -10,9 +10,17 @@ from app.utils.dates_crud import compute_colleague_message_dates
 from app.utils.users_crud import get_one_user_id
 from app.utils.traits_crud import chosen_traits_get
 from app.utils.dev_plan_crud import dev_plan_create_get_one
-from app.utils.user_colleagues_crud import colleague_email_save_one, user_colleagues_get_all, user_colleagues_clear_all, user_colleagues_add_dates, user_colleagues_get_one_survey_token
 from app.utils.user_colleagues_survey_crud import survey_save_one, survey_get_all
-from app.api.routes.development_plan import get_review_details 
+from app.api.routes.development_plan import get_review_details
+from app.utils.user_colleagues_crud import (
+  colleague_email_save_one, 
+  user_colleagues_get_all, 
+  user_colleagues_clear_all, 
+  user_colleagues_add_dates, 
+  user_colleagues_get_one_survey_token, 
+  user_colleagues_count, 
+  user_colleagues_survey_completed
+)
 
 db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/colleague-feedback", tags=["colleague-feedback"])
@@ -155,10 +163,21 @@ async def save_colleague_feedback(data: UserColleagueSurveyAnswersSchema, db: db
     raise HTTPException(status_code=400, detail=str(error)) 
 
 # Get Colleague Feedback Status
-@router.get("/status/{user_id}")
-async def get_colleague_feedback_status():
+@router.get("/status")
+async def get_colleague_feedback_status(user_id: str, db: db_dependency):
   try:
-    return { "message": "Colleague Feedback Status" }
+    # Get current dev plan
+    dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
+    dev_plan_id=dev_plan["dev_plan_id"]
+
+    # Count of user colleagues and user colleagues with completed survey
+    count_user_colleagues = await user_colleagues_count(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
+    count_user_colleagues_completed_survey = await user_colleagues_survey_completed(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
+
+    return { 
+      "colleagues_invited_count": count_user_colleagues,
+      "colleagues_survey_completed_count": count_user_colleagues_completed_survey
+    }
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
   
