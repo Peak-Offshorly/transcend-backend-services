@@ -73,6 +73,18 @@ async def answers_save_one(db: Session, form_id: str, question_id: str, option_i
 
     db.commit()
 
+async def answers_clear_all(db: Session, form_id: str):
+    existing_answers = db.query(Answers).filter(
+        Answers.form_id == form_id
+    ).all()
+
+    if existing_answers:
+        for answer in existing_answers:
+            db.delete(answer)
+            db.flush()
+
+    db.commit()
+
 async def answers_get_all(db: Session, user_id: str, form_name: str, sprint_number: str, dev_plan_id: str):
     form = db.query(Forms).filter(
         Forms.user_id == user_id, 
