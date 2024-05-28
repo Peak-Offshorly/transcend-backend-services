@@ -5,7 +5,7 @@ from typing import Annotated
 from app.database.connection import get_db
 from app.utils.dev_plan_crud import dev_plan_create_get_one
 from app.utils.forms_crud import forms_with_questions_options_get_all
-from app.utils.answers_crud import answers_save_one, answers_get_all
+from app.utils.answers_crud import answers_save_one, answers_get_all, answers_clear_all
 from app.schemas.models import FormAnswerSchema
 
 db_dependency = Annotated[Session, Depends(get_db)]
@@ -26,6 +26,9 @@ async def save_development_actions(answers: FormAnswerSchema, db: db_dependency)
   form_id = answers.form_id
 
   try:
+    # Clear existing dev action answers - addresses case of going back and updating dev actions form
+    await answers_clear_all(db=db, form_id=form_id)
+
     for answer in answers.answers:
       # Add all answers in DB 
       await answers_save_one(
