@@ -65,7 +65,8 @@ async def user_colleagues_survey_completed(db: Session, user_id: str, dev_plan_i
 
 async def user_colleagues_get_all(db: Session, user_id: str, dev_plan_id: str):
     return db.query(UserColleagues).filter(
-        UserColleagues.user_id == user_id
+        UserColleagues.user_id == user_id,
+        UserColleagues.development_plan_id == dev_plan_id
     ).all()
 
 async def user_colleagues_get_one_survey_token(db: Session, survey_token: str):

@@ -18,13 +18,13 @@ async def answers_get_all(user_id: str, db: db_dependency):
     forms_answers = intial_form_answers + await answers_all_forms_get_all(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
     
     # Chosen strength/weakness practices
-    chosen_trait_practices_1 = await chosen_practices_get(db=db, user_id=user_id, sprint_number=1)
+    chosen_trait_practices_1 = await chosen_practices_get(db=db, user_id=user_id, sprint_number=1, dev_plan_id=dev_plan_id)
     if len(chosen_trait_practices_1['chosen_strength_practice']) == 0 :
       chosen_trait_practices_1['chosen_strength_practice'] = None
     if len(chosen_trait_practices_1['chosen_weakness_practice']) == 0:
       chosen_trait_practices_1['chosen_weakness_practice'] = None
     
-    chosen_trait_practices_2 = await chosen_practices_get(db=db, user_id=user_id, sprint_number=2) 
+    chosen_trait_practices_2 = await chosen_practices_get(db=db, user_id=user_id, sprint_number=2, dev_plan_id=dev_plan_id) 
     if len(chosen_trait_practices_2['chosen_strength_practice']) == 0 :
       chosen_trait_practices_2['chosen_strength_practice'] = None
     if len(chosen_trait_practices_2['chosen_weakness_practice']) == 0:

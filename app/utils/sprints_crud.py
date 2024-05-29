@@ -51,10 +51,15 @@ async def sprint_create_get_one(db: Session, user_id: str, dev_plan_id: str):
             sprint_id = next_sprint.id
             start_date = next_sprint.start_date
             end_date = next_sprint.end_date
+        else:
+            return {
+                "message": "Reached max of 2 sprints"
+            }
     else:
         # get existing max sprint that is not finished
         existing_sprint = db.query(Sprints).filter(
             Sprints.user_id == user_id,
+            Sprints.development_plan_id == dev_plan_id,
             Sprints.number == max_sprint
         ).first()
         
@@ -168,6 +173,7 @@ async def get_sprint_start_end_date_sprint_number(db: Session, user_id: str, spr
     existing_sprint =  db.query(Sprints).filter(
         Sprints.user_id == user_id,
         Sprints.number == sprint_number,
+        Sprints.development_plan_id == dev_plan_id
     ).first()
 
     if existing_sprint is None:

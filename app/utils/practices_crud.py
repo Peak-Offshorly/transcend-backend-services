@@ -113,13 +113,14 @@ def chosen_practices_save_one(db: Session, user_id: str, name: str, practice_id:
 
     return { "chosen_practice_id": chosen_practice_id }
 
-async def chosen_practices_get(db: Session, user_id: str, sprint_number: int):
+async def chosen_practices_get(db: Session, user_id: str, sprint_number: int, dev_plan_id: str):
     chosen_strength_practice = db.query(ChosenPractices).join(
         ChosenTraits, ChosenPractices.chosen_trait_id == ChosenTraits.id
     ).filter(
         ChosenTraits.trait_type == "STRENGTH", 
         ChosenPractices.user_id == user_id,
-        ChosenPractices.sprint_number == sprint_number
+        ChosenPractices.sprint_number == sprint_number,
+        ChosenPractices.development_plan_id == dev_plan_id
     ).all()
 
     chosen_weakness_practice = db.query(ChosenPractices).join(
@@ -127,7 +128,8 @@ async def chosen_practices_get(db: Session, user_id: str, sprint_number: int):
     ).filter(
         ChosenTraits.trait_type == "WEAKNESS", 
         ChosenPractices.user_id == user_id,
-        ChosenPractices.sprint_number == sprint_number
+        ChosenPractices.sprint_number == sprint_number,
+        ChosenPractices.development_plan_id == dev_plan_id
     ).all()
 
     return { "chosen_strength_practice": chosen_strength_practice, "chosen_weakness_practice": chosen_weakness_practice }

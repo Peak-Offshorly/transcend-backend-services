@@ -200,7 +200,9 @@ async def save_traits_answers(answers: FormAnswerSchema, db: db_dependency):
 async def get_trait_practices(user_id: str, trait_type: str, db: db_dependency):
   try:
     dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
-    sprint = await sprint_get_current(db=db, user_id=user_id, dev_plan_id=dev_plan["dev_plan_id"])
+    
+    # Create sprint  
+    sprint = await sprint_create_get_one(db=db, user_id=user_id, dev_plan_id=dev_plan["dev_plan_id"])
     
     # If 2nd sprint, set 2 random practices to is_recommended to True
     if sprint["sprint_number"] == 2:

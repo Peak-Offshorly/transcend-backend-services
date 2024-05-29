@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from typing import Annotated
 from app.schemas.models import DataFormSchema
 from app.database.connection import get_db
-from app.utils.dev_plan_crud import dev_plan_create_get_one
+from app.utils.dev_plan_crud import dev_plan_create_get_one, dev_plan_update_is_finished_true
 from app.utils.dates_crud import add_dates, compute_second_sprint_dates, compute_colleague_message_dates
 from app.utils.sprints_crud import get_sprint_start_end_date, get_sprint_start_end_date_sprint_number
 from app.utils.traits_crud import chosen_traits_get
@@ -22,7 +22,7 @@ async def create_gantt_chart_dates(data: DataFormSchema, db: db_dependency):
     dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
     chosen_traits_data = chosen_traits_get(db=db, user_id=user_id, dev_plan_id=dev_plan["dev_plan_id"])
     recommended_mind_body_category_data = await personal_practice_category_get_one(db=db, user_id=user_id, dev_plan_id=dev_plan["dev_plan_id"])
-    chosen_trait_practices = await chosen_practices_get(db=db, user_id=user_id, sprint_number=1)
+    chosen_trait_practices = await chosen_practices_get(db=db, user_id=user_id, sprint_number=1, dev_plan_id=dev_plan["dev_plan_id"])
     
     await add_dates(
       db=db,
@@ -45,7 +45,7 @@ async def get_gantt_chart(user_id: str, db: db_dependency):
     dev_plan_id=dev_plan["dev_plan_id"]
 
     chosen_traits = chosen_traits_get(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
-    chosen_trait_practices_1 = await chosen_practices_get(db=db, user_id=user_id, sprint_number=1) # Chosen Practices for Sprint 1 
+    chosen_trait_practices_1 = await chosen_practices_get(db=db, user_id=user_id, sprint_number=1, dev_plan_id=dev_plan_id) # Chosen Practices for Sprint 1 
     recommended_mind_body_category = await personal_practice_category_get_one(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
     sprint_1_dates = await get_sprint_start_end_date(db=db, user_id=user_id, sprint_id=chosen_trait_practices_1["chosen_strength_practice"][0].sprint_id)
 
@@ -53,7 +53,7 @@ async def get_gantt_chart(user_id: str, db: db_dependency):
     existing_sprint_2_dates = await get_sprint_start_end_date_sprint_number(db=db, user_id=user_id, sprint_number=2, dev_plan_id=dev_plan_id)
     if existing_sprint_2_dates:
       sprint_2_dates = existing_sprint_2_dates
-      chosen_trait_practices_2 = await chosen_practices_get(db=db, user_id=user_id, sprint_number=2)
+      chosen_trait_practices_2 = await chosen_practices_get(db=db, user_id=user_id, sprint_number=2, dev_plan_id=dev_plan_id)
     else:
       sprint_2_dates = await compute_second_sprint_dates(start_to_mid_date=sprint_1_dates["end_date"], end_date=chosen_traits["chosen_strength"]["end_date"])
       chosen_trait_practices_2 = None
@@ -113,7 +113,7 @@ async def get_review_details(user_id: str, sprint_number: int, db: db_dependency
     chosen_traits = chosen_traits_get(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
 
     # Practice for Strength/Weakness
-    chosen_trait_practices = await chosen_practices_get(db=db, user_id=user_id, sprint_number=sprint_number)
+    chosen_trait_practices = await chosen_practices_get(db=db, user_id=user_id, sprint_number=sprint_number, dev_plan_id=dev_plan_id)
     if len(chosen_trait_practices['chosen_strength_practice']) == 0 :
       chosen_trait_practices['chosen_strength_practice'] = None
     if len(chosen_trait_practices['chosen_weakness_practice']) == 0:
@@ -161,5 +161,19 @@ async def get_current_week(user_id: str, db: db_dependency):
       "week_number": week_number
     }
 
+  except Exception as error:
+    raise HTTPException(status_code=400, detail=str(error))
+  
+@router.post("/finish")
+async def finish_development_plan(data: DataFormSchema, db: db_dependency):
+  user_id = data.user_id
+  
+  try:
+    dev_plan = await dev_plan_create_get_one(db=db, user_id=user_id)
+    dev_plan_id = dev_plan["dev_plan_id"]
+    
+    response = await dev_plan_update_is_finished_true(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
+
+    return { "message": response["message"] }
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))

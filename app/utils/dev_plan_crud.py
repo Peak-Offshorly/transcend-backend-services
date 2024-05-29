@@ -149,3 +149,34 @@ async def dev_plan_update_personal_practice_category(user_id: str, personal_prac
     existing_dev_plan.personal_practice_category_id = personal_practice_category_id
     
     db.commit()
+
+async def dev_plan_update_is_finished_true(db: Session, user_id: str, dev_plan_id: str):
+    existing_dev_plan = db.query(DevelopmentPlan).filter(
+        DevelopmentPlan.id == dev_plan_id,
+        DevelopmentPlan.user_id == user_id,
+        DevelopmentPlan.is_finished == False
+    ).first()
+
+    if existing_dev_plan:
+        # Check if all required fields have valid entries
+        required_fields = [
+            existing_dev_plan.chosen_strength_id,
+            existing_dev_plan.chosen_weakness_id,
+            existing_dev_plan.sprint_1_id,
+            existing_dev_plan.chosen_strength_practice_1_id,
+            existing_dev_plan.chosen_weakness_practice_1_id,
+            existing_dev_plan.sprint_2_id,
+            existing_dev_plan.chosen_strength_practice_2_id,
+            existing_dev_plan.chosen_weakness_practice_2_id,
+            existing_dev_plan.personal_practice_category_id
+        ]
+        
+        if all(field is not None for field in required_fields):
+            existing_dev_plan.is_finished = True
+            db.flush()
+            db.commit()
+            return { "message": f"Development Plan ID {existing_dev_plan.id} is finished" }
+        else:
+            return { "message": f"Development Plan not yet complete" }
+    
+    return { "message": "Development Plan does not exist" }
