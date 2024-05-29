@@ -1,5 +1,6 @@
 import time
 from datetime import datetime, timezone
+from app.const import STAGING_URL
 from app.email.send_email import send_email_background, send_email_async
 from fastapi import BackgroundTasks
 from sqlalchemy import cast, Date
@@ -80,7 +81,7 @@ async def user_colleague_week_12_emails(db: Session):
         body = {
             "colleague_email": colleague_email[0],
             "user_name": user.first_name,
-            "survey_href": f"https://peak-transcend-staging.netlify.app/colleague-survey/{colleague.survey_token}",
+            "survey_href": f"{STAGING_URL}/colleague-survey?token={colleague.survey_token}",
             "strength": dev_plan_details["chosen_strength"]["name"],
             "weakness": dev_plan_details["chosen_weakness"]["name"],
             "strength_practice": dev_plan_details["strength_practice"][0].name,

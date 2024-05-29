@@ -21,3 +21,7 @@ EMAIL_FROM = os.getenv('EMAIL_FROM')
 EMAIL_PORT = int(os.getenv('EMAIL_PORT'))
 EMAIL_SERVER = os.getenv('EMAIL_SERVER')
 EMAIL_FROM_NAME = os.getenv('EMAIL_FROM_NAME')
+
+#Web App URLs
+DEV_URL = os.getenv('DEV_URL')
+STAGING_URL = os.getenv('STAGING_URL')
