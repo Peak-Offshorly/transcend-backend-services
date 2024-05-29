@@ -19,7 +19,8 @@ from app.utils.user_colleagues_crud import (
   user_colleagues_add_dates, 
   user_colleagues_get_one_survey_token, 
   user_colleagues_count, 
-  user_colleagues_survey_completed
+  user_colleagues_survey_completed,
+  user_colleagues_get_dates
 )
 
 db_dependency = Annotated[Session, Depends(get_db)]
@@ -225,3 +226,24 @@ async def get_colleague_feedback_summary(user_id: str, db: db_dependency):
         }
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
+  
+# Get Colleague Feedback Dates
+@router.get("/dates")
+async def get_colleague_feedback_dates(user_id: str, db: db_dependency):
+  try:
+    # Get current dev plan
+    dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
+    dev_plan_id = dev_plan["dev_plan_id"]
+
+    colleague_message_dates = await user_colleagues_get_dates(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
+    
+    if colleague_message_dates:
+      return {
+        "colleague_message_week_5_date": colleague_message_dates["week_5"],
+        "colleague_message_week_9_date": colleague_message_dates["week_9"],
+        "colleague_message_week_12_date": colleague_message_dates["week_12"]
+      }
+    
+    return { "message": "No saved colleagues for user" }
+  except Exception as error:
+    raise HTTPException(status_code=400, detail=str(error)) 

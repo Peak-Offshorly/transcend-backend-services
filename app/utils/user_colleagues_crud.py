@@ -73,3 +73,16 @@ async def user_colleagues_get_one_survey_token(db: Session, survey_token: str):
     return db.query(UserColleagues).filter(
         UserColleagues.survey_token == survey_token
     ).first()
+
+async def user_colleagues_get_dates(db: Session, user_id: str, dev_plan_id: str):
+    existing_colleague = db.query(UserColleagues).filter(
+        UserColleagues.user_id == user_id,
+        UserColleagues.development_plan_id == dev_plan_id
+    ).first()
+
+    if existing_colleague:
+        return{
+            "week_5": existing_colleague.week_5_date,
+            "week_9": existing_colleague.week_9_date,
+            "week_12": existing_colleague.week_12_date,
+        }
