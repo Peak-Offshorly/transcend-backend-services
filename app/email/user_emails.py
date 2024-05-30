@@ -9,6 +9,7 @@ from app.api.routes.development_plan import get_review_details
 from app.utils.users_crud import get_one_user_id
 from app.utils.dev_plan_crud import dev_plan_create_get_one
 from app.utils.sprints_crud import sprint_get_current
+from app.const import WEB_URL
 
 async def user_weekly_email(db: Session):
     print('---STARTED SEND USER WEEKLY EMAILS FUNCTION---')
@@ -46,7 +47,7 @@ async def user_weekly_email(db: Session):
             subject = f"Peak - Development Plan Progress Check for Week {week_number}"
             body = {
                 "user_name": user.first_name,
-                "progress_check_link": "https://peak-transcend-staging.netlify.app/progress-check",
+                "progress_check_link": f"{WEB_URL}/progress-check",
                 "week_number": week_number,
                 "strength": dev_plan_details["chosen_strength"]["name"],
                 "weakness": dev_plan_details["chosen_weakness"]["name"],
