@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import Annotated
-from app.database.connection import get_db
 from app.schemas.models import DataFormSchema, FormSchema, FormAnswerSchema
+from app.database.connection import get_db
+from app.firebase.utils import verify_token
 from app.utils.dev_plan_crud import dev_plan_create_get_one
 from app.utils.traits_crud import traits_create, traits_compute_tscore
 from app.utils.answers_crud import answers_to_initial_questions_save
@@ -20,11 +20,17 @@ router = APIRouter(prefix="/initial-questions", tags=["initial-questions"])
 # Get Initial Questions - slightly different Get since we get the individual questions and options and don't connect it to a specific Form id
 # Returns: Form Schema (Form, Questions, Options, Answers)
 @router.post("/get-form")
-async def create_get_traits_and_form_questions_options(data: DataFormSchema, db: db_dependency):
+async def create_get_traits_and_form_questions_options(data: DataFormSchema, db: db_dependency, token = Depends(verify_token)):
+  form_name = data.form_name
+  user_id = data.user_id
+
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
+
   try:
-    form_name = data.form_name
-    user_id = data.user_id
-    
     form_exists = initial_questions_forms_with_questions_options_get_all(db=db, name=form_name, user_id=user_id)
     
     # return form schema with form_id if Form exists already
@@ -49,7 +55,15 @@ async def create_get_traits_and_form_questions_options(data: DataFormSchema, db:
 # Post Save Initial Answers: would have calculations based on chosen answers
 # Returns: Success Message
 @router.post("/save-answers")
-async def save_initial_questions_answers(answers: FormAnswerSchema, db: db_dependency):
+async def save_initial_questions_answers(answers: FormAnswerSchema, db: db_dependency, token = Depends(verify_token)):
+  user_id = answers.user_id
+
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
+  
   try:
     await answers_to_initial_questions_save(db=db, answers=answers)
     traits_compute_tscore(db=db, answers=answers)

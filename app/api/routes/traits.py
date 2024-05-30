@@ -1,13 +1,14 @@
 import json
 from uuid import UUID
 from collections import defaultdict
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import Annotated
 from app.schemas.models import ChosenTraitsSchema, FormAnswerSchema, PracticeSchema, ChosenPracticesSchema
 from app.database.connection import get_db
+from app.firebase.utils import verify_token
 from app.utils.dates_crud import compute_second_sprint_dates
-from app.utils.dev_plan_crud import dev_plan_create_get_one, dev_plan_get_current, dev_plan_update_chosen_traits, dev_plan_update_sprint, dev_plan_update_chosen_strength_practice, dev_plan_update_chosen_weakness_practice
+from app.utils.dev_plan_crud import dev_plan_create_get_one, dev_plan_update_chosen_traits, dev_plan_update_sprint, dev_plan_update_chosen_strength_practice, dev_plan_update_chosen_weakness_practice
 from app.utils.forms_crud import form_questions_options_get_all, forms_create_one, forms_with_questions_options_get_all, forms_with_questions_options_sprint_id_get_all
 from app.utils.answers_crud import answers_save_one
 from app.utils.sprints_crud import sprint_create_get_one, sprint_update_strength_form_id, sprint_update_weakness_form_id, sprint_update_second_sprint_dates, get_sprint_start_end_date_sprint_number, sprint_get_current
@@ -29,7 +30,13 @@ router = APIRouter(prefix="/traits", tags=["traits"])
 
 # Get Traits (Strengths and Weaknesses with the Scores)
 @router.get("/all-strengths-weaknesses")
-async def get_strengths_weaknesses(user_id: str, db: db_dependency):
+async def get_strengths_weaknesses(user_id: str, db: db_dependency, token = Depends(verify_token)):
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
+  
   try:
     return traits_get_top_bottom_five(db=db, user_id=user_id)
   except Exception as error:
@@ -37,8 +44,16 @@ async def get_strengths_weaknesses(user_id: str, db: db_dependency):
   
 # Post Save Chosen Strength and Weakness
 @router.post("/save-strength-weakness")
-async def save_traits_chosen(chosen_traits: ChosenTraitsSchema, db: db_dependency):
+async def save_traits_chosen(chosen_traits: ChosenTraitsSchema, db: db_dependency, token = Depends(verify_token)):
   user_id = chosen_traits.user_id
+  print(token)
+  print(user_id)
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
+  
   trait_data = {
       "strength": chosen_traits.strength,
       "weakness": chosen_traits.weakness
@@ -119,7 +134,13 @@ async def create_trait_form(user_id: str, trait: str, trait_type: str, dev_plan_
 
 # Get Chosen Strength and Weakness
 @router.get("/get-strength-weakness")
-async def get_traits_chosen(user_id: str, db: db_dependency):
+async def get_traits_chosen(user_id: str, db: db_dependency, token = Depends(verify_token)):
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
+  
   try:
     dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
     return chosen_traits_get(db=db, user_id=user_id, dev_plan_id=dev_plan["dev_plan_id"])
@@ -128,7 +149,13 @@ async def get_traits_chosen(user_id: str, db: db_dependency):
   
 # Get Form questions and options for trait strength/weakness
 @router.get("/get-trait-questions")
-async def get_trait_questions(user_id: str, form_name: str, db: db_dependency):
+async def get_trait_questions(user_id: str, form_name: str, db: db_dependency, token = Depends(verify_token)):
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
+  
   try:
     dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
     return forms_with_questions_options_get_all(db, name=form_name, user_id=user_id, dev_plan_id = dev_plan["dev_plan_id"])
@@ -137,9 +164,15 @@ async def get_trait_questions(user_id: str, form_name: str, db: db_dependency):
 
 # Post Save Followup Trait Answers; would have calculations based on answers to determine which practices to recommend
 @router.post("/save-trait-questions-answers")
-async def save_traits_answers(answers: FormAnswerSchema, db: db_dependency):
-  form_id = answers.form_id
+async def save_traits_answers(answers: FormAnswerSchema, db: db_dependency, token = Depends(verify_token)):
   user_id = answers.user_id
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
+  
+  form_id = answers.form_id
   recommended_practices = []
 
   # Dictionary to store answers categorized by extent
@@ -197,7 +230,13 @@ async def save_traits_answers(answers: FormAnswerSchema, db: db_dependency):
 
 # Get Trait Practices
 @router.get("/get-trait-practices")
-async def get_trait_practices(user_id: str, trait_type: str, db: db_dependency):
+async def get_trait_practices(user_id: str, trait_type: str, db: db_dependency, token = Depends(verify_token)):
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
+  
   try:
     dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
     
@@ -214,10 +253,15 @@ async def get_trait_practices(user_id: str, trait_type: str, db: db_dependency):
   
 # Post Save Trait Practices - SEPERATE FOR STRENGTH AND WEAKNESS
 @router.post("/save-strength-practice")
-async def save_chosen_strength_practice(chosen_practices: ChosenPracticesSchema, db: db_dependency):
+async def save_chosen_strength_practice(chosen_practices: ChosenPracticesSchema, db: db_dependency, token = Depends(verify_token)):
   user_id = chosen_practices.user_id
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
+  
   strength_practice = chosen_practices.strength_practice
-
   # Form questions, ranks and options at most 3; placeholders only
   questions=[
     "DEVELOPMENT_ACTION_1",
@@ -308,10 +352,15 @@ async def save_chosen_strength_practice(chosen_practices: ChosenPracticesSchema,
     raise HTTPException(status_code=400, detail=str(error))
 
 @router.post("/save-weakness-practice")
-async def save_chosen_weakness_practice(chosen_practices: ChosenPracticesSchema, db: db_dependency):
+async def save_chosen_weakness_practice(chosen_practices: ChosenPracticesSchema, db: db_dependency, token = Depends(verify_token)):
   user_id = chosen_practices.user_id
-  weakness_practice = chosen_practices.weakness_practice
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
 
+  weakness_practice = chosen_practices.weakness_practice
   # Form questions, ranks and options at most 3; placeholders only
   questions=[
     "DEVELOPMENT_ACTION_1",
