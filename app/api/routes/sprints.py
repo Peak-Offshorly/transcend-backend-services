@@ -19,8 +19,8 @@ async def get_current_sprint(user_id: str, db: db_dependency):
   
 
 # Finish first/second sprint
-@router.post("/finish-first-sprint")
-async def finish_first_sprint(data: DataFormSchema, db: db_dependency):
+@router.post("/finish-sprint")
+async def finish_sprint(data: DataFormSchema, db: db_dependency):
   user_id = data.user_id
   try:
     dev_plan = await dev_plan_create_get_one(db=db, user_id=user_id)
