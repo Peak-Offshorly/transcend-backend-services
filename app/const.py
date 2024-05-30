@@ -23,5 +23,4 @@ EMAIL_SERVER = os.getenv('EMAIL_SERVER')
 EMAIL_FROM_NAME = os.getenv('EMAIL_FROM_NAME')
 
 #Web App URLs
-DEV_URL = os.getenv('DEV_URL')
-STAGING_URL = os.getenv('STAGING_URL')
+WEB_URL = os.getenv('WEB_URL')

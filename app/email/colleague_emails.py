@@ -1,6 +1,5 @@
 import time
 from datetime import datetime, timezone
-from app.const import STAGING_URL
 from app.email.send_email import send_email_background, send_email_async
 from fastapi import BackgroundTasks
 from sqlalchemy import cast, Date
@@ -10,6 +9,7 @@ from app.api.routes.development_plan import get_review_details
 from app.utils.users_crud import get_one_user_id
 from app.utils.dev_plan_crud import dev_plan_create_get_one
 from app.utils.sprints_crud import sprint_get_current
+from app.const import WEB_URL
 
 async def user_colleague_week_5_9_emails(db: Session):
     print('---STARTED SEND WEEKS 5 AND 9 COLLEAGUE EMAILS FUNCTION---')
@@ -81,7 +81,7 @@ async def user_colleague_week_12_emails(db: Session):
         body = {
             "colleague_email": colleague_email[0],
             "user_name": user.first_name,
-            "survey_href": f"{STAGING_URL}/colleague-survey?token={colleague.survey_token}",
+            "survey_href": f"{WEB_URL}/survey/colleagues?token={colleague.survey_token}",
             "strength": dev_plan_details["chosen_strength"]["name"],
             "weakness": dev_plan_details["chosen_weakness"]["name"],
             "strength_practice": dev_plan_details["strength_practice"][0].name,
