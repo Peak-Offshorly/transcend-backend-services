@@ -24,6 +24,13 @@ class Users(Base):
     personal_practice_category = relationship('PersonalPracticeCategory', back_populates='users')
     chosen_personal_practices = relationship('ChosenPersonalPractices', back_populates='users')
 
+# class EndpointCallCounter(Base):
+#     __tablename__ = 'endpoint_call_counter'
+
+#     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+#     endpoint_name = Column(String, index=True)
+#     count = Column(Integer, default=0)
+
 class UserColleagues(Base):
     __tablename__ = 'user_colleagues'
 

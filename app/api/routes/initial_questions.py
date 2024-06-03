@@ -7,6 +7,7 @@ from app.schemas.models import DataFormSchema, FormSchema, FormAnswerSchema
 from app.utils.dev_plan_crud import dev_plan_create_get_one
 from app.utils.traits_crud import traits_create, traits_compute_tscore
 from app.utils.answers_crud import answers_to_initial_questions_save
+from app.utils.update_traits import check_user_count_divisible_by_ten, update_ave_std
 from app.utils.forms_crud import (
     forms_with_questions_options_get_all,
     forms_create_one_initial_questions_form, 
@@ -50,9 +51,16 @@ async def create_get_traits_and_form_questions_options(data: DataFormSchema, db:
 # Returns: Success Message
 @router.post("/save-answers")
 async def save_initial_questions_answers(answers: FormAnswerSchema, db: db_dependency):
+  user_id = answers.user_id
   try:
-    await answers_to_initial_questions_save(db=db, answers=answers)
-    traits_compute_tscore(db=db, answers=answers)
+    # await answers_to_initial_questions_save(db=db, answers=answers)
+    # traits_compute_tscore(db=db, answers=answers)
+
+    # if check_user_count_divisible_by_ten(db=db, user_id=user_id):
+    if True:
+      # Perform update operation
+      await update_ave_std(db=db)
+
 
     return { "message": "Initial question answers saved and t-scores computed." }
   except Exception as error:
