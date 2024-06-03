@@ -51,9 +51,13 @@ async def get_gantt_chart(user_id: str, db: db_dependency):
 
     # Get or Compute Sprint 2 start/end date
     existing_sprint_2_dates = await get_sprint_start_end_date_sprint_number(db=db, user_id=user_id, sprint_number=2, dev_plan_id=dev_plan_id)
-    if existing_sprint_2_dates["start_date"]:
-      sprint_2_dates = existing_sprint_2_dates
-      chosen_trait_practices_2 = await chosen_practices_get(db=db, user_id=user_id, sprint_number=2, dev_plan_id=dev_plan_id)
+    if existing_sprint_2_dates:
+      if existing_sprint_2_dates["start_date"]:
+        sprint_2_dates = existing_sprint_2_dates
+        chosen_trait_practices_2 = await chosen_practices_get(db=db, user_id=user_id, sprint_number=2, dev_plan_id=dev_plan_id)
+      else:
+        sprint_2_dates = await compute_second_sprint_dates(start_to_mid_date=sprint_1_dates["end_date"], end_date=chosen_traits["chosen_strength"]["end_date"])
+        chosen_trait_practices_2 = None
     else:
       sprint_2_dates = await compute_second_sprint_dates(start_to_mid_date=sprint_1_dates["end_date"], end_date=chosen_traits["chosen_strength"]["end_date"])
       chosen_trait_practices_2 = None
