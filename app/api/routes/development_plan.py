@@ -156,6 +156,12 @@ async def get_current_week(user_id: str, db: db_dependency):
     current_date = datetime.now(timezone.utc)
     delta = current_date - start_date
     week_number = (delta.days // 7) + 1  # Adding 1 to make week_number start from 1
+  
+    # FOR DEV TESTING - increment weeks every 2 minutes
+    # minutes_elapsed = delta.total_seconds() // 60  # Convert the timedelta to minutes
+    # week_number = int((minutes_elapsed // 2) + 1)  # Increment week every 120 minutes (2 minutes * 60 seconds)
+    # if week_number > 12:
+    #   week_number = 12
 
     return{
       "week_number": week_number
