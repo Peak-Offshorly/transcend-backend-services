@@ -54,7 +54,8 @@ async def user_colleague_week_5_9_emails(db: Session):
             body=body, 
             email_to=colleague.email, 
             subject=subject,
-            template_name="colleague-week-five-nine.html"
+            template_name="colleague-week-five-nine.html",
+            reply_to=user.email
         )
     print('---FINISHED SEND WEEKS 5 AND 9 COLLEAGUE EMAILS FUNCTION---')
 
@@ -97,7 +98,8 @@ async def user_colleague_week_12_emails(db: Session):
             body=body, 
             email_to=colleague.email, 
             subject=subject,
-            template_name="colleague-week-twelve-survey.html"
+            template_name="colleague-week-twelve-survey.html",
+            reply_to=user.email
         )
         print(f'sent email to {colleague.email}')
     

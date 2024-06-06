@@ -46,6 +46,8 @@ async def get_development_progress_questions_strength_practice(db: db_dependency
       week_number += 30240
       if week_number > 6:
         week_number -= 6
+        if week_number > 6:
+          week_number = 6
   # FOR DEV TESTING
   
   # <SPRINT_NUM>_PROGRESS_STRENGTH_WEEK_<WEEK NUMBER>
@@ -124,6 +126,8 @@ async def get_development_progress_questions_weakness_practice(db: db_dependency
       week_number += 30240
       if week_number > 6:
         week_number -= 6
+        if week_number > 6:
+          week_number = 6
   # FOR DEV TESTING
   
   # <SPRINT_NUM>_PROGRESS_WEAKNESS_WEEK_<WEEK NUMBER>
