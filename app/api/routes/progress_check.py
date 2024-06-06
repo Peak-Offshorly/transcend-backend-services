@@ -36,9 +36,17 @@ async def get_development_progress_questions_strength_practice(db: db_dependency
   # FOR DEV TESTING - increment weeks every 2 minutes
   minutes_elapsed = delta.total_seconds() // 60  # Convert the timedelta to minutes
   week_number = int((minutes_elapsed // 2) + 1)  # Increment week every 120 minutes (2 minutes * 60 seconds)
+  # FOR DEV TESTING
   
   if week_number > 6:
       week_number = 6  # Assuming the range is up to 6 weeks
+  
+  # FOR DEV TESTING
+  elif week_number < 0:
+      week_number += 30240
+      if week_number > 6:
+        week_number -= 6
+  # FOR DEV TESTING
   
   # <SPRINT_NUM>_PROGRESS_STRENGTH_WEEK_<WEEK NUMBER>
   form_name = f"{sprint_number}_PROGRESS_STRENGTH_WEEK_{week_number}"
@@ -106,9 +114,17 @@ async def get_development_progress_questions_weakness_practice(db: db_dependency
   # FOR DEV TESTING - increment weeks every 2 minutes
   minutes_elapsed = delta.total_seconds() // 60  # Convert the timedelta to minutes
   week_number = int((minutes_elapsed // 2) + 1)  # Increment week every 120 minutes (2 minutes * 60 seconds)
+  # FOR DEV TESTING
   
   if week_number > 6:
       week_number = 6  # Assuming the range is up to 6 weeks
+
+  # FOR DEV TESTING
+  elif week_number < 0:
+      week_number += 30240
+      if week_number > 6:
+        week_number -= 6
+  # FOR DEV TESTING
   
   # <SPRINT_NUM>_PROGRESS_WEAKNESS_WEEK_<WEEK NUMBER>
   form_name = f"{sprint_number}_PROGRESS_WEAKNESS_WEEK_{week_number}"
