@@ -11,6 +11,7 @@ charset-normalizer==3.3.2
 click==8.1.7
 cryptography==42.0.5
 dnspython==2.6.1
+docx2txt==0.8
 email_validator==2.1.1
 exceptiongroup==1.2.0
 fastapi==0.110.1
@@ -39,6 +40,12 @@ iniconfig==2.0.0
 Jinja2==3.1.4
 jwcrypto==1.5.6
 jws==0.1.3
+langchain==0.2.2
+langchain-anthropic==0.1.15
+langchain-community==0.2.3
+langchain-core==0.2.4
+langchain-openai==0.1.8
+langchain-pinecone==0.1.1
 MarkupSafe==2.1.5
 msgpack==1.0.8
 oauth2client==4.1.3
@@ -56,6 +63,7 @@ pydantic-settings==2.2.1
 pydantic_core==2.16.3
 PyJWT==2.8.0
 pyparsing==3.1.2
+pypdf==4.2.0
 Pyrebase4==4.8.0
 pytest==8.1.1
 pytest-asyncio==0.23.6
