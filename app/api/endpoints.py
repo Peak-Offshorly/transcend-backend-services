@@ -10,6 +10,7 @@ from app.api.routes.development_plan import router as development_plan
 from app.api.routes.colleague_feedback import router as colleague_feedback
 from app.api.routes.progress_check import router as progress_check
 from app.api.routes.sprints import router as sprints
+from app.api.routes.development_actions import router as development_actions
 
 router = APIRouter()
 router.include_router(router=user_router)
@@ -22,6 +23,7 @@ router.include_router(router=development_plan)
 router.include_router(router=colleague_feedback)
 router.include_router(router=progress_check)
 router.include_router(router=sprints)
+router.include_router(router=development_actions)
 
 @router.get("/")
 async def health_check():
