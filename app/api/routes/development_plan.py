@@ -51,9 +51,13 @@ async def get_gantt_chart(user_id: str, db: db_dependency):
 
     # Get or Compute Sprint 2 start/end date
     existing_sprint_2_dates = await get_sprint_start_end_date_sprint_number(db=db, user_id=user_id, sprint_number=2, dev_plan_id=dev_plan_id)
-    if existing_sprint_2_dates["start_date"]:
-      sprint_2_dates = existing_sprint_2_dates
-      chosen_trait_practices_2 = await chosen_practices_get(db=db, user_id=user_id, sprint_number=2, dev_plan_id=dev_plan_id)
+    if existing_sprint_2_dates:
+      if existing_sprint_2_dates["start_date"]:
+        sprint_2_dates = existing_sprint_2_dates
+        chosen_trait_practices_2 = await chosen_practices_get(db=db, user_id=user_id, sprint_number=2, dev_plan_id=dev_plan_id)
+      else:
+        sprint_2_dates = await compute_second_sprint_dates(start_to_mid_date=sprint_1_dates["end_date"], end_date=chosen_traits["chosen_strength"]["end_date"])
+        chosen_trait_practices_2 = None
     else:
       sprint_2_dates = await compute_second_sprint_dates(start_to_mid_date=sprint_1_dates["end_date"], end_date=chosen_traits["chosen_strength"]["end_date"])
       chosen_trait_practices_2 = None
@@ -155,13 +159,13 @@ async def get_current_week(user_id: str, db: db_dependency):
     start_date = dev_plan["start_date"]
     current_date = datetime.now(timezone.utc)
     delta = current_date - start_date
-    week_number = (delta.days // 7) + 1  # Adding 1 to make week_number start from 1
+    # week_number = (delta.days // 7) + 1  # Adding 1 to make week_number start from 1
   
     # FOR DEV TESTING - increment weeks every 2 minutes
-    # minutes_elapsed = delta.total_seconds() // 60  # Convert the timedelta to minutes
-    # week_number = int((minutes_elapsed // 2) + 1)  # Increment week every 120 minutes (2 minutes * 60 seconds)
-    # if week_number > 12:
-    #   week_number = 12
+    minutes_elapsed = delta.total_seconds() // 60  # Convert the timedelta to minutes
+    week_number = int((minutes_elapsed // 2) + 1)  # Increment week every 120 minutes (2 minutes * 60 seconds)
+    if week_number > 12:
+      week_number = 12
 
     return{
       "week_number": week_number

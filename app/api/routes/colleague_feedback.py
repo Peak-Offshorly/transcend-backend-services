@@ -95,8 +95,9 @@ async def send_initial_emails(db: db_dependency, background_tasks: BackgroundTas
         background_tasks=background_tasks, 
         body=body, 
         email_to=colleague.email, 
-        subject=f"Peak - Colleague Invite for {user.first_name}'s Development Plan",
-        template_name="initial-colleague-email.html"
+        subject=f"Transcend - Colleague Invite for {user.first_name}'s Development Plan",
+        template_name="initial-colleague-email.html",
+        reply_to=user.email
       )
       
     return { "message": "Colleague Initial emails sent." }

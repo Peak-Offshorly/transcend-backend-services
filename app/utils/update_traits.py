@@ -40,14 +40,12 @@ async def update_ave_std(db: Session):
             additional_count=additional_count
         )
         traits_avgs.append(avg)
-        
-    
-    for i, trait in enumerate(traits_data['traits']):
+
         std = calculate_std(
             trait_list_counts=trait_list_counts[trait],
             old_avg=traits_data['traits_avg'][i],
             old_std=traits_data['traits_std'][i],
-            new_avg=traits_avgs[i],
+            new_avg=avg,
             old_count=old_count,
             additional_count=additional_count
         )
@@ -88,7 +86,7 @@ def update_traits_db(db: Session, traits_avgs, traits_stds):
         traits_data = json.load(traits_json)
 
     for trait_name, avg, std in zip(traits_data['traits'], traits_avgs, traits_stds):
-        traits = db.query(Traits).filter_by(name=trait_name, user_id='rYtdeQbtD1N71PCpmkvAyZQGN442').all()
+        traits = db.query(Traits).filter_by(name=trait_name).all()
         if traits:
             for trait in traits:
                 trait.average = avg

@@ -23,12 +23,13 @@ conf = ConnectionConfig(
     TEMPLATE_FOLDER="././app/email/templates"
 )
 
-def send_email_background(background_tasks: BackgroundTasks, subject: str, email_to: str, body: Dict[str, Any], template_name: str):
+def send_email_background(background_tasks: BackgroundTasks, subject: str, email_to: str, body: Dict[str, Any], template_name: str, reply_to: str):
     message = MessageSchema(
         subject=subject,
         recipients=[email_to],
         template_body=body,
-        subtype=MessageType.html
+        subtype=MessageType.html,
+        reply_to=[reply_to]
     )
 
     fm = FastMail(conf)
@@ -38,12 +39,13 @@ def send_email_background(background_tasks: BackgroundTasks, subject: str, email
         template_name=template_name
     )
 
-async def send_email_async(subject: str, email_to: str, body: Dict[str, Any], template_name: str):
+async def send_email_async(subject: str, email_to: str, body: Dict[str, Any], template_name: str, reply_to: str):
     message = MessageSchema(
         subject=subject,
         recipients=[email_to],
         template_body=body,
-        subtype=MessageType.html
+        subtype=MessageType.html,
+        reply_to=[reply_to]
     )
 
     fm = FastMail(conf)

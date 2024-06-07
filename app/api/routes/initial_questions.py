@@ -53,11 +53,11 @@ async def create_get_traits_and_form_questions_options(data: DataFormSchema, db:
 async def save_initial_questions_answers(answers: FormAnswerSchema, db: db_dependency, background_tasks: BackgroundTasks):
   user_id = answers.user_id
   try:
-    # await answers_to_initial_questions_save(db=db, answers=answers)
-    # traits_compute_tscore(db=db, answers=answers)
+    await answers_to_initial_questions_save(db=db, answers=answers)
+    traits_compute_tscore(db=db, answers=answers)
 
+    # Schedule the update operation as a background task if 10 additional inputs
     if increment_count(db=db, user_id=user_id):
-      # Schedule the update operation as a background task
       background_tasks.add_task(update_ave_std, db)
       
     return { "message": "Initial question answers saved and t-scores computed." }
