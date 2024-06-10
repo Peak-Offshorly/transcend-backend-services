@@ -8,7 +8,7 @@ from app.ai.const import OPENAI_API_KEY
 # GPT_MODEL = "gpt-3.5-turbo-0125"
 GPT_MODEL = "gpt-4o-2024-05-13"
 
-def generate_actions(docs, strengths, weaknesses, chosen_strength, chosen_weakness):
+def generate_actions(docs, strengths, weaknesses, chosen_strength, chosen_weakness, strength_practice, weakness_practice, company_size, industry, employee_role, role_description):
   print("Generating answer")
 
   prompt = PromptTemplate(
@@ -16,33 +16,59 @@ def generate_actions(docs, strengths, weaknesses, chosen_strength, chosen_weakne
   template="""
     <|begin_of_text|>
     <|start_header_id|>system<|end_header_id|>
-    You are an expert at creating Leadership Development Plans. Employees are assessed on their strengths and weaknesses as a leader and your task is to suggest improvement strategies in the form of a comprehensive and insightful development plan. The employee has answered a set of questions to identify their top 5 strengths and weaknesses.
+    You are an expert at creating actionable improvement points for a Leadership Development Plan. Employees are assessed on their strengths and weaknesses as a leader and your task is to suggest improvement strategies in the form of a comprehensive and insightful development plan that contains actions. 
 
-    It has been identified that their top 5 strengths are: {strengths} and their top 5 weaknesses are: {weaknesses}.
-
-    The employee will give you their chosen strength and weakness. Your task is to provide 10 detailed development actions that are feasible, measurable, and time-bound in order to guide the employee in strengthening and leveraging their strengths and in order to address and improve their weaknesses. You should provide exactly 5 actions for the chosen strength and exactly 5 actions for the chosen weakness. Each action should be specific, actionable, and relevant to the employee's chosen strength and weakness.
+    The employee will give you their personal and company details, their strengths and weaknesses as a leader, and the practice they want to focus on for each chosen strength and weakness. Using these data, Your task is to provide 10 detailed development actions that are feasible, measurable, and time-bound in order to guide the employee in strengthening and leveraging their strengths and in order to address and improve their weaknesses. You should provide exactly 5 actions for the chosen strength and exactly 5 actions for the chosen weakness. Each action should be specific, actionable, and relevant to the employee's chosen strength practice and weakness practice.
 
     Provide your answer in a JSON format with "strength" and "weakness" as keys. Each should have a list of 5 actions as values. Each action in the list should be an object that contains the name, details, importance, and measurement. The name pertains to the name or title of the action, the details are the description and specifics of the action, the importance is the significance of the action in developing the employee's leadership skills, and the measurement is how the action can be measured over time. Be as detailed and precise as possible in your response.
 
     Use the following pieces of retrieved context to help GUIDE your answer. Your answer is not constrained to these pieces and you may use knowledge beyond the retrieved context, but take a deep breath and thoroughly make sure the details you generate are factual and reasonable.
     Context: {context}
 
-    Make sure to understand the task you are given and provide a detailed, insightful, and correctly-formatted response that is relevant to the employee's chosen strength and weakness.
+    Make sure to understand the task you are given and provide a detailed, insightful, and correctly-formatted response that is relevant to the employee's details and needs.
     
     <|eot_id|><|start_header_id|>user<|end_header_id|>
-    Chosen strength: {chosen_strength} and chosen weakness: {chosen_weakness} to work on.
+    Employee Details:
+    Industry: {industry}
+    Role: {employee_role}
+    Role Description: {role_description}
+    Company Size: {company_size}
+
+    It has been identified that their top 5 strengths are: {strengths} and their top 5 weaknesses are: {weaknesses}.
+
+    They want to work on this strength: "{chosen_strength}"
+    Focused on their identified practice for that strength: "{strength_practice}"
+    They want to work on this weakness: "{chosen_weakness}"
+    Focused on their identified practice for that weakness: "{weakness_practice}"
 
     Answer: <|eot_id|><|start_header_id|>assistant<|end_header_id|>
     """,
-    input_variables=["strengths", "weaknesses", "context", "chosen_strength", "chosen_weakness"],
+    input_variables=["context", "strengths", "weaknesses", "chosen_strength", "chosen_weakness", "strength_practice", "weakness_practice", "company_size", "industry", "employee_role", "role_description"],
     )
+  
+  # print(prompt.template)
+  print(f"Length: {len(prompt.template)}")
   
   llm = ChatOpenAI(model=GPT_MODEL,  openai_api_key=OPENAI_API_KEY, temperature=0)
 
   # chain = prompt | llm | StrOutputParser()
   chain = prompt | llm | JsonOutputParser()
 
-  generation = chain.invoke({"strengths": strengths, "weaknesses": weaknesses, "context": docs, "chosen_strength": chosen_strength, "chosen_weakness": chosen_weakness})
+  inputs = {
+    "context": docs,
+    "strengths": strengths,
+    "weaknesses": weaknesses,
+    "chosen_strength": chosen_strength,
+    "chosen_weakness": chosen_weakness,
+    "strength_practice": strength_practice,
+    "weakness_practice": weakness_practice,
+    "company_size": company_size,
+    "industry": industry,
+    "employee_role": employee_role,
+    "role_description": role_description
+  }
+
+  generation = chain.invoke(inputs)
   # print(generation)
   return generation
 
