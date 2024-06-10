@@ -7,6 +7,7 @@ from app.firebase.utils import verify_token
 from app.utils.dev_plan_crud import dev_plan_create_get_one
 from app.utils.traits_crud import traits_create, traits_compute_tscore
 from app.utils.answers_crud import answers_to_initial_questions_save
+from app.utils.update_traits import check_user_count_divisible_by_ten, update_ave_std, increment_count
 from app.utils.forms_crud import (
     forms_with_questions_options_get_all,
     forms_create_one_initial_questions_form, 
@@ -68,6 +69,10 @@ async def save_initial_questions_answers(answers: FormAnswerSchema, db: db_depen
     await answers_to_initial_questions_save(db=db, answers=answers)
     traits_compute_tscore(db=db, answers=answers)
 
+    # Schedule the update operation as a background task if 10 additional inputs
+    if increment_count(db=db, user_id=user_id):
+      background_tasks.add_task(update_ave_std, db)
+      
     return { "message": "Initial question answers saved and t-scores computed." }
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))

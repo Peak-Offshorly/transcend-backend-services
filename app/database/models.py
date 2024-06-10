@@ -24,6 +24,14 @@ class Users(Base):
     personal_practice_category = relationship('PersonalPracticeCategory', back_populates='users')
     chosen_personal_practices = relationship('ChosenPersonalPractices', back_populates='users')
 
+class InitialAnswerTracker(Base):
+    __tablename__ = 'initial_answer_tracker'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(String, ForeignKey("users.id"))
+    count = Column(Integer, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
 class UserColleagues(Base):
     __tablename__ = 'user_colleagues'
 

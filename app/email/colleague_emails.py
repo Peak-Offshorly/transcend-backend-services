@@ -24,7 +24,7 @@ async def user_colleague_week_5_9_emails(db: Session):
         user = get_one_user_id(db=db, user_id=colleague.user_id)
         user_email_href = f"https://mail.google.com/mail/u/0/?view=cm&fs=1&tf=1&to={user.email}"
         
-        subject = f"Peak - {user.first_name}'s Development Plan Week 5" if colleague.week_5_date.date() == today else f"Transcend - {user.first_name}'s Development Plan - Week 9"
+        subject = f"Transcend - {user.first_name}'s Development Plan Week 5" if colleague.week_5_date.date() == today else f"Transcend - {user.first_name}'s Development Plan - Week 9"
         week_number = 5 if colleague.week_5_date.date() == today else 9
         colleague_email = colleague.email.split("@")
 
@@ -54,7 +54,8 @@ async def user_colleague_week_5_9_emails(db: Session):
             body=body, 
             email_to=colleague.email, 
             subject=subject,
-            template_name="colleague-week-five-nine.html"
+            template_name="colleague-week-five-nine.html",
+            reply_to=user.email
         )
     print('---FINISHED SEND WEEKS 5 AND 9 COLLEAGUE EMAILS FUNCTION---')
 
@@ -69,7 +70,7 @@ async def user_colleague_week_12_emails(db: Session):
     for colleague in user_colleagues: 
         user = get_one_user_id(db=db, user_id=colleague.user_id)
         
-        subject = f"Peak - {user.first_name}'s Development Plan Colleague Survey"
+        subject = f"Transcend - {user.first_name}'s Development Plan Colleague Survey"
         colleague_email = colleague.email.split("@")
 
         # Get current dev plan
@@ -97,7 +98,8 @@ async def user_colleague_week_12_emails(db: Session):
             body=body, 
             email_to=colleague.email, 
             subject=subject,
-            template_name="colleague-week-twelve-survey.html"
+            template_name="colleague-week-twelve-survey.html",
+            reply_to=user.email
         )
         print(f'sent email to {colleague.email}')
     

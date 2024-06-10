@@ -33,6 +33,7 @@ async def user_weekly_email(db: Session):
 
         if week_number > 0 and week_number <= 12 and today == current_week_end_date:
             user = get_one_user_id(user_id=plan.user_id, db=db)
+            print(f'sent email to {user.id}')
 
             # Get current dev plan
             dev_plan = await dev_plan_create_get_one(user_id=user.id, db=db)
@@ -44,15 +45,15 @@ async def user_weekly_email(db: Session):
             sprint_first_second = "first" if current_sprint["sprint_number"] == 1 else "second"
             
             # Prep email body and send email to user
-            subject = f"Peak - Development Plan Progress Check for Week {week_number}"
+            subject = f"Transcend - Development Plan Progress Check for Week {week_number}"
             body = {
                 "user_name": user.first_name,
                 "progress_check_link": f"{WEB_URL}/progress-check",
                 "week_number": week_number,
                 "strength": dev_plan_details["chosen_strength"]["name"],
                 "weakness": dev_plan_details["chosen_weakness"]["name"],
-                "strength_practice": dev_plan_details["strength_practice"][0].name,
-                "weakness_practice": dev_plan_details["weakness_practice"][0].name,
+                "strength_practice": dev_plan_details["strength_practice"][0].name if dev_plan_details["strength_practice"] else None,
+                "weakness_practice": dev_plan_details["weakness_practice"][0].name if dev_plan_details["weakness_practice"] else None,
                 "strength_practice_dev_actions": dev_plan_details["strength_practice_dev_actions"],
                 "weakness_practice_dev_actions": dev_plan_details["weakness_practice_dev_actions"],
                 "recommended_category": dev_plan_details["mind_body_practice"].name,
@@ -65,7 +66,8 @@ async def user_weekly_email(db: Session):
                 body=body, 
                 email_to=user.email,
                 subject=subject,
-                template_name="user-weekly-email.html"
+                template_name="user-weekly-email.html",
+                reply_to=user.email
             )
             print(f'sent email to {user.email}')
 
