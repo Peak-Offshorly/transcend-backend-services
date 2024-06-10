@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import Annotated
 from app.schemas.models import DataFormSchema, FormSchema, FormAnswerSchema
@@ -56,7 +56,7 @@ async def create_get_traits_and_form_questions_options(data: DataFormSchema, db:
 # Post Save Initial Answers: would have calculations based on chosen answers
 # Returns: Success Message
 @router.post("/save-answers")
-async def save_initial_questions_answers(answers: FormAnswerSchema, db: db_dependency, token = Depends(verify_token)):
+async def save_initial_questions_answers(answers: FormAnswerSchema, db: db_dependency, background_tasks: BackgroundTasks, token = Depends(verify_token)):
   user_id = answers.user_id
 
   if token != user_id:

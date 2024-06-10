@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Annotated
 from app.schemas.models import DataFormSchema, FormAnswerSchema
 from app.database.connection import get_db
+from app.firebase.utils import verify_token
 from app.utils.dev_plan_crud import dev_plan_create_get_one
 from app.utils.sprints_crud import sprint_create_get_one
 from app.utils.answers_crud import answers_get_all, answers_save_one
@@ -16,8 +17,15 @@ router = APIRouter(prefix="/progress-check", tags=["progress-check"])
 # Get Written Development Actions as Questions - Strength
 # Progress check is done per week for each 6 week sprint
 @router.post("/questions-strength-practice")
-async def get_development_progress_questions_strength_practice(db: db_dependency, data: DataFormSchema):
+async def get_development_progress_questions_strength_practice(db: db_dependency, data: DataFormSchema, token = Depends(verify_token)):
   user_id = data.user_id
+
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
+
   # Get current dev plan
   dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
   dev_plan_id=dev_plan["dev_plan_id"]
@@ -96,8 +104,15 @@ async def get_development_progress_questions_strength_practice(db: db_dependency
 # Get Written Development Actions as Questions - Weakness
 # Progress check is done per week for each 6 week sprint
 @router.post("/questions-weakness-practice")
-async def get_development_progress_questions_weakness_practice(db: db_dependency, data: DataFormSchema):
+async def get_development_progress_questions_weakness_practice(db: db_dependency, data: DataFormSchema, token = Depends(verify_token)):
   user_id = data.user_id
+
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
+
   # Get current dev plan
   dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
   dev_plan_id=dev_plan["dev_plan_id"]
@@ -175,10 +190,17 @@ async def get_development_progress_questions_weakness_practice(db: db_dependency
 
 # Post Save Answers for Written Development Actions as Questions - can be used for both Strength and Weakness
 @router.post("/save-answers")
-async def save_development_progress_answers(db: db_dependency, answers: FormAnswerSchema):
+async def save_development_progress_answers(db: db_dependency, answers: FormAnswerSchema, token = Depends(verify_token)):
   form_id = answers.form_id
   form_name = answers.form_name
   form_name_parts = form_name.split("_")
+  user_id = answers.user_id
+
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
 
   try:
     for answer in answers.answers:
@@ -197,7 +219,13 @@ async def save_development_progress_answers(db: db_dependency, answers: FormAnsw
 
 # Get answers for Progress Check - might be used for weekly email nudge to user
 @router.get("/get-answers")
-async def get_development_progress_answers(db: db_dependency, trait_type: str, sprint_number: int, week_number: int, user_id: str):
+async def get_development_progress_answers(db: db_dependency, trait_type: str, sprint_number: int, week_number: int, user_id: str, token = Depends(verify_token)):
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
+
   try:
     if week_number > 6:
       return { "message": "Week number too big." }
