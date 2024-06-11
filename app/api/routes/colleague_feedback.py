@@ -83,7 +83,7 @@ async def send_initial_emails(db: db_dependency, background_tasks: BackgroundTas
     dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
     dev_plan_id=dev_plan["dev_plan_id"]
     current_sprint = await sprint_get_current(user_id=user_id, db=db, dev_plan_id=dev_plan_id)
-    dev_plan_details = await get_review_details(user_id=user_id, sprint_number=current_sprint["sprint_number"], db=db, token=token)
+    dev_plan_details = await get_review_details(user_id=user_id, sprint_number=current_sprint["sprint_number"], db=db)
 
     user = get_one_user_id(db=db, user_id=user_id)
     user_colleagues = await user_colleagues_get_all(db=db, user_id=user_id, dev_plan_id=dev_plan_id)

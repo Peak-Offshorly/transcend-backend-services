@@ -122,14 +122,7 @@ async def get_gantt_chart(db: db_dependency, user_id: str, token = Depends(verif
 
 # Get Details of Plan -- for Review Page
 @router.get("/review-details")
-async def get_review_details(user_id: str, sprint_number: int, db: db_dependency, token = Depends(verify_token)):
-  
-  if token != user_id:
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail="You are not authorized to perform this action."
-    )
-  
+async def get_review_details(user_id: str, sprint_number: int, db: db_dependency):
   try:
     # Get current dev plan
     dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
