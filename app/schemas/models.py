@@ -142,6 +142,14 @@ class UserColleagueSurveyAnswersSchema(BaseModel):
     q4_answer: Optional[str]
     q5_answer: Optional[str]
 
+class UserColleaguesStatusSchema(BaseModel):
+    email: str
+    survey_completed: bool
+
+    class Config:
+        orm_mode = True
+        from_attributes = True
+
 class DataFormSchema(BaseModel):
     form_name: Optional[str] = None
     user_id: str

@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends, status
 from sqlalchemy.orm import Session
 from typing import Annotated
 from collections import Counter
-from app.schemas.models import UserColleagueEmailsSchema, DataFormSchema, UserColleagueSurveyAnswersSchema
+from app.schemas.models import UserColleagueEmailsSchema, DataFormSchema, UserColleagueSurveyAnswersSchema, UserColleaguesStatusSchema
 from app.email.send_email import send_email_background
 from app.database.connection import get_db
 from app.firebase.utils import verify_token
@@ -196,10 +196,14 @@ async def get_colleague_feedback_status(user_id: str, db: db_dependency, token =
     # Count of user colleagues and user colleagues with completed survey
     count_user_colleagues = await user_colleagues_count(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
     count_user_colleagues_completed_survey = await user_colleagues_survey_completed(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
+    
+    user_colleagues = await user_colleagues_get_all(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
+    colleagues_emails_and_status = [UserColleaguesStatusSchema.model_validate(colleague) for colleague in user_colleagues]
 
     return { 
       "colleagues_invited_count": count_user_colleagues,
-      "colleagues_survey_completed_count": count_user_colleagues_completed_survey
+      "colleagues_survey_completed_count": count_user_colleagues_completed_survey,
+      "colleagues_emails_and_status": colleagues_emails_and_status
     }
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
