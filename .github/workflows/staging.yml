@@ -15,8 +15,6 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - run: | # To fetch all history for all tags and branches
-          git fetch --prune --unshallow
 
       #Task for setting up Python 3.10 using actions/setup-python@v2 Github action
       - name: Set up Python 3.10
