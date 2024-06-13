@@ -13,6 +13,8 @@ jobs:
     #steps: defines a series of tasks executed by the Job
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - run: | # To fetch all history for all tags and branches
           git fetch --prune --unshallow
 
@@ -42,8 +44,16 @@ jobs:
     needs: build
     steps:
       - uses: actions/checkout@v2
+      - name: Get triggering commit
+        id: get_commit
+        run: |
+          COMMIT_HASH=$(git rev-parse HEAD)
+          echo "::set-output name=commit_hash::$COMMIT_HASH"
+
       - name: Deploy to Render
         env:
           deploy_url: ${{ secrets.RENDER_DEPLOY_HOOK_URL_PRODUCTION }}
         run: |
-          curl "$deploy_url"
+          FULL_DEPLOY_URL="${deploy_url}&ref=${{ steps.get_commit.outputs.commit_hash }}"
+          echo "Deploying commit: ${{ steps.get_commit.outputs.commit_hash }}"
+          curl "$FULL_DEPLOY_URL"
