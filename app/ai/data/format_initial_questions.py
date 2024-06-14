@@ -1,19 +1,32 @@
 import json
 
 def get_initial_questions():
-  with open('initial_questions.json') as json_file:
+  with open('app/ai/data/initial_questions.json') as json_file:
     data = json.load(json_file)
 
   return data
 
-def get_initial_questions_with_answers(form_answers):
-  answers_form = next((form for form in form_answers["forms_and_answers"] if form['name'] == '1_INITIAL_QUESTIONS'), None)
-
-  initial_answers = answers_form["answers"]
+def get_initial_questions_with_answers(answers):
   initial_questions = get_initial_questions()["initial_questions"]
 
+  data = ""
+
   for idx, question in enumerate(initial_questions):
-    question["answer"] = initial_answers[idx]["answer"]
+    # question["answer"] = answers[idx].answer
+
+    #todo: see if adding options is necessary
+    options = ""
+    for option in question["options_w_traits"]:
+      options += f"""
+        - {option['name']} ({option['trait']})\n
+      """
+
+    data += f"""
+      [Question {idx+1}]
+      Options:
+      {options}
+      Answer: {answers[idx].answer}\n\n
+    """
 
   return initial_questions
 
