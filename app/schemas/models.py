@@ -145,3 +145,11 @@ class UserColleagueSurveyAnswersSchema(BaseModel):
 class DataFormSchema(BaseModel):
     form_name: Optional[str] = None
     user_id: str
+
+class DevelopmentActionsSchema(BaseModel):
+    user_id: str
+    company_size: str
+    industry: str
+    employee_role: str
+    role_description: str
+    trait_type: str
