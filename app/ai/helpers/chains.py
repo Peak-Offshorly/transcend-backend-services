@@ -3,24 +3,35 @@ from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.output_parsers import StrOutputParser
 from app.ai.const import OPENAI_API_KEY
+from app.ai.helpers.tokens import count_tokens
 
 # GPT_MODEL = "gpt-4-1106-preview"
 # GPT_MODEL = "gpt-3.5-turbo-0125"
 GPT_MODEL = "gpt-4o-2024-05-13"
 
-def generate_actions(docs, strengths, weaknesses, chosen_strength, chosen_weakness, strength_practice, weakness_practice, company_size, industry, employee_role, role_description):
+def generate_actions(docs, initial_questions_with_answers, strengths, weaknesses, chosen_strength, chosen_weakness, strength_practice, weakness_practice, company_size, industry, employee_role, role_description):
   print("Generating answer")
 
   prompt = PromptTemplate(
-  # todo: add a format -- should be JSON ? One for strength and One for weakness. Have 5 for each.
   template="""
     <|begin_of_text|>
     <|start_header_id|>system<|end_header_id|>
-    You are an expert at creating actionable improvement points for a Leadership Development Plan. Employees are assessed on their strengths and weaknesses as a leader and your task is to suggest improvement strategies in the form of a comprehensive and insightful development plan that contains actions. 
+    You are an expert at creating detailed step-by-step actionable improvement points for a Leadership Development Plan. 
 
-    The employee will give you their personal and company details, their strengths and weaknesses as a leader, and the practice they want to focus on for each chosen strength and weakness. Using these data, Your task is to provide 10 detailed development actions that are feasible, measurable, and time-bound in order to guide the employee in strengthening and leveraging their strengths and in order to address and improve their weaknesses. You should provide exactly 5 actions for the chosen strength and exactly 5 actions for the chosen weakness. Each action should be specific, actionable, and relevant to the employee's chosen strength practice and weakness practice.
+    The employee will give you their personal and company details, their strengths and weaknesses as a leader, and the practice they want to focus on for each chosen strength and weakness.
+    
+    Your task is to provide 10 detailed development actions that are feasible, measurable, and time-bound in order to guide the employee in leveraging their strengths and addressing their weaknesses. Provide exactly 5 actions for the chosen strength and exactly 5 actions for the chosen weakness.
+    The details for each action must ALWAYS include the following (2-5 sentences):
+    - Address the chosen strength and weakness, and the respective practices that the employee wants to focus on
+    - Be as thorough and specific in terms of what the employee should do.
+    - Include a clear frequency or schedule (e.g., daily, weekly).
+    - Be clear on the materials, tools, or resources required.
+    - Provide a step-by-step improvement strategy that is comprehensive and insightful.
+    - Be practical and reasonable given the employee's role and the company's context.
+    - Be measurable in terms of progress and impact on the employee's leadership skills.
 
-    Provide your answer in a JSON format with "strength" and "weakness" as keys. Each should have a list of 5 actions as values. Each action in the list should be an object that contains the name, details, importance, and measurement. The name pertains to the name or title of the action, the details are the description and specifics of the action, the importance is the significance of the action in developing the employee's leadership skills, and the measurement is how the action can be measured over time. Be as detailed and precise as possible in your response.
+    
+    Provide your answer in a JSON format with "strength" and "weakness" as keys. Each should have a list of 5 actions as values. Each action in the list should be an object that contains the name, details, importance, and measurement. The name pertains to the name or title of the action, the details contain the thorough steps or instructions for the action, the importance is the significance of the action in developing the employee's leadership skills, and the measurement is how the action can be measured over time. Be as detailed and precise as possible in your response.
 
     Use the following pieces of retrieved context to help GUIDE your answer. Your answer is not constrained to these pieces and you may use knowledge beyond the retrieved context, but take a deep breath and thoroughly make sure the details you generate are factual and reasonable.
     Context: {context}
@@ -32,7 +43,7 @@ def generate_actions(docs, strengths, weaknesses, chosen_strength, chosen_weakne
     Industry: {industry}
     Role: {employee_role}
     Role Description: {role_description}
-    Company Size: {company_size}
+    Company Size: {company_size} employees
 
     It has been identified that their top 5 strengths are: {strengths} and their top 5 weaknesses are: {weaknesses}.
 
@@ -46,8 +57,24 @@ def generate_actions(docs, strengths, weaknesses, chosen_strength, chosen_weakne
     input_variables=["context", "strengths", "weaknesses", "chosen_strength", "chosen_weakness", "strength_practice", "weakness_practice", "company_size", "industry", "employee_role", "role_description"],
     )
   
-  # print(prompt.template)
-  print(f"Length: {len(prompt.template)}")
+  data_to_tokenize = [
+    prompt.template,
+    docs,
+    strengths,
+    weaknesses,
+    chosen_strength,
+    chosen_weakness,
+    strength_practice,
+    weakness_practice,
+    company_size,
+    industry,
+    employee_role,
+    role_description
+  ]
+  
+  encoding_model = "o200k_base"
+  tokens_total = sum(count_tokens(element, encoding_model) for element in data_to_tokenize)
+  print(f"Tokens Used: {tokens_total}")
   
   llm = ChatOpenAI(model=GPT_MODEL,  openai_api_key=OPENAI_API_KEY, temperature=0)
 
