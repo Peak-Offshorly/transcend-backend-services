@@ -7,7 +7,7 @@ from langchain_core.output_parsers import JsonOutputParser
 GPT_MODEL = "gpt-4o-2024-05-13"
 
 from app.ai.const import OPENAI_API_KEY
-def grade_docs(input_data, retrieved_docs, filename, model=GPT_MODEL):
+def grade_docs(trait, practice, retrieved_docs, filename, model=GPT_MODEL):
   # print("Grading Retrieved Docs")
   llm_model = ChatOpenAI(model=model, openai_api_key=OPENAI_API_KEY, temperature=0)
   #todo improve prompt to be about the 
@@ -24,7 +24,10 @@ def grade_docs(input_data, retrieved_docs, filename, model=GPT_MODEL):
       <|start_header_id|>user<|end_header_id|>
       Here are the retrieved document from the file {filename}:
         \n\n {documents} \n\n
-      Here is the user data: {input} \n
+      Here is the user data:
+        - {trait}
+        - {practice}
+        \n
       <|eot_id|>
     
       <|start_header_id|>assistant<|end_header_id|>
@@ -35,22 +38,23 @@ def grade_docs(input_data, retrieved_docs, filename, model=GPT_MODEL):
   retrieval_grader = prompt | llm_model | JsonOutputParser()
 
   # Expected Output: {'score': 'yes'}  or {'score': 'no'}
-  output = retrieval_grader.invoke({"input": input_data, "filename": filename, "documents": retrieved_docs})
+  output = retrieval_grader.invoke({"trait": trait, "practice": practice, "filename": filename, "documents": retrieved_docs})
   # print("Output", output)
   return output
 
 def format_docs(docs):
   return "\n\n".join(doc.page_content for doc in docs)
 
-def get_docs(vectorstore, input_data):
+def get_docs(vectorstore, trait, practice):
   print("Retrieving relevant documents")
-  retrieved_docs = vectorstore.similarity_search(query=input_data, k=5)
+  query = f"{trait} - {practice}"
+  retrieved_docs = vectorstore.similarity_search(query=query, k=5)
   filtered_docs = []
   for idx, doc in enumerate(retrieved_docs):
     # print(f"Doc {idx}")
     #filename is for more context on what document it came from
     filename = doc.metadata['filename']
-    docs_grade = grade_docs(input_data, doc.page_content, filename)
+    docs_grade = grade_docs(trait, practice, doc.page_content, filename)
     if docs_grade["score"] == "yes":
       filtered_docs.append(doc)
 
