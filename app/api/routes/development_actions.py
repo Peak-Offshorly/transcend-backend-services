@@ -6,7 +6,7 @@ from app.schemas.models import DevelopmentActionsSchema
 from app.database.connection import get_db
 from app.ai.helpers.get_vectorstore import get_vectorstore
 from app.ai.helpers.get_documents import get_docs
-from app.ai.helpers.chains import generate_actions
+from app.ai.helpers.chains import generate_actions, check_user_input
 from app.ai.data.format_initial_questions import get_initial_questions_with_answers
 from app.ai.data.traits_practices import get_ten_traits, get_chosen_traits, get_chosen_practices
 from app.utils.answers_crud import initial_questions_answers_all_forms_get_all
@@ -20,16 +20,17 @@ router = APIRouter(prefix="/development-actions", tags=["development-actions"])
 
 @router.post("/get-actions")
 async def get_actions(data: DevelopmentActionsSchema, db: db_dependency):
-  user_id = data.user_id
-  company_size = data.company_size
-  industry = data.industry
-  employee_role = data.employee_role
-  role_description = data.role_description
-  trait_type = data.trait_type
-
-  #todo: add data checker -- avoid prompt injection
-
   try:
+    user_id = data.user_id
+    trait_type = data.trait_type
+
+    valid_data = check_user_input(company_size=data.company_size, industry=data.industry, employee_role=data.employee_role, role_description=data.role_description)
+
+    company_size = valid_data['company_size']
+    industry = valid_data['industry']
+    employee_role = valid_data['employee_role']
+    role_description = valid_data['role_description']
+
     vectorstore = get_vectorstore(index_name="peak-ai")
     # retriever = vectorstore.as_retriever(search_type="mmr")
     # retriever = vectorstore.as_retriever()
@@ -55,15 +56,14 @@ async def get_actions(data: DevelopmentActionsSchema, db: db_dependency):
 
     current_sprint = await sprint_get_current(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
 
-    # Getting chosen practices, sprint 1 (might change, get function from backend)
     chosen_trait_practices_1 = await chosen_practices_get(db=db, user_id=user_id, sprint_number=current_sprint['sprint_number'], dev_plan_id=dev_plan_id)
     strength_practice, weakness_practice = get_chosen_practices(chosen_trait_practices_1)
 
     response = ""
     if trait_type == "strength":
-      print("Strengths", strengths)
-      print("Chosen Strength: ", chosen_strength)
-      print("Chosen Practice: ", strength_practice)
+      # print("Strengths", strengths)
+      # print("Chosen Strength: ", chosen_strength)
+      # print("Chosen Practice: ", strength_practice)
       docs = get_docs(vectorstore=vectorstore, trait=chosen_strength, practice=strength_practice)
       final_docs = f"""
         Strength Context:
