@@ -28,7 +28,7 @@ def get_initial_questions_with_answers(answers):
       Answer: {answers[idx].answer}\n\n
     """
 
-  return initial_questions
+  return data
 
 # FORM_ANSWERS = {
 #     "forms_and_answers": [
