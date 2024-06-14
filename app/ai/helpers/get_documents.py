@@ -8,7 +8,7 @@ GPT_MODEL = "gpt-4o-2024-05-13"
 
 from app.ai.const import OPENAI_API_KEY
 def grade_docs(input_data, retrieved_docs, filename, model=GPT_MODEL):
-  print("Grading Retrieved Docs")
+  # print("Grading Retrieved Docs")
   llm_model = ChatOpenAI(model=model, openai_api_key=OPENAI_API_KEY, temperature=0)
   #todo improve prompt to be about the 
   prompt = PromptTemplate(
@@ -36,7 +36,7 @@ def grade_docs(input_data, retrieved_docs, filename, model=GPT_MODEL):
 
   # Expected Output: {'score': 'yes'}  or {'score': 'no'}
   output = retrieval_grader.invoke({"input": input_data, "filename": filename, "documents": retrieved_docs})
-  print("Output", output)
+  # print("Output", output)
   return output
 
 def format_docs(docs):
@@ -44,14 +44,10 @@ def format_docs(docs):
 
 def get_docs(vectorstore, input_data):
   print("Retrieving relevant documents")
-  # retrieved_docs = vectorstore.similarity_search_with_relevance_scores(query=input_data, k=6)
-  retrieved_docs = vectorstore.similarity_search(query=input_data, k=6)
-  print(len(retrieved_docs))
-
-  print("Filtering relevant documents")
+  retrieved_docs = vectorstore.similarity_search(query=input_data, k=5)
   filtered_docs = []
   for idx, doc in enumerate(retrieved_docs):
-    print(f"Doc {idx}")
+    # print(f"Doc {idx}")
     #filename is for more context on what document it came from
     filename = doc.metadata['filename']
     docs_grade = grade_docs(input_data, doc.page_content, filename)
