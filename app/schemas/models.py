@@ -16,6 +16,17 @@ class UpdateUserSchema(BaseModel):
     first_name: Optional[str]
     last_name: Optional[str]
 
+class UpdateUserCompanyDetailsSchema(BaseModel):
+    user_id: Optional[str] = None
+    company_size: Optional[int] = None
+    industry: Optional[str] = None
+    role: Optional[str] = None
+    role_description: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+        from_attributes = True
+
 class LoginSchema(BaseModel):
     email: str
     password: str
