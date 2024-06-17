@@ -14,6 +14,7 @@ from app.utils.practices_crud import chosen_practices_get
 from app.utils.dev_plan_crud import dev_plan_get_current
 from app.utils.traits_crud import traits_get_top_bottom_five, chosen_traits_get
 from app.utils.sprints_crud import sprint_get_current
+from app.utils.users_crud import get_user_company_details
 
 db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/development-actions", tags=["development-actions"])
@@ -24,7 +25,10 @@ async def get_actions(data: DevelopmentActionsSchema, db: db_dependency):
     user_id = data.user_id
     trait_type = data.trait_type
 
-    valid_data = check_user_input(company_size=data.company_size, industry=data.industry, employee_role=data.employee_role, role_description=data.role_description)
+    company_details = get_user_company_details(db=db, user_id=user_id)
+    print(f"company details:\n {company_details.company_size} {company_details.industry} {company_details.role} {company_details.role_description}")
+
+    valid_data = check_user_input(company_size=company_details.company_size, industry=company_details.industry, employee_role=company_details.employee_role, role_description=company_details.role_description)
 
     company_size = valid_data['company_size']
     industry = valid_data['industry']
