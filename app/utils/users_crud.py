@@ -1,6 +1,7 @@
 from uuid import UUID
 from sqlalchemy.orm import Session
 from app.database.models import Users, Forms, Traits, ChosenTraits, Questions, Options, Answers, Practices, DevelopmentPlan
+from app.schemas.models import UserCompanyDetailsSchema
 
 def update_user_company_details(db: Session, user_id: str, company_size: int, industry: str, role: str, role_description: str):
     db_user = db.query(Users).filter(Users.id == user_id).first()
@@ -13,6 +14,13 @@ def update_user_company_details(db: Session, user_id: str, company_size: int, in
         db.commit()
 
     return db_user
+
+def get_user_company_details(db: Session, user_id: str):
+    db_account = db.query(Users).filter(Users.id == user_id).first()
+
+    if db_account:
+        return UserCompanyDetailsSchema.model_validate(db_account)
+    return None
 
 async def get_all_users(db: Session) -> Users:
     return db.query(Users).all()

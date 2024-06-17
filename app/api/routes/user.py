@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from typing import Annotated
 from app.firebase.session import firebase, auth
 from app.database.models import Users
-from app.schemas.models import SignUpSchema, UpdateUserSchema, LoginSchema, UpdateUserCompanyDetailsSchema
+from app.schemas.models import SignUpSchema, UpdateUserSchema, LoginSchema, UserCompanyDetailsSchema
 from app.database.connection import get_db
 from app.firebase.utils import verify_token
 from app.utils.users_crud import (
@@ -14,14 +14,16 @@ from app.utils.users_crud import (
     delete_user,
     get_one_user,
     get_all_users,
-    update_user_company_details
+    update_user_company_details,
+    get_user_company_details
 )
 db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/accounts", tags=["accounts"])
 
 @router.post("/save-company-details")
-async def save_company_details(data: UpdateUserCompanyDetailsSchema, db: db_dependency, token = Depends(verify_token)):
-  user_id = data.user_id
+async def save_company_details(data: UserCompanyDetailsSchema, db: db_dependency, token = Depends(verify_token)):
+  user_id = data.id
+
   if token != user_id:
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
@@ -46,6 +48,19 @@ async def save_company_details(data: UpdateUserCompanyDetailsSchema, db: db_depe
       content={"message":  "Company details saved."},
       status_code=200
     )
+  except Exception as error:
+    raise HTTPException(status_code=400, detail=str(error))
+
+@router.get("/get-company-details")
+async def get_company_details(user_id: str, db: db_dependency, token = Depends(verify_token)):
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
+  
+  try:
+    return get_user_company_details(db=db, user_id=user_id)
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
 

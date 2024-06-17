@@ -16,8 +16,8 @@ class UpdateUserSchema(BaseModel):
     first_name: Optional[str]
     last_name: Optional[str]
 
-class UpdateUserCompanyDetailsSchema(BaseModel):
-    user_id: Optional[str] = None
+class UserCompanyDetailsSchema(BaseModel):
+    id: Optional[str] = None
     company_size: Optional[int] = None
     industry: Optional[str] = None
     role: Optional[str] = None
