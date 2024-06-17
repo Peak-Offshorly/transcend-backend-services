@@ -95,6 +95,10 @@ async def sprint_get_current(db: Session, user_id: str, dev_plan_id: str):
         Sprints.number == max_sprint
     ).first()
 
+    # Return None if sprint 2 already and the sprint is finished
+    if existing_sprint.number == 2 and existing_sprint.is_finished == True: 
+        return None
+
     return { 
         "sprint_number": existing_sprint.number, 
         "sprint_id": existing_sprint.id

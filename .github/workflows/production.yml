@@ -1,9 +1,9 @@
-name: Staging Environment
+name: Production Environment
 
 on:
   push:
     tags:
-      - "staging/v*"
+      - "release/v*"
 
 #A workflow job running sequentially
 jobs:
@@ -50,7 +50,7 @@ jobs:
 
       - name: Deploy to Render
         env:
-          deploy_url: ${{ secrets.RENDER_DEPLOY_HOOK_URL_STAGING }}
+          deploy_url: ${{ secrets.RENDER_DEPLOY_HOOK_URL_PRODUCTION }}
         run: |
           FULL_DEPLOY_URL="${deploy_url}&ref=${{ steps.get_commit.outputs.commit_hash }}"
           echo "Deploying commit: ${{ steps.get_commit.outputs.commit_hash }}"

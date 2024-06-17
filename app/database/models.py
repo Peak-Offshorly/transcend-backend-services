@@ -12,7 +12,11 @@ class Users(Base):
     email = Column(String, index=True)
     first_name = Column(String, index=True)
     last_name = Column(String, index=True)
+    mobile_number = Column(String, index=True)
+    company_size = Column(Integer, index=True)
+    industry = Column(String, index=True)
     role = Column(String, index=True)
+    role_description = Column(String, index=True)
     company_id = Column(String, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     is_active = Column(Boolean, default=True)
@@ -23,6 +27,14 @@ class Users(Base):
     chosen_practices = relationship('ChosenPractices', back_populates='users')
     personal_practice_category = relationship('PersonalPracticeCategory', back_populates='users')
     chosen_personal_practices = relationship('ChosenPersonalPractices', back_populates='users')
+
+class InitialAnswerTracker(Base):
+    __tablename__ = 'initial_answer_tracker'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(String, ForeignKey("users.id"))
+    count = Column(Integer, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
 class UserColleagues(Base):
     __tablename__ = 'user_colleagues'

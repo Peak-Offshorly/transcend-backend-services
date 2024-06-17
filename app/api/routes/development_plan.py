@@ -1,8 +1,9 @@
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import Annotated
 from app.schemas.models import DataFormSchema
+from app.firebase.utils import verify_token
 from app.database.connection import get_db
 from app.utils.dev_plan_crud import dev_plan_create_get_one, dev_plan_update_is_finished_true
 from app.utils.dates_crud import add_dates, compute_second_sprint_dates, compute_colleague_message_dates
@@ -16,8 +17,15 @@ router = APIRouter(prefix="/development-plan", tags=["development-plan"])
 
 # Adds dates for Gantt chart shown in Sprint 1; this endpoint should ONLY called in sprint 1, in choosing mind body practice page
 @router.post("/add-dates")
-async def create_gantt_chart_dates(data: DataFormSchema, db: db_dependency):
+async def create_gantt_chart_dates(data: DataFormSchema, db: db_dependency, token = Depends(verify_token)):
   user_id = data.user_id
+  
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
+  
   try:
     dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
     chosen_traits_data = chosen_traits_get(db=db, user_id=user_id, dev_plan_id=dev_plan["dev_plan_id"])
@@ -38,7 +46,14 @@ async def create_gantt_chart_dates(data: DataFormSchema, db: db_dependency):
 
 # Get Development Plan Gantt Chart
 @router.get("/gantt-chart-data")
-async def get_gantt_chart(user_id: str, db: db_dependency):
+async def get_gantt_chart(db: db_dependency, user_id: str, token = Depends(verify_token)):
+  
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
+
   try:
     # Get current dev plan
     dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
@@ -151,7 +166,14 @@ async def get_review_details(user_id: str, sprint_number: int, db: db_dependency
   
 # Get Current Week
 @router.get("/current-week")
-async def get_current_week(user_id: str, db: db_dependency):
+async def get_current_week(user_id: str, db: db_dependency, token = Depends(verify_token)):
+  
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
+  
   try:
     dev_plan = await dev_plan_create_get_one(db=db, user_id=user_id)
 
@@ -160,6 +182,12 @@ async def get_current_week(user_id: str, db: db_dependency):
     current_date = datetime.now(timezone.utc)
     delta = current_date - start_date
     week_number = (delta.days // 7) + 1  # Adding 1 to make week_number start from 1
+  
+    # # FOR DEV TESTING - increment weeks every 2 minutes
+    # minutes_elapsed = delta.total_seconds() // 60  # Convert the timedelta to minutes
+    # week_number = int((minutes_elapsed // 2) + 1)  # Increment week every 120 minutes (2 minutes * 60 seconds)
+    # if week_number > 12:
+    #   week_number = 12
 
     return{
       "week_number": week_number
@@ -169,8 +197,14 @@ async def get_current_week(user_id: str, db: db_dependency):
     raise HTTPException(status_code=400, detail=str(error))
   
 @router.post("/finish")
-async def finish_development_plan(data: DataFormSchema, db: db_dependency):
+async def finish_development_plan(data: DataFormSchema, db: db_dependency, token = Depends(verify_token)):
   user_id = data.user_id
+  
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
   
   try:
     dev_plan = await dev_plan_create_get_one(db=db, user_id=user_id)

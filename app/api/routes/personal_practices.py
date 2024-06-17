@@ -1,10 +1,11 @@
 import json
 from collections import defaultdict
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import Annotated
 from app.schemas.models import DataFormSchema, FormAnswerSchema, ChosenPersonalPracticesSchema
 from app.database.connection import get_db
+from app.firebase.utils import verify_token
 from app.utils.dev_plan_crud import dev_plan_create_get_one, dev_plan_update_personal_practice_category
 from app.utils.forms_crud import mind_body_form_questions_options_get_all, forms_with_questions_options_get_all, forms_create_one
 from app.utils.answers_crud import answers_save_one
@@ -21,9 +22,15 @@ router = APIRouter(prefix="/personal-practices", tags=["personal-practices"])
 
 # Get Mind Body Practices Questions
 @router.post("/get-form")
-async def create_get_personal_practices_form(data: DataFormSchema, db: db_dependency):
+async def create_get_personal_practices_form(data: DataFormSchema, db: db_dependency, token = Depends(verify_token)):
   form_name = data.form_name
   user_id = data.user_id
+
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
 
   questions=[]
   weights=[]
@@ -75,9 +82,15 @@ async def create_get_personal_practices_form(data: DataFormSchema, db: db_depend
 
 # Post Save Mind Body Practices Answers 
 @router.post("/save-form-answers")
-async def save_answers(answers: FormAnswerSchema, db: db_dependency):
+async def save_answers(answers: FormAnswerSchema, db: db_dependency, token = Depends(verify_token)):
   form_id = answers.form_id
   user_id = answers.user_id
+
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
 
   category_scores = defaultdict(int)
   category_total_possible_points = {
@@ -138,7 +151,13 @@ async def save_answers(answers: FormAnswerSchema, db: db_dependency):
 
 # Get Mind Body Practice Recommendation
 @router.get("/recommendations")
-async def get_recommendations(user_id: str, db: db_dependency):
+async def get_recommendations(user_id: str, db: db_dependency, token = Depends(verify_token)):
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
+
   try:
     with open("app/utils/data/mind_body_practices.json", "r") as file:
       mind_body_practices = json.load(file)
@@ -158,10 +177,17 @@ async def get_recommendations(user_id: str, db: db_dependency):
 
 # Post Save Mind Body Practice Chosen Recommendation (min 1, max 2 answers)
 @router.post("/save-selected-recommendations")
-async def save_selected_recommendations(chosen_personal_practices: ChosenPersonalPracticesSchema, db: db_dependency):
+async def save_selected_recommendations(chosen_personal_practices: ChosenPersonalPracticesSchema, db: db_dependency, token = Depends(verify_token)):
   user_id = chosen_personal_practices.user_id
   recommended_mind_body_category_id = chosen_personal_practices.recommended_mind_body_category_id
   chosen_recommendations = chosen_personal_practices.chosen_practices
+
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
+
   try:
     # Save selected recommendations
     if len(chosen_recommendations) <= 2:
@@ -179,7 +205,13 @@ async def save_selected_recommendations(chosen_personal_practices: ChosenPersona
     raise HTTPException(status_code=400, detail=str(error))
   
 @router.get("/get-selected-recommendations")
-async def get_selected_recommendations(user_id: str, db: db_dependency):
+async def get_selected_recommendations(user_id: str, db: db_dependency, token = Depends(verify_token)):
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
+
   try:
     dev_plan = await dev_plan_create_get_one(db=db, user_id=user_id)
     dev_plan_id = dev_plan["dev_plan_id"]

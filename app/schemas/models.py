@@ -10,11 +10,23 @@ class SignUpSchema(BaseModel):
     email: str
     first_name: str
     last_name: str
+    mobile_number: str
 
 class UpdateUserSchema(BaseModel):
     email: Optional[str]
     first_name: Optional[str]
     last_name: Optional[str]
+
+class UserCompanyDetailsSchema(BaseModel):
+    id: Optional[str] = None
+    company_size: Optional[int] = None
+    industry: Optional[str] = None
+    role: Optional[str] = None
+    role_description: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+        from_attributes = True
 
 class LoginSchema(BaseModel):
     email: str
@@ -141,6 +153,14 @@ class UserColleagueSurveyAnswersSchema(BaseModel):
     q3_answer: int
     q4_answer: Optional[str]
     q5_answer: Optional[str]
+
+class UserColleaguesStatusSchema(BaseModel):
+    email: str
+    survey_completed: bool
+
+    class Config:
+        orm_mode = True
+        from_attributes = True
 
 class DataFormSchema(BaseModel):
     form_name: Optional[str] = None

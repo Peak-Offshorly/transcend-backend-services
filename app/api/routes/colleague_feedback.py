@@ -1,10 +1,11 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends, status
 from sqlalchemy.orm import Session
 from typing import Annotated
 from collections import Counter
-from app.schemas.models import UserColleagueEmailsSchema, DataFormSchema, UserColleagueSurveyAnswersSchema
+from app.schemas.models import UserColleagueEmailsSchema, DataFormSchema, UserColleagueSurveyAnswersSchema, UserColleaguesStatusSchema
 from app.email.send_email import send_email_background
 from app.database.connection import get_db
+from app.firebase.utils import verify_token
 from app.utils.sprints_crud import sprint_get_current
 from app.utils.dates_crud import compute_colleague_message_dates
 from app.utils.users_crud import get_one_user_id
@@ -28,9 +29,16 @@ router = APIRouter(prefix="/colleague-feedback", tags=["colleague-feedback"])
 
 # Save Colleague Emails
 @router.post("/save-emails")
-async def save_colleague_emails(data: UserColleagueEmailsSchema, db: db_dependency):
+async def save_colleague_emails(data: UserColleagueEmailsSchema, db: db_dependency, token = Depends(verify_token)):
   user_id = data.user_id
   emails = data.emails
+
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
+  
   try:
     # Get current dev plan
     dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
@@ -61,8 +69,15 @@ async def save_colleague_emails(data: UserColleagueEmailsSchema, db: db_dependen
     raise HTTPException(status_code=400, detail=str(error))
 
 @router.post("/send-initial-emails")
-async def send_initial_emails(db: db_dependency, background_tasks: BackgroundTasks, data: DataFormSchema):
+async def send_initial_emails(db: db_dependency, background_tasks: BackgroundTasks, data: DataFormSchema, token = Depends(verify_token)):
   user_id = data.user_id
+
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
+
   try:
     # Get current dev plan
     dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
@@ -95,8 +110,9 @@ async def send_initial_emails(db: db_dependency, background_tasks: BackgroundTas
         background_tasks=background_tasks, 
         body=body, 
         email_to=colleague.email, 
-        subject=f"Peak - Colleague Invite for {user.first_name}'s Development Plan",
-        template_name="initial-colleague-email.html"
+        subject=f"Transcend - Colleague Invite for {user.first_name}'s Development Plan",
+        template_name="initial-colleague-email.html",
+        reply_to=user.email
       )
       
     return { "message": "Colleague Initial emails sent." }
@@ -165,7 +181,13 @@ async def save_colleague_feedback(data: UserColleagueSurveyAnswersSchema, db: db
 
 # Get Colleague Feedback Status
 @router.get("/status")
-async def get_colleague_feedback_status(user_id: str, db: db_dependency):
+async def get_colleague_feedback_status(user_id: str, db: db_dependency, token = Depends(verify_token)):
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
+
   try:
     # Get current dev plan
     dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
@@ -174,17 +196,27 @@ async def get_colleague_feedback_status(user_id: str, db: db_dependency):
     # Count of user colleagues and user colleagues with completed survey
     count_user_colleagues = await user_colleagues_count(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
     count_user_colleagues_completed_survey = await user_colleagues_survey_completed(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
+    
+    user_colleagues = await user_colleagues_get_all(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
+    colleagues_emails_and_status = [UserColleaguesStatusSchema.model_validate(colleague) for colleague in user_colleagues]
 
     return { 
       "colleagues_invited_count": count_user_colleagues,
-      "colleagues_survey_completed_count": count_user_colleagues_completed_survey
+      "colleagues_survey_completed_count": count_user_colleagues_completed_survey,
+      "colleagues_emails_and_status": colleagues_emails_and_status
     }
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
   
 # Get All Colleague Feedback for user
 @router.get("/all")
-async def get_colleague_feedback_summary(user_id: str, db: db_dependency):
+async def get_colleague_feedback_summary(user_id: str, db: db_dependency, token = Depends(verify_token)):
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
+
   try:
     # Get current dev plan
     dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
@@ -229,7 +261,13 @@ async def get_colleague_feedback_summary(user_id: str, db: db_dependency):
   
 # Get Colleague Feedback Dates
 @router.get("/dates")
-async def get_colleague_feedback_dates(user_id: str, db: db_dependency):
+async def get_colleague_feedback_dates(user_id: str, db: db_dependency, token = Depends(verify_token)):
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
+
   try:
     # Get current dev plan
     dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)

@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import Annotated
 from app.database.connection import get_db
+from app.firebase.utils import verify_token
 from app.utils.dev_plan_crud import dev_plan_create_get_one
 from app.utils.answers_crud import answers_all_forms_get_all, initial_questions_answers_all_forms_get_all
 from app.utils.practices_crud import chosen_practices_get, personal_practice_category_get_one, chosen_personal_practices_get_all
@@ -10,7 +11,13 @@ db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/answers", tags=["answers"])
 
 @router.get("/all")
-async def answers_get_all(user_id: str, db: db_dependency):
+async def answers_get_all(user_id: str, db: db_dependency, token = Depends(verify_token)):
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
+
   try:
     dev_plan = await dev_plan_create_get_one(db=db, user_id=user_id)
     dev_plan_id = dev_plan["dev_plan_id"]
