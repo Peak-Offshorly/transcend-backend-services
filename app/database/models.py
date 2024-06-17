@@ -12,6 +12,7 @@ class Users(Base):
     email = Column(String, index=True)
     first_name = Column(String, index=True)
     last_name = Column(String, index=True)
+    mobile_number = Column(String, index=True)
     company_size = Column(Integer, index=True)
     industry = Column(String, index=True)
     role = Column(String, index=True)

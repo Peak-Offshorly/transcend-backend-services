@@ -77,13 +77,15 @@ async def create_user_account(data: SignUpSchema, db: db_dependency):
   email = data.email
   first_name = data.first_name
   last_name = data.last_name
+  mobile_number = data.mobile_number
 
   try:
     new_account = Users(
       id = uid,
       email = email,
       first_name = first_name,
-      last_name = last_name
+      last_name = last_name,
+      mobile_number = mobile_number
     )
 
     create_user(db=db, user=new_account)

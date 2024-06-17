@@ -46,7 +46,8 @@ def create_user(db: Session, user: Users):
         id = user.id,
         email = user.email,
         first_name = user.first_name,
-        last_name = user.last_name
+        last_name = user.last_name,
+        mobile_number = user.mobile_number
     )
 
     db.add(db_user)

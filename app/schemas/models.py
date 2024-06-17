@@ -10,6 +10,7 @@ class SignUpSchema(BaseModel):
     email: str
     first_name: str
     last_name: str
+    mobile_number: str
 
 class UpdateUserSchema(BaseModel):
     email: Optional[str]
