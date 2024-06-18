@@ -28,7 +28,7 @@ async def get_actions(data: DevelopmentActionsSchema, db: db_dependency):
     company_details = get_user_company_details(db=db, user_id=user_id)
     print(f"company details:\n {company_details.company_size} {company_details.industry} {company_details.role} {company_details.role_description}")
 
-    valid_data = check_user_input(company_size=company_details.company_size, industry=company_details.industry, employee_role=company_details.employee_role, role_description=company_details.role_description)
+    valid_data = check_user_input(company_size=company_details.company_size, industry=company_details.industry, employee_role=company_details.role, role_description=company_details.role_description)
 
     company_size = valid_data['company_size']
     industry = valid_data['industry']
@@ -75,9 +75,9 @@ async def get_actions(data: DevelopmentActionsSchema, db: db_dependency):
       """
       response = generate_actions(trait_type, final_docs, initial_questions_with_answers, ",".join(strengths), chosen_strength, strength_practice, company_size, industry, employee_role, role_description)
     elif trait_type == "weakness":
-      print("Weaknesses", weaknesses)
-      print("Chosen Weakness: ", chosen_weakness)
-      print("Chosen Practice: ", weakness_practice)
+      # print("Weaknesses", weaknesses)
+      # print("Chosen Weakness: ", chosen_weakness)
+      # print("Chosen Practice: ", weakness_practice)
       docs = get_docs(vectorstore=vectorstore, trait=chosen_weakness, practice=weakness_practice)
       final_docs = f"""
         Weakness Context:
