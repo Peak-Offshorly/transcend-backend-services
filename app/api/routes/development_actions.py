@@ -26,7 +26,6 @@ async def get_actions(data: DevelopmentActionsSchema, db: db_dependency):
     trait_type = data.trait_type
 
     company_details = get_user_company_details(db=db, user_id=user_id)
-    print(f"company details:\n {company_details.company_size} {company_details.industry} {company_details.role} {company_details.role_description}")
 
     valid_data = check_user_input(company_size=company_details.company_size, industry=company_details.industry, employee_role=company_details.role, role_description=company_details.role_description)
 
@@ -36,11 +35,6 @@ async def get_actions(data: DevelopmentActionsSchema, db: db_dependency):
     role_description = valid_data['role_description']
 
     vectorstore = get_vectorstore(index_name="peak-ai")
-    # retriever = vectorstore.as_retriever(search_type="mmr")
-    # retriever = vectorstore.as_retriever()
-    # retriever = vectorstore.as_retriever(
-    #   search_type="similarity_score_threshold", search_kwargs={"score_threshold": 0.7, "k": 10}
-    # )
 
     # Getting initial questions with answers
     user_answers = await initial_questions_answers_all_forms_get_all(db=db, user_id=user_id)
