@@ -48,7 +48,7 @@ def format_docs(docs):
 def get_docs(vectorstore, trait, practice):
   print("Retrieving relevant documents")
   query = f"{trait} - {practice}"
-  retrieved_docs = vectorstore.similarity_search(query=query, k=5)
+  retrieved_docs = vectorstore.similarity_search(query=query, k=4)
   filtered_docs = []
   for idx, doc in enumerate(retrieved_docs):
     # print(f"Doc {idx}")
