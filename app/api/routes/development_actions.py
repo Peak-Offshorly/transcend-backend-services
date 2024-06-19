@@ -19,7 +19,7 @@ from app.utils.users_crud import get_user_company_details
 db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/development-actions", tags=["development-actions"])
 
-@router.post("/get-actions")
+@router.post("/create-actions")
 async def get_actions(data: DevelopmentActionsSchema, db: db_dependency):
   try:
     user_id = data.user_id
