@@ -165,3 +165,7 @@ class UserColleaguesStatusSchema(BaseModel):
 class DataFormSchema(BaseModel):
     form_name: Optional[str] = None
     user_id: str
+
+class DevelopmentActionsSchema(BaseModel):
+    user_id: str
+    trait_type: str
