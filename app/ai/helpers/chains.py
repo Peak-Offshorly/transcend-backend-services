@@ -10,7 +10,7 @@ from app.ai.helpers.tokens import count_tokens
 GPT_MODEL = "gpt-4o-2024-05-13"
 
 def generate_actions(trait_type, docs, initial_questions_with_answers, five_traits, chosen_trait, trait_practice, company_size, industry, employee_role, role_description):
-  print("Generating answer")
+  # print("Generating answer")
 
   #todo: results are for the leader to the team, but need to be results only actionably by the leader (personal)
   prompt = PromptTemplate(
@@ -21,7 +21,7 @@ def generate_actions(trait_type, docs, initial_questions_with_answers, five_trai
 
     The employee will give you their personal and company details, their answers to a leadership questionnaire, their {type} as a leader, and the practice they want to focus on for their chosen {type}.
     
-    Your task is to provide 3 detailed personal development actions that are feasible, measurable, and time-bound in order to guide the employee in leveraging and improving their {type}. Provide exactly 3 personalized actions for the chosen {type} that can be done within a span of 2 weeks on an individual level.
+    Your task is to provide 3 detailed personal development actions that are feasible, measurable, and time-bound in order to guide the employee in leveraging and improving their {type}. Provide exactly 3 personalized actions for the chosen {type} that can be done within a span of 2 weeks on an individual level or a team level, depending on the chosen practice.
 
     Provide your answer in a JSON format with "actions" as the key. It should contain a list of 3 actions as values. Each action in the list should be an object that contains the name, details, importance, and measurement.
     The name pertains to the name or title of the action. 
@@ -81,7 +81,7 @@ def generate_actions(trait_type, docs, initial_questions_with_answers, five_trai
   
   encoding_model = "o200k_base"
   tokens_total = sum(count_tokens(element, encoding_model) for element in data_to_tokenize)
-  print(f"Tokens Used: {tokens_total}")
+  # print(f"Tokens Used: {tokens_total}")
   
   llm = ChatOpenAI(model=GPT_MODEL,  openai_api_key=OPENAI_API_KEY, temperature=0)
 
