@@ -87,7 +87,7 @@ async def send_initial_emails(db: db_dependency, background_tasks: BackgroundTas
 
     user = get_one_user_id(db=db, user_id=user_id)
     user_colleagues = await user_colleagues_get_all(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
-    user_email_href = f"https://mail.google.com/mail/u/0/?view=cm&fs=1&tf=1&to={user.email}"
+    user_email_href = f"mailto:{user.email}"
     
     for colleague in user_colleagues:
       colleague_email = colleague.email.split("@")

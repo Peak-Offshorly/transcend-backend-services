@@ -22,7 +22,7 @@ async def user_colleague_week_5_9_emails(db: Session):
     for colleague in user_colleagues:
         try:
             user = get_one_user_id(db=db, user_id=colleague.user_id)
-            user_email_href = f"https://mail.google.com/mail/u/0/?view=cm&fs=1&tf=1&to={user.email}"
+            user_email_href = f"mailto:{user.email}"
             
             subject = f"Transcend - {user.first_name}'s Development Plan Week 5" if colleague.week_5_date.date() == today else f"Transcend - {user.first_name}'s Development Plan - Week 9"
             week_number = 5 if colleague.week_5_date.date() == today else 9
