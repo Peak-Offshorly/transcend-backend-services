@@ -27,7 +27,7 @@ def generate_actions(trait_type, docs, initial_questions_with_answers, five_trai
     The name pertains to the name or title of the action. 
     The details contain the thorough details or information for the action as instructed below. The details for each action, which should be 2-3 sentences, must ALWAYS include the following:
     - Address the chosen {type} and the respective chosen practice that the employee wants to focus on
-    - Should only be focused on the employee's personal development and not on the team or the company
+    - Should be primarily focused on the employee's personal development, but it can include the team if necessary
     - Be as thorough and specific in terms of what the employee should do
     - Include a clear frequency or schedule (e.g., daily, every other day, weekly, at the start or end of the week)
     - Be clear on the materials, tools, or resources required
