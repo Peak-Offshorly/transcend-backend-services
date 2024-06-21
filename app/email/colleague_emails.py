@@ -111,3 +111,54 @@ async def user_colleague_week_12_emails(db: Session):
             print(f'Failed to send email to {colleague.email} due to {e}')
     
     print('---FINISHED SEND WEEK 12 COLLEAGUE EMAILS FUNCTION---')
+
+#----FOR UAT OF JEREMY SETUP
+async def user_colleague_week_12_emails_trigger(db: Session, user_id: str, background_tasks: BackgroundTasks):
+    
+    user_colleagues = db.query(UserColleagues).filter(
+        UserColleagues.user_id == user_id
+    ).all()
+    statuses = []
+
+    for colleague in user_colleagues:
+        try:
+            user = get_one_user_id(db=db, user_id=colleague.user_id)
+            
+            subject = f"Transcend - {user.first_name}'s Development Plan Colleague Survey"
+            colleague_email = colleague.email.split("@")
+
+            # Get current dev plan
+            dev_plan = await dev_plan_create_get_one(user_id=user.id, db=db)
+            dev_plan_id=dev_plan["dev_plan_id"]
+            current_sprint = await sprint_get_current(user_id=user.id, db=db, dev_plan_id=dev_plan_id)
+            dev_plan_details = await get_review_details(user_id=user.id, sprint_number=current_sprint["sprint_number"], db=db)
+
+            body = {
+                "colleague_email": colleague_email[0],
+                "user_name": user.first_name,
+                "survey_href": f"{WEB_URL}/survey/colleagues?token={colleague.survey_token}",
+                "strength": dev_plan_details["chosen_strength"]["name"],
+                "weakness": dev_plan_details["chosen_weakness"]["name"],
+                "strength_practice": dev_plan_details["strength_practice"][0].name,
+                "weakness_practice": dev_plan_details["weakness_practice"][0].name,
+                "strength_practice_dev_actions": dev_plan_details["strength_practice_dev_actions"],
+                "weakness_practice_dev_actions": dev_plan_details["weakness_practice_dev_actions"],
+                "recommended_category": dev_plan_details["mind_body_practice"].name,
+                "chosen_personal_practices": dev_plan_details["mind_body_chosen_recommendations"],
+                "sprint_number": current_sprint["sprint_number"]
+            }
+            
+            send_email_background(
+                body=body, 
+                email_to=colleague.email, 
+                subject=subject,
+                template_name="colleague-week-twelve-survey.html",
+                reply_to=user.email,
+                background_tasks=background_tasks
+            )
+            statuses.append(f'Sent email to {colleague.email}')
+        except Exception as e:
+            statuses.append(f'Failed to send email to {colleague.email} due to {e}')
+
+    return statuses
+#----FOR UAT OF JEREMY SETUP

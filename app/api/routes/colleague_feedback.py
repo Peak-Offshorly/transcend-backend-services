@@ -23,6 +23,7 @@ from app.utils.user_colleagues_crud import (
   user_colleagues_survey_completed,
   user_colleagues_get_dates
 )
+from app.email.colleague_emails import user_colleague_week_12_emails_trigger
 
 db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/colleague-feedback", tags=["colleague-feedback"])
@@ -285,3 +286,18 @@ async def get_colleague_feedback_dates(user_id: str, db: db_dependency, token = 
     return { "message": "No saved colleagues for user" }
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error)) 
+
+#----FOR UAT OF JEREMY SETUP
+# Get Colleague Feedback Dates
+@router.post("/send-colleague-survey")
+async def send_colleague_survey(db: db_dependency, data: DataFormSchema, background_tasks: BackgroundTasks):
+  user_id = data.user_id
+  try:
+    response = await user_colleague_week_12_emails_trigger(db=db, user_id=user_id, background_tasks=background_tasks)
+
+    return { 
+      "message": response
+    } 
+  except Exception as error:
+    raise HTTPException(status_code=400, detail=str(error)) 
+#----FOR UAT OF JEREMY SETUP
