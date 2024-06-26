@@ -6,6 +6,7 @@ from app.database.connection import get_db
 from app.firebase.utils import verify_token
 from app.utils.dev_plan_crud import dev_plan_create_get_one
 from app.utils.sprints_crud import sprint_get_current, sprint_update_is_finished_true
+from app.utils.pending_actions_crud import pending_actions_clear_all
 
 db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/sprints", tags=["sprints"])
@@ -48,7 +49,12 @@ async def finish_sprint(data: DataFormSchema, db: db_dependency, token = Depends
     
     response = await sprint_update_is_finished_true(db=db, user_id=user_id, dev_plan_id=dev_plan_id, sprint_id=sprint_id)
 
-    return { "message": response["message"] }
+    # Clear Pending Actions for user_id
+    await pending_actions_clear_all(db=db, user_id=user_id)
+
+    response = response["message"] + " Pending actions for sprint cleared!"
+
+    return { "message": response }
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
   
