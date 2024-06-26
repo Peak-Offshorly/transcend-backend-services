@@ -236,5 +236,13 @@ class ChosenPersonalPractices(Base):
     users = relationship('Users', back_populates='chosen_personal_practices')
     personal_practice_category = relationship('PersonalPracticeCategory', back_populates='chosen_personal_practices')
 
+class PendingActions(Base):
+    __tablename__ = 'pending_actions'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(String, ForeignKey("users.id"))
+    action = Column(String, index=True)
+    category = Column(String, index=True)
+
 
 Base.metadata.create_all(engine)
