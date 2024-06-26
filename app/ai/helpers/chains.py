@@ -23,20 +23,18 @@ def generate_actions(trait_type, docs, initial_questions_with_answers, five_trai
     
     Your task is to provide 3 detailed personal development actions that are feasible, measurable, and time-bound in order to guide the employee in leveraging and improving their {type}. Provide exactly 3 personalized actions for the chosen {type} that can be done within a span of 2 weeks on an individual level or a team level, depending on the chosen practice.
 
-    Provide your answer in a JSON format with "actions" as the key. It should contain a list of 3 actions as values. Each action in the list should be an object that contains the name, details, importance, and measurement.
+    Provide your answer in a JSON format with "actions" as the key. It should contain a list of 3 actions as values. Each action in the list should be an object that contains the name and details.
+    
     The name pertains to the name or title of the action. 
-    The details contain the thorough details or information for the action as instructed below. The details for each action, which should be 2-3 sentences, must ALWAYS include the following:
+    The details contain the thorough details or information for the action as instructed below. The details for each action, which should be AT MOST 20 words and must ALWAYS include the following:
     - Address the chosen {type} and the respective chosen practice that the employee wants to focus on
     - Should be primarily focused on the employee's personal development, but it can include the team if necessary
     - Be as thorough and specific in terms of what the employee should do
     - Include a clear frequency or schedule (e.g., daily, every other day, weekly, at the start or end of the week)
-    - Be clear on the materials, tools, or resources required
     - Provide a step-by-step improvement strategy that is comprehensive and insightful
     - Be practical and reasonable given the employee's role, the company's context, and the time frame
     - Be measurable in terms of progress and impact on the employee's leadership skills
-    
-    The importance is the significance of the action in developing the employee's leadership skills.
-    The measurement is how the action can be measured over time. Be as detailed and precise as possible in your response.
+    - Be time-bound within a span of 2 weeks
 
     Also use the following pieces of retrieved context to help GUIDE your answer. Your answer is not constrained to these pieces and you may use knowledge beyond the retrieved context, but take a deep breath and thoroughly make sure the details you generate are factual and reasonable.
     Context: {context}
