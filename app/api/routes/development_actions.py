@@ -144,8 +144,6 @@ async def regenerate_actions(data: DevelopmentActionsSchema, db: db_dependency):
       for action in existing_actions:
         previous_actions += f"- {action.action}\n"
 
-    print("Previous Actions: ", previous_actions)
-
     company_details = get_user_company_details(db=db, user_id=user_id)
 
     valid_data = check_user_input(company_size=company_details.company_size, industry=company_details.industry, employee_role=company_details.role, role_description=company_details.role_description)
@@ -181,9 +179,6 @@ async def regenerate_actions(data: DevelopmentActionsSchema, db: db_dependency):
     response = ""
     prompt_template = DevelopmentActionsPrompts.regeneration_prompt()
     if trait_type == "strength":
-      # print("Strengths", strengths)
-      # print("Chosen Strength: ", chosen_strength)
-      # print("Chosen Practice: ", strength_practice)
       docs = get_docs(vectorstore=vectorstore, trait=chosen_strength, practice=strength_practice)
       final_docs = f"""
         Strength Context:
@@ -206,9 +201,6 @@ async def regenerate_actions(data: DevelopmentActionsSchema, db: db_dependency):
             
       response = generate_actions(prompt_template=prompt_template, inputs=inputs)
     elif trait_type == "weakness":
-      # print("Weaknesses", weaknesses)
-      # print("Chosen Weakness: ", chosen_weakness)
-      # print("Chosen Practice: ", weakness_practice)
       docs = get_docs(vectorstore=vectorstore, trait=chosen_weakness, practice=weakness_practice)
       final_docs = f"""
         Weakness Context:
@@ -236,7 +228,6 @@ async def regenerate_actions(data: DevelopmentActionsSchema, db: db_dependency):
 
     #create one for each action
     for action in response["actions"]:
-      print("action", action)
       await pending_actions_create_one(db=db, user_id=user_id, action=action["details"], category=trait_type)
       
     return response
