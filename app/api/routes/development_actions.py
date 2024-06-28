@@ -95,7 +95,7 @@ async def get_actions(data: DevelopmentActionsSchema, db: db_dependency):
           "role_description": role_description
         }
               
-        response = generate_actions(trait_type, inputs)
+        response = generate_actions(prompt_template=prompt_template, inputs=inputs)
       elif trait_type == "weakness":
         # print("Weaknesses", weaknesses)
         # print("Chosen Weakness: ", chosen_weakness)
@@ -204,7 +204,7 @@ async def regenerate_actions(data: DevelopmentActionsSchema, db: db_dependency):
         "previous_actions": previous_actions
       }
             
-      response = generate_actions(trait_type, inputs)
+      response = generate_actions(prompt_template=prompt_template, inputs=inputs)
     elif trait_type == "weakness":
       # print("Weaknesses", weaknesses)
       # print("Chosen Weakness: ", chosen_weakness)
