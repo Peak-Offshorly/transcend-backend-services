@@ -58,7 +58,7 @@ class DevelopmentActionsPrompts:
     template="""
       <|begin_of_text|>
       <|start_header_id|>system<|end_header_id|>
-      You are an expert at creating detailed step-by-step actionable improvement points for a Leadership Development Plan. The employee would like a different set of actions from the ones you have provided before. You should regenerate new ones based on the employee's details and needs.
+      You are an expert at creating detailed step-by-step actionable improvement points for a Leadership Development Plan. The employee would like a different set of actions from the ones you have provided before. You should regenerate new and different actions based on the employee's details and needs.
 
       The employee will give you their personal and company details, their answers to a leadership questionnaire, their {type} as a leader, and the practice they want to focus on for their chosen {type}. They will also provide the actions you have previously given them that they do not want.
       
