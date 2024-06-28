@@ -98,7 +98,7 @@ async def save_answers(answers: FormAnswerSchema, db: db_dependency, token = Dep
     'NUTRITION': 8,
     'SLEEP': 10,
     'STRESS REDUCTION': 12,
-    'ROUTINES': 18
+    'ROUTINES': 8
   }
 
   try:
