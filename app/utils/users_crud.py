@@ -56,12 +56,16 @@ def create_user(db: Session, user: Users):
 
     return db_user
 
-def update_user(db: Session, user_id, first_name, last_name):
+def update_user(db: Session, user_id=None, email=None, first_name=None, last_name=None):
     db_user = db.query(Users).filter(Users.id == user_id).first()
 
     if db_user:
-        db_user.first_name = first_name
-        db_user.last_name = last_name
+        if email is not None and email.strip():
+            db_user.email = email
+        if first_name is not None and first_name.strip():
+            db_user.first_name = first_name
+        if last_name is not None and last_name.strip():
+            db_user.last_name = last_name
         db.commit()
 
     return db_user

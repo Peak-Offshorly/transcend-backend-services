@@ -127,28 +127,24 @@ async def login_user_account(data: LoginSchema, db: db_dependency):
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
   
-@router.post("/update-user")
-async def update_user_account(data: UpdateUserSchema, db: db_dependency):
+@router.post("/edit-user")
+async def edit_user_account(data: UpdateUserSchema, db: db_dependency, token = Depends(verify_token)):
+  user_id = data.id
+
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
+  
   email = data.email
   first_name = data.first_name
   last_name = data.last_name
-
   try:
-    ### ACTUAL IMPLEMENTATION: Should get tokenId from logged-in user then use that to verify and obtain the uid of the user.
-   
-    #---TEST IMPLEMENTATION
-    user = get_one_user(db=db, email=email)
-    #---
-
-    auth.update_user(
-      uid=user.id,
-      email = data.email
-    )
-
-    update_user(db=db, user_id=user.id, first_name=first_name, last_name=last_name)
+    update_user(db=db, user_id=user_id, email=email, first_name=first_name, last_name=last_name)
 
     return JSONResponse(
-      content={"message":  f"Account successfully updated for {user.email}"},
+      content={"message":  f"Account successfully updated for {user_id}"},
       status_code=200
     )
   except Exception as error:
