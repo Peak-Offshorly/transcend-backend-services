@@ -13,9 +13,10 @@ class SignUpSchema(BaseModel):
     mobile_number: str
 
 class UpdateUserSchema(BaseModel):
-    email: Optional[str]
-    first_name: Optional[str]
-    last_name: Optional[str]
+    id: Optional[str] = None
+    email: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
 
 class UserCompanyDetailsSchema(BaseModel):
     id: Optional[str] = None
