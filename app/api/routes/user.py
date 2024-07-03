@@ -13,6 +13,7 @@ from app.utils.users_crud import (
     update_user,
     delete_user,
     get_one_user,
+    get_one_user_id,
     get_all_users,
     update_user_company_details,
     get_user_company_details
@@ -68,6 +69,13 @@ async def get_company_details(user_id: str, db: db_dependency, token = Depends(v
 async def get_user_account(email: str, db: db_dependency):
   try:
     return get_one_user(db=db, email=email)
+  except Exception as error:
+    raise HTTPException(status_code=400, detail=str(error))
+
+@router.get("/get-user-uid")
+async def get_user_account_uid(user_id: str, db: db_dependency):
+  try:
+    return get_one_user_id(db=db, user_id=user_id)
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
   
