@@ -251,3 +251,44 @@ def delete_form_and_associations(db: Session, form_id: UUID):
     )
 
     db.commit()
+
+def delete_form_and_associations_form_name(db: Session, form_name: str, dev_plan_id: str):
+    # Find the form
+    form = db.execute(select(Forms).where(
+       Forms.name == form_name,
+       Forms.development_plan_id == dev_plan_id
+    )).scalar_one_or_none()
+    
+    if not form:
+        return None
+
+    form_id = form.id
+    # Find all questions associated with the form
+    questions = db.execute(
+        select(Questions).where(Questions.form_id == form_id)
+    ).scalars().all()
+
+    # Collect question IDs
+    question_ids = [question.id for question in questions]
+
+    # Delete answers associated with the form and its questions
+    db.execute(
+        delete(Answers).where((Answers.form_id == form_id))
+    )
+
+    # Delete options associated with each question
+    db.execute(
+        delete(Options).where(Options.question_id.in_(question_ids))
+    )
+
+    # Delete questions associated with the form
+    db.execute(
+        delete(Questions).where(Questions.form_id == form_id)
+    )
+
+    # Finally, delete the form itself
+    db.execute(
+        delete(Forms).where(Forms.id == form_id)
+    )
+
+    db.commit()

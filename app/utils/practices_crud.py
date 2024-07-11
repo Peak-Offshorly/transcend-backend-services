@@ -1,6 +1,6 @@
 import random
 from uuid import UUID
-from sqlalchemy import func
+from sqlalchemy import delete
 from sqlalchemy.orm import Session
 from app.database.models import Practices, Questions, ChosenTraits, ChosenPractices, PersonalPracticeCategory, ChosenPersonalPractices
 from app.schemas.models import PracticeSchema
@@ -31,6 +31,32 @@ async def practices_clear_existing(db: Session, question_id: str, user_id: str):
         for existing_practice in existing_practices:
             db.delete(existing_practice)
             db.flush()
+
+    db.commit()
+
+async def practices_and_chosen_practices_clear_all(db: Session, chosen_strength_id: str, chosen_weakness_id: str, dev_plan_id: str, user_id: str):
+    if (chosen_strength_id or chosen_weakness_id) == "": 
+        return None
+
+    # Delete CHOSEN strength and weakness practice
+    db.execute(
+        delete(ChosenPractices).where((
+            ChosenPractices.chosen_trait_id == chosen_strength_id
+    )))
+    db.execute(
+        delete(ChosenPractices).where((
+            ChosenPractices.chosen_trait_id == chosen_weakness_id
+    )))
+
+    # Delete strength and weakness practices
+    db.execute(
+        delete(Practices).where((
+            Practices.chosen_trait_id == chosen_strength_id
+    )))
+    db.execute(
+        delete(Practices).where((
+            Practices.chosen_trait_id == chosen_weakness_id
+    )))
 
     db.commit()
 
@@ -179,6 +205,22 @@ async def chosen_personal_practices_clear_existing(db: Session, user_id: str, re
             db.flush()
 
     db.commit()
+
+async def personal_practice_category_and_chosen_personal_practices_clear_all(db: Session, user_id: str, dev_plan_id: str):
+    personal_practice_category = db.query(PersonalPracticeCategory).filter(
+        PersonalPracticeCategory.user_id == user_id,
+        PersonalPracticeCategory.development_plan_id == dev_plan_id
+    ).first()
+
+    if personal_practice_category:
+        db.execute(
+        delete(ChosenPersonalPractices).where((
+            ChosenPersonalPractices.personal_practice_category_id == personal_practice_category.id
+        )))
+        db.delete(personal_practice_category)
+
+        db.commit()
+
 
 async def chosen_personal_practices_save_one(db: Session, user_id: str, name: str, recommended_mind_body_category_id: str):
     new_personal_practice = ChosenPersonalPractices(

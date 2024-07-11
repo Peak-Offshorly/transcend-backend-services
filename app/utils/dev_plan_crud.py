@@ -68,9 +68,7 @@ async def dev_plan_get_current(db: Session, user_id: str):
     ).scalar()
 
     if max_dev_plan is None:
-        return{
-            "message": "User has no development plan yet."
-        }
+        return None
 
     existing_dev_plan = db.query(DevelopmentPlan).filter(
         DevelopmentPlan.user_id == user_id,
@@ -180,3 +178,20 @@ async def dev_plan_update_is_finished_true(db: Session, user_id: str, dev_plan_i
             return { "message": f"Development Plan not yet complete" }
     
     return { "message": "Development Plan does not exist" }
+
+async def dev_plan_clear_fields(db: Session, user_id: str, dev_plan_id: str):
+    existing_dev_plan = db.query(DevelopmentPlan).filter(
+        DevelopmentPlan.id == dev_plan_id,
+        DevelopmentPlan.user_id == user_id,
+        DevelopmentPlan.is_finished == False
+    ).first()
+
+    if existing_dev_plan:
+        existing_dev_plan.chosen_strength_id = None
+        existing_dev_plan.chosen_weakness_id = None
+        existing_dev_plan.sprint_1_id = None
+        existing_dev_plan.chosen_strength_practice_1_id = None
+        existing_dev_plan.chosen_weakness_practice_1_id = None
+        existing_dev_plan.personal_practice_category_id = None
+
+    db.commit()

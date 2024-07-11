@@ -112,6 +112,9 @@ def chosen_traits_get(db: Session, user_id: str, dev_plan_id: str):
         ChosenTraits.development_plan_id == dev_plan_id
         ).first()
     
+    if (user_strength or user_weakness) is None:
+        return None
+    
     return {
         "user_id": user_id,
         "chosen_strength": {
@@ -127,3 +130,28 @@ def chosen_traits_get(db: Session, user_id: str, dev_plan_id: str):
             "end_date": user_weakness.end_date
         }
     }
+
+def chosen_traits_clear(db: Session, user_id: str, dev_plan_id: str):
+    user_strength = db.query(ChosenTraits).filter(
+        ChosenTraits.user_id == user_id,
+        ChosenTraits.trait_type == "STRENGTH",
+        ChosenTraits.development_plan_id == dev_plan_id
+        ).first()
+    
+    
+    user_weakness = db.query(ChosenTraits).filter(
+        ChosenTraits.user_id == user_id,
+        ChosenTraits.trait_type == "WEAKNESS",
+        ChosenTraits.development_plan_id == dev_plan_id
+        ).first()
+    
+    
+    if user_strength:
+        db.delete(user_strength)
+        db.flush()
+
+    if user_weakness:
+        db.delete(user_weakness)
+        db.flush()
+    
+    db.commit()
