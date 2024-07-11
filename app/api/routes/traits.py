@@ -89,7 +89,7 @@ async def save_traits_chosen(chosen_traits: ChosenTraitsSchema, db: db_dependenc
     # ----Clear succeeding forms/practices/traits
     chosen_traits = chosen_traits_get(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
     if chosen_traits:
-        if chosen_traits["chosen_strength"]["name"] != chosen_traits.strength or chosen_traits["chosen_weakness"]["name"] != chosen_traits.weakness:
+        if chosen_traits["chosen_strength"]["name"] != trait_data["strength"].name or chosen_traits["chosen_weakness"]["name"] != trait_data["weakness"].name:
           # Clear dev plan fields
           await dev_plan_clear_fields(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
 
