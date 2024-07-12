@@ -8,7 +8,7 @@ from app.schemas.models import ChosenTraitsSchema, FormAnswerSchema, PracticeSch
 from app.database.connection import get_db
 from app.firebase.utils import verify_token
 from app.utils.dates_crud import compute_second_sprint_dates
-from app.utils.answers_crud import answers_save_one
+from app.utils.answers_crud import answers_save_one, are_matching_answers
 from app.utils.pending_actions_crud import pending_actions_clear_all
 from app.utils.dev_plan_crud import(
     dev_plan_create_get_one, 
