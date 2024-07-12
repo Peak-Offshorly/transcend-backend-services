@@ -120,31 +120,58 @@ async def save_traits_chosen(chosen_traits: ChosenTraitsSchema, db: db_dependenc
           # Clear pending actions
           await pending_actions_clear_all(db=db, user_id=user_id)
 
-    # Iterate over strength and weakness
-    for trait_type, data in trait_data.items():
-      trait_id = data.id
-      trait_name = data.name
-      t_score = data.t_score
-    
-      # Create Form for certain trait
-      trait_form = await create_trait_form(db=db, user_id=user_id, trait=trait_name, dev_plan_id=dev_plan_id, trait_type=trait_type)
+          # Iterate over strength and weakness
+          for trait_type, data in trait_data.items():
+            trait_id = data.id
+            trait_name = data.name
+            t_score = data.t_score
+          
+            # Create Form for certain trait
+            trait_form = await create_trait_form(db=db, user_id=user_id, trait=trait_name, dev_plan_id=dev_plan_id, trait_type=trait_type)
 
-      # Create ChosenTrait entry, attach form id for certain trait Form
-      chosen_traits_create(
-        db=db, 
-        user_id=user_id, 
-        form_id=trait_form["form_id"],
-        trait_id=trait_id, 
-        trait_name=trait_name, 
-        t_score=t_score, 
-        trait_type=trait_type,
-        dev_plan_id=dev_plan_id
-      )
-    
-    chosen_traits = chosen_traits_get(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
-    chosen_strength_id = chosen_traits["chosen_strength"]["id"]
-    chosen_weakness_id = chosen_traits["chosen_weakness"]["id"]
-    await dev_plan_update_chosen_traits(user_id=user_id, chosen_strength_id=chosen_strength_id, chosen_weakness_id=chosen_weakness_id, db=db)
+            # Create ChosenTrait entry, attach form id for certain trait Form
+            chosen_traits_create(
+              db=db, 
+              user_id=user_id, 
+              form_id=trait_form["form_id"],
+              trait_id=trait_id, 
+              trait_name=trait_name, 
+              t_score=t_score, 
+              trait_type=trait_type,
+              dev_plan_id=dev_plan_id
+            )
+          
+          chosen_traits = chosen_traits_get(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
+          chosen_strength_id = chosen_traits["chosen_strength"]["id"]
+          chosen_weakness_id = chosen_traits["chosen_weakness"]["id"]
+          await dev_plan_update_chosen_traits(user_id=user_id, chosen_strength_id=chosen_strength_id, chosen_weakness_id=chosen_weakness_id, db=db)
+      
+    else:
+      # Iterate over strength and weakness
+      for trait_type, data in trait_data.items():
+        trait_id = data.id
+        trait_name = data.name
+        t_score = data.t_score
+
+        # Create Form for certain trait
+        trait_form = await create_trait_form(db=db, user_id=user_id, trait=trait_name, dev_plan_id=dev_plan_id, trait_type=trait_type)
+        # Create ChosenTrait entry, attach form id for certain trait Form
+        chosen_traits_create(
+          db=db, 
+          user_id=user_id, 
+          form_id=trait_form["form_id"],
+          trait_id=trait_id, 
+          trait_name=trait_name, 
+          t_score=t_score, 
+          trait_type=trait_type,
+          dev_plan_id=dev_plan_id
+        )
+
+      chosen_traits = chosen_traits_get(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
+      chosen_strength_id = chosen_traits["chosen_strength"]["id"]
+      chosen_weakness_id = chosen_traits["chosen_weakness"]["id"]
+      await dev_plan_update_chosen_traits(user_id=user_id, chosen_strength_id=chosen_strength_id, chosen_weakness_id=chosen_weakness_id, db=db)
+      
 
     return { "message": "Strength and Weakness added and Forms created." }
   except Exception as error:
