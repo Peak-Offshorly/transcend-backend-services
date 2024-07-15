@@ -154,6 +154,7 @@ cython_debug/
 
 # Firebase Config 
 transcend-service-account-key.json
+transcend-service-account-key-PROD.json
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
