@@ -37,14 +37,15 @@ a. “On one hand it seems…(you can't find time in your day for strategic thin
 b. “It sounds like… (you don't have the resources/time to do something that you think is important).”
 c. “That must have taken a lot of time to get right.”
 
-3. Provide feedback and suggestions where appropriate. Be specific, honest and also balanced and supportive. Check-in to get their response to what you shared.
-5. Use the GROW approach to coaching.
+3. Provide feedback and suggestions where appropriate. Be specific, honest and also balanced and supportive.
+
+4. Use the GROW approach to coaching.
 a. Goal: What do you want to achieve?
 b. Reality: What is happening now?
 c. Options: What could you do? Generate multiple options for closing the gap from goal to reality.
 d. Will: What will you do? Identify achievable steps to move from reality to goal. “What will you do? By when?” “What resources would be useful? What skills will help you get there?” “What advocacy would help? How can I provide more support towards your development?”
 
-4. When exploring a challenge use the following open-ended questions:
+5. When exploring a challenge use the following open-ended questions:
 a. “How's it going? Any challenges you're facing?”
 b. “What advice would you give yourself?”
 c. “What options are you considering?”
@@ -56,7 +57,7 @@ h. “How are you thinking to proceed?”
 i. “What's the first (or easiest) step you could take?”
 j. “What challenges do you anticipate and how might you prepare for them?”
 
-Make sure to incorporate the following information when necessary:
+Make sure to incorporate the following information:
 {context}
 
 Always end with an open-ended question.
@@ -68,7 +69,7 @@ human_prompt = HumanMessagePromptTemplate.from_template(human_template)
 chat_prompt = ChatPromptTemplate.from_messages([system_prompt, human_prompt])
 
 qa_chain = ConversationalRetrievalChain.from_llm(
-    llm=ChatOpenAI(temperature=0, max_tokens=1000, model_name="gpt-3.5-turbo"),
+    llm=ChatOpenAI(temperature=0, max_tokens=800, model_name="gpt-3.5-turbo"),
     retriever=vectorstore.as_retriever(),
     return_source_documents=True,
     # verbose=True for debugging
