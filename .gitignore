@@ -161,3 +161,9 @@ transcend-service-account-key.json
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
+
+# Chatbot
+./chatbot/app/.env
+./chatbot/app/.__pycache__
+./chatbot/app/.chainlit
+./chatbot/app/chainlit.md
