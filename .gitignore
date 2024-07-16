@@ -163,7 +163,7 @@ transcend-service-account-key.json
 #.idea/
 
 # Chatbot
-./chatbot/app/.env
-./chatbot/app/.__pycache__
-./chatbot/app/.chainlit
-./chatbot/app/chainlit.md
+chatbot/app/.env
+chatbot/app/.__pycache__
+chatbot/app/.chainlit
+chatbot/app/chainlit.md

@@ -68,7 +68,7 @@ human_prompt = HumanMessagePromptTemplate.from_template(human_template)
 chat_prompt = ChatPromptTemplate.from_messages([system_prompt, human_prompt])
 
 qa_chain = ConversationalRetrievalChain.from_llm(
-    llm=ChatOpenAI(temperature=0),
+    llm=ChatOpenAI(temperature=0, max_tokens=1000, model_name="gpt-3.5-turbo"),
     retriever=vectorstore.as_retriever(),
     return_source_documents=True,
     # verbose=True for debugging
