@@ -1,14 +1,15 @@
 import os
+from dotenv import load_dotenv
 from langchain_community.document_loaders import TextLoader, Docx2txtLoader, PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_pinecone import PineconeVectorStore
 from pinecone import Pinecone
 from langchain_openai.embeddings import OpenAIEmbeddings
 
-PINECONE_API_KEY = "d32754a9-14bd-4e40-a8ad-ec9e08a28b9c"
-PINECONE_ENV = "us-east-1"
-os.environ['PINECONE_API_KEY'] = PINECONE_API_KEY
-os.environ['PINECONE_ENV'] = PINECONE_ENV
+load_dotenv()
+
+PINECONE_API_KEY = os.environ['PINECONE_API_KEY']
+PINECONE_ENV = os.environ['PINECONE_ENV']
 
 def add_document_to_vectorstore(index_name: str, file_type: str, file_path: str):
   # load text or pdf
