@@ -11,6 +11,7 @@ class SignUpSchema(BaseModel):
     first_name: str
     last_name: str
     mobile_number: str
+    password: str
 
 class UpdateUserSchema(BaseModel):
     id: Optional[str] = None

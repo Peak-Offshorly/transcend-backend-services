@@ -1,9 +1,12 @@
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, status
+import datetime as dt
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from typing import Annotated
 from app.firebase.session import firebase, auth
+import firebase_admin
+from firebase_admin import auth, credentials
 from app.database.models import Users
 from app.schemas.models import SignUpSchema, UpdateUserSchema, LoginSchema, UserCompanyDetailsSchema
 from app.database.connection import get_db
@@ -18,6 +21,7 @@ from app.utils.users_crud import (
     update_user_company_details,
     get_user_company_details
 )
+
 db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/accounts", tags=["accounts"])
 
@@ -81,34 +85,50 @@ async def get_user_account_uid(user_id: str, db: db_dependency):
   
 @router.post("/create-user")
 async def create_user_account(data: SignUpSchema, db: db_dependency):
-  uid = data.uid
-  email = data.email
-  first_name = data.first_name
-  last_name = data.last_name
-  mobile_number = data.mobile_number
+    try:
+        # create user 
+        firebase_user = auth.create_user(
+            email=data.email,
+            password=data.password,
+            display_name=f"{data.first_name} {data.last_name}"
+        )
 
-  try:
-    new_account = Users(
-      id = uid,
-      email = email,
-      first_name = first_name,
-      last_name = last_name,
-      mobile_number = mobile_number
-    )
+        # send email verification
+        verification_link = auth.generate_email_verification_link(data.email)
 
-    create_user(db=db, user=new_account)
-    
-    return JSONResponse(
-      content={
-        "message":  f"Account successfully created for {email}",
-        "user_id": new_account.id
-        },
-      status_code=200
-    )
-  
-  except Exception as error:
-    raise HTTPException(status_code=400, detail=str(error))
-  
+        # create user in database
+        new_account = Users(
+            id=firebase_user.uid,
+            email=data.email,
+            first_name=data.first_name,
+            last_name=data.last_name,
+            mobile_number=data.mobile_number
+        )
+
+        create_user(db=db, user=new_account)
+
+        # set user role in Firebase custom claims
+        role = 'unknown'  # default role is unknown
+        auth.set_custom_user_claims(firebase_user.uid, {'role': role})
+        print(f"Create: User role set to {role}")
+
+        return JSONResponse(
+            content={
+                "message": f"Account successfully created for {data.email}",
+                "user_id": firebase_user.uid,
+                "email": data.email,
+                "display_name": f"{data.first_name} {data.last_name}",
+                "verification_link": verification_link
+            },
+            status_code=200
+        )
+
+    except Exception as error:
+        # If any error occurs, delete the Firebase user if it was created
+        if 'firebase_user' in locals():
+            auth.delete_user(firebase_user.uid)
+        raise HTTPException(status_code=400, detail=str(error))
+
 @router.post("/login")
 async def login_user_account(data: LoginSchema, db: db_dependency):
   email = data.email
@@ -121,17 +141,26 @@ async def login_user_account(data: LoginSchema, db: db_dependency):
     )
 
     token = user["idToken"]
+    decoded_token = auth.verify_id_token(token)
+    role = decoded_token.get('role', 'unknown') # default role is unknown
+    # print(f"Login: User role set to {role}")
     user_db = get_one_user(db=db, email=email)
     
-    return JSONResponse(
+    session_cookie = firebase_admin.auth.create_session_cookie(token, expires_in=dt.timedelta(days=5))
+
+    response = JSONResponse(
       content={
         "message": f"Successfully logged in {email}",
         "token": token,
-        "user_id": user_db.id
+        "user_id": user_db.id,
+        "role": role
         },
       status_code=200
     )
   
+    response.set_cookie(key="session", value=session_cookie, httponly=True, secure=True)
+    # print(f"Login: User role set to {role}")
+    return response
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
   
@@ -215,3 +244,47 @@ async def check_if_active_user(db: db_dependency):
     )
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
+  
+@router.post("/set-user-role")
+async def set_user_role(request: Request, db: db_dependency):
+    try:
+        # Parse the JSON body
+        body = await request.json()
+        user_id = body.get("user_id")
+        role = body.get("role")
+        
+        if not user_id or not role:
+            raise HTTPException(status_code=400, detail="user_id and role are required fields")
+
+        # Set the custom claim in Firebase
+        auth.set_custom_user_claims(user_id, {'role': role})
+        print(f"Set: User role set to {role}")
+
+        return JSONResponse(
+            content={"message": f"User role set to {role}"},
+            status_code=200
+        )
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
+  
+@router.get("/get-user-role")
+async def get_user_role(request: Request):
+    try:
+        body = await request.json()
+        token = body.get("token")
+
+        if not token:
+            raise HTTPException(status_code=400, detail="id_token is required")
+
+        # Verify the token and get the role
+        print("Get: Verifying token")
+        decoded_token = auth.verify_id_token(token)
+        role = decoded_token.get('role', 'unknown')  # default role is unknown
+        print(f"Get: User role is {role}")
+
+        return JSONResponse(
+            content={"message": f"User role is {role}"},
+            status_code=200
+        )
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
