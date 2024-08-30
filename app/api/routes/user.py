@@ -19,7 +19,8 @@ from app.utils.users_crud import (
     get_one_user_id,
     get_all_users,
     update_user_company_details,
-    get_user_company_details
+    get_user_company_details,
+    get_all_user_dashboard
 )
 
 db_dependency = Annotated[Session, Depends(get_db)]
@@ -309,5 +310,38 @@ async def get_user_role(request: Request):
             content={"message": f"User role is {role}"},
             status_code=200
         )
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
+    
+@router.get("/get-all-users")
+async def get_all_users_account(db: db_dependency):
+    try:
+        users = get_all_user_dashboard(db)
+        return users
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
+    
+@router.post("/view-user")
+async def view_user_account(request: Request, db: db_dependency):
+    try:
+        body = await request.json()
+        token = body.get("token")
+        user_id = body.get("user_id")
+
+        if not token:
+            raise HTTPException(status_code=400, detail="id_token is required")
+
+        # Verify the token and get the role and user_id
+        decoded_token = auth.verify_id_token(token)
+        role = decoded_token.get('role', 'unknown')  # default role is unknown
+        token_user_id = decoded_token.get('user_id')
+
+        # Check if the token belongs to the current logged-in user or if the user is an admin
+        if token_user_id != user_id and role != 'admin': 
+            raise HTTPException(status_code=403, detail="You do not have permission to view this account")
+
+        # If the checks pass, proceed to retrieve the user details
+        return get_one_user_id(db=db, user_id=user_id)
+        
     except Exception as error:
         raise HTTPException(status_code=400, detail=str(error))
