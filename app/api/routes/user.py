@@ -270,21 +270,28 @@ async def set_user_role(request: Request, db: db_dependency):
 @router.get("/get-user-role")
 async def get_user_role(request: Request):
     try:
-        body = await request.json()
-        token = body.get("token")
+        # Extract the Authorization header from the request
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            raise HTTPException(status_code=400, detail="Authorization header is required")
 
-        if not token:
-            raise HTTPException(status_code=400, detail="id_token is required")
+        # Extract the token from the header
+        if not auth_header.startswith("Bearer "):
+            raise HTTPException(status_code=400, detail="Invalid authorization header format")
+        
+        token = auth_header.split(" ")[1]
 
-        # Verify the token and get the role
+        # verify 
         print("Get: Verifying token")
         decoded_token = auth.verify_id_token(token)
-        role = decoded_token.get('role', 'unknown')  # default role is unknown
+        role = decoded_token.get('role', 'unknown')  # default role is 'unknown'
         print(f"Get: User role is {role}")
 
+        # return the response with the role attribute
         return JSONResponse(
-            content={"message": f"User role is {role}"},
+            content={"message": f"User role is {role}", "role": role},
             status_code=200
         )
+
     except Exception as error:
         raise HTTPException(status_code=400, detail=str(error))
