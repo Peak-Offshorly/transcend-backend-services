@@ -248,7 +248,7 @@ async def check_if_active_user(db: db_dependency):
 @router.post("/set-user-role")
 async def set_user_role(request: Request, db: db_dependency):
     try:
-        # Parse the JSON body
+
         body = await request.json()
         user_id = body.get("user_id")
         role = body.get("role")
@@ -256,7 +256,7 @@ async def set_user_role(request: Request, db: db_dependency):
         if not user_id or not role:
             raise HTTPException(status_code=400, detail="user_id and role are required fields")
 
-        # Set the custom claim in Firebase
+        # set the custom claim in Firebase
         auth.set_custom_user_claims(user_id, {'role': role})
         print(f"Set: User role set to {role}")
 
@@ -270,21 +270,28 @@ async def set_user_role(request: Request, db: db_dependency):
 @router.get("/get-user-role")
 async def get_user_role(request: Request):
     try:
-        body = await request.json()
-        token = body.get("token")
+        # extract the Authorization header from the request
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            raise HTTPException(status_code=400, detail="Authorization header is required")
 
-        if not token:
-            raise HTTPException(status_code=400, detail="id_token is required")
+        # extract the token from the header
+        if not auth_header.startswith("Bearer "):
+            raise HTTPException(status_code=400, detail="Invalid authorization header format")
+        
+        token = auth_header.split(" ")[1]
 
-        # Verify the token and get the role
+        # verify 
         print("Get: Verifying token")
         decoded_token = auth.verify_id_token(token)
-        role = decoded_token.get('role', 'unknown')  # default role is unknown
+        role = decoded_token.get('role', 'unknown')  # default role is 'unknown'
         print(f"Get: User role is {role}")
 
+        # return the response with the role attribute
         return JSONResponse(
-            content={"message": f"User role is {role}"},
+            content={"message": f"User role is {role}", "role": role},
             status_code=200
         )
+
     except Exception as error:
         raise HTTPException(status_code=400, detail=str(error))
