@@ -171,3 +171,11 @@ class DataFormSchema(BaseModel):
 class DevelopmentActionsSchema(BaseModel):
     user_id: str
     trait_type: str
+class CompanyDataSchema(BaseModel):
+    id: Optional[str] = None
+    name: str
+    seats: int
+
+    class Config:
+        orm_mode = True
+        from_attributes = True
