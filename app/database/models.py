@@ -249,7 +249,7 @@ class Company(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     name = Column(String, index=True)
-    seats = Column(Integer, index=True)
+
 
 
 Base.metadata.create_all(engine)

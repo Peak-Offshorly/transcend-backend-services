@@ -31,3 +31,21 @@ async def create_company_endpoint(data: CompanyDataSchema, db: db_dependency):
         return JSONResponse(content={"company": company_data.dict()}, status_code=201)
     except Exception as error:
         raise HTTPException(status_code=400, detail=str(error))
+    
+@router.get("/get-company/{company_id}", response_model=CompanyDataSchema)
+async def get_company_endpoint(company_id: str, db: db_dependency):
+    try:
+        company = get_company_by_id(db=db, company_id=company_id)
+
+        if company is None:
+            raise HTTPException(status_code=404, detail="Company not found")
+
+        # Convert SQLAlchemy model instance to Pydantic schema and ensure the id is a string
+        company_data = CompanyDataSchema(
+            id=str(company.id),  # Convert UUID to string
+            name=company.name,
+        )
+
+        return company_data
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
