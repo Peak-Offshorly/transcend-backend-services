@@ -8,7 +8,7 @@ from app.firebase.session import firebase, auth
 import firebase_admin
 from firebase_admin import auth, credentials
 from app.database.models import Users
-from app.schemas.models import SignUpSchema, UpdateUserSchema, LoginSchema, UserCompanyDetailsSchema
+from app.schemas.models import SignUpSchema, UpdateUserSchema, LoginSchema, UserCompanyDetailsSchema,CustomTokenRequestSchema
 from app.database.connection import get_db
 from app.firebase.utils import verify_token
 from app.utils.users_crud import (
@@ -294,13 +294,36 @@ async def set_user_role(request: Request, db: db_dependency):
         body = await request.json()
         user_id = body.get("user_id")
         role = body.get("role")
-        
+
         if not user_id or not role:
             raise HTTPException(status_code=400, detail="user_id and role are required fields")
-
-        # set the custom claim in Firebase
-        auth.set_custom_user_claims(user_id, {'role': role})
-        print(f"Set: User role set to {role}")
+        
+        user = auth.get_user(user_id)
+        custom_claims = user.custom_claims or {}
+        role_from_claims = custom_claims.get('role', 'unknown')  
+        print(f"Current role: {role_from_claims}")
+        
+        # only two roles are allowed
+        if role not in ["admin", "user"]:
+            raise HTTPException(status_code=400, detail="Invalid role")
+        
+        # no repeat role assignment
+        if role_from_claims == role:
+            raise HTTPException(status_code=400, detail=f"User is already a {role}")
+        
+        if role == "admin":
+           if role_from_claims == "user":
+              raise HTTPException(status_code=400, detail="This user can't be promoted to admin")
+           if role_from_claims == "unknown":
+              auth.set_custom_user_claims(user_id, {'role': role})
+              print(f"Set: User role set to {role}")
+        if role == "user":
+            if role_from_claims == "admin":
+                auth.set_custom_user_claims(user_id, {'role': role})
+                print(f"Set: User role set to {role}")
+            if role_from_claims == "unknown":
+                auth.set_custom_user_claims(user_id, {'role': role})
+                print(f"Set: User role set to {role}")
 
         return JSONResponse(
             content={"message": f"User role set to {role}"},
@@ -370,3 +393,18 @@ async def view_user_account(request: Request, db: db_dependency):
         
     except Exception as error:
         raise HTTPException(status_code=400, detail=str(error))
+    
+@router.post("/generate-custom-token")
+async def generate_custom_token(data:CustomTokenRequestSchema , db: db_dependency):
+  try:
+    user_id = data.user_id
+    custom_token = auth.create_custom_token(user_id)
+    decoded_token = custom_token.decode('utf-8')
+    return JSONResponse(
+      content={"message": "Custom token generated", "custom_token": decoded_token},
+        status_code=200)
+  except Exception as error:
+    raise HTTPException(status_code=400, detail=str(error))
+    
+
+
