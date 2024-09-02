@@ -147,7 +147,7 @@ async def login_user_account(data: LoginSchema, db: db_dependency):
     # print(f"Login: User role set to {role}")
     user_db = get_one_user(db=db, email=email)
     
-    session_cookie = firebase_admin.auth.create_session_cookie(token, expires_in=dt.timedelta(days=5))
+    session_cookie = firebase_admin.auth.create_session_cookie(token, expires_in=dt.timedelta(minutes=5))
 
     response = JSONResponse(
       content={
@@ -158,8 +158,26 @@ async def login_user_account(data: LoginSchema, db: db_dependency):
         },
       status_code=200
     )
-  
-    response.set_cookie(key="session", value=session_cookie, httponly=True, secure=True)
+    if role == "admin":
+      response.set_cookie(
+              key="__session",
+              value=session_cookie,
+              httponly=True,
+              secure=True,
+              max_age=300,  
+              samesite="strict",  
+              domain=".netlify.app"  # domain if deployed = ".netlify.app"  for local use "127.0.0.1"
+        )
+    if role == "user":
+      response.set_cookie(
+              key="__session",
+              value=session_cookie,
+              httponly=True,
+              secure=True,
+              max_age=300,  
+              samesite="strict",  
+              domain="peak-transcend-dev.netlify.app"  # domain if deployed = "peak-transcend-dev.netlify.app"
+      )
     # print(f"Login: User role set to {role}")
     return response
   except Exception as error:
