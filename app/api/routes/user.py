@@ -132,17 +132,11 @@ async def create_user_account(data: SignUpSchema, db: db_dependency):
 
 @router.post("/login")
 async def login_user_account(data: LoginSchema, db: db_dependency):
-  email = data.email
-  password = data.password
-
+  token = data.token
+  
   try:
-    user = firebase.auth().sign_in_with_email_and_password(
-      email = email,
-      password = password
-    )
-
-    token = user["idToken"]
     decoded_token = auth.verify_id_token(token)
+    email = decoded_token.get('email')
     role = decoded_token.get('role', 'unknown') # default role is unknown
     # print(f"Login: User role set to {role}")
     user_db = get_one_user(db=db, email=email)
@@ -159,25 +153,26 @@ async def login_user_account(data: LoginSchema, db: db_dependency):
       status_code=200
     )
     if role == "admin":
+      # check environment to set domain and samesite on dev staging and prod
+      # domain = "" BE domain for prod
+      # samesite = "lax" # for prod
+      # secure= True # for prod
+      domain = "transcend-backend-services-4toc.onrender.com"
+      samesite = "None" 
+      secure=False
+    else: None
+
+    if domain:
       response.set_cookie(
-              key="__session",
-              value=session_cookie,
-              httponly=True,
-              secure=True,
-              max_age=300,  
-              samesite="strict",  
-              domain=".netlify.app"  # domain if deployed = ".netlify.app"  for local use "127.0.0.1"
-        )
-    if role == "user":
-      response.set_cookie(
-              key="__session",
-              value=session_cookie,
-              httponly=True,
-              secure=True,
-              max_age=300,  
-              samesite="strict",  
-              domain="peak-transcend-dev.netlify.app"  # domain if deployed = "peak-transcend-dev.netlify.app"
-      )
+        key="__session",
+        value=session_cookie,
+        httponly=True,
+        secure=secure,
+        max_age=300,  
+        samesite=samesite,
+        domain=domain
+    )
+
     # print(f"Login: User role set to {role}")
     return response
   except Exception as error:
@@ -405,6 +400,3 @@ async def generate_custom_token(data:CustomTokenRequestSchema , db: db_dependenc
         status_code=200)
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
-    
-
-

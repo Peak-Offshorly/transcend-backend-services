@@ -31,8 +31,7 @@ class UserCompanyDetailsSchema(BaseModel):
         from_attributes = True
 
 class LoginSchema(BaseModel):
-    email: str
-    password: str
+    token: str
 
 class TraitsSchema(BaseModel):
     id: Optional[UUID] = None
