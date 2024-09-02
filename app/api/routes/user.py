@@ -19,7 +19,8 @@ from app.utils.users_crud import (
     get_one_user_id,
     get_all_users,
     update_user_company_details,
-    get_user_company_details
+    get_user_company_details,
+    get_all_user_dashboard
 )
 
 db_dependency = Annotated[Session, Depends(get_db)]
@@ -146,7 +147,7 @@ async def login_user_account(data: LoginSchema, db: db_dependency):
     # print(f"Login: User role set to {role}")
     user_db = get_one_user(db=db, email=email)
     
-    session_cookie = firebase_admin.auth.create_session_cookie(token, expires_in=dt.timedelta(days=5))
+    session_cookie = firebase_admin.auth.create_session_cookie(token, expires_in=dt.timedelta(minutes=5))
 
     response = JSONResponse(
       content={
@@ -157,8 +158,26 @@ async def login_user_account(data: LoginSchema, db: db_dependency):
         },
       status_code=200
     )
-  
-    response.set_cookie(key="session", value=session_cookie, httponly=True, secure=True)
+    if role == "admin":
+      response.set_cookie(
+              key="__session",
+              value=session_cookie,
+              httponly=True,
+              secure=True,
+              max_age=300,  
+              samesite="strict",  
+              domain=".netlify.app"  # domain if deployed = ".netlify.app"  for local use "127.0.0.1"
+        )
+    if role == "user":
+      response.set_cookie(
+              key="__session",
+              value=session_cookie,
+              httponly=True,
+              secure=True,
+              max_age=300,  
+              samesite="strict",  
+              domain="peak-transcend-dev.netlify.app"  # domain if deployed = "peak-transcend-dev.netlify.app"
+      )
     # print(f"Login: User role set to {role}")
     return response
   except Exception as error:
@@ -189,26 +208,49 @@ async def edit_user_account(data: UpdateUserSchema, db: db_dependency, token = D
   
 
 @router.delete("/delete-user")
-async def delete_user_account(email: str, db: db_dependency):
-  try:
-    
-    ### ACTUAL IMPLEMENTATION: Should get tokenId from logged-in user then use that to verify and obtain the uid of the user.
-    #---TEST IMPLEMENTATION
-    user = get_one_user(db=db, email=email)
-    #---
+async def delete_user_account(request: Request, db: db_dependency):
+    try:
+        # Extract the Authorization header
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            raise HTTPException(status_code=401, detail="Authorization header missing")
 
-    auth.delete_user(
-      uid=user.id
-    )
+        # Extract the token from the Bearer token format
+        try:
+            id_token = auth_header.split(" ")[1]
+        except IndexError:
+            raise HTTPException(status_code=401, detail="Authorization header format is invalid")
 
-    delete_user(db=db, user_id=user.id)
+        # Verify the token and extract the uid
+        try:
+            decoded_token = auth.verify_id_token(id_token)
+            uid = decoded_token.get("uid")
+            email = decoded_token.get("email")  # Get email from the decoded token if available
+        except auth.InvalidIdTokenError:
+            raise HTTPException(status_code=401, detail="Invalid Firebase ID token")
+        except auth.ExpiredIdTokenError:
+            raise HTTPException(status_code=401, detail="Expired Firebase ID token")
 
-    return JSONResponse(
-      content={"message":  f"Account successfully deleted for {user.email}"},
-      status_code=200
-    )
-  except Exception as error:
-    raise HTTPException(status_code=400, detail=str(error))
+        if not uid:
+            raise HTTPException(status_code=401, detail="Token verification failed, UID not found")
+
+        # Retrieve the user from the database using the email
+        user = get_one_user(db=db, email=email)  # Assuming the function expects an 'email'
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found in the database")
+
+        # Delete the user from Firebase Authentication
+        auth.delete_user(uid=uid)
+
+        # Delete the user from the PostgreSQL database
+        delete_user(db=db, user_id=uid)
+
+        return JSONResponse(
+            content={"message": f"Account successfully deleted for {user.email}"},
+            status_code=200
+        )
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
   
 @router.get("/check-if-active")
 async def check_if_active_user(db: db_dependency):
@@ -293,5 +335,38 @@ async def get_user_role(request: Request):
             status_code=200
         )
 
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
+    
+@router.get("/get-all-users")
+async def get_all_users_account(db: db_dependency):
+    try:
+        users = get_all_user_dashboard(db)
+        return users
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
+    
+@router.post("/view-user")
+async def view_user_account(request: Request, db: db_dependency):
+    try:
+        body = await request.json()
+        token = body.get("token")
+        user_id = body.get("user_id")
+
+        if not token:
+            raise HTTPException(status_code=400, detail="id_token is required")
+
+        # Verify the token and get the role and user_id
+        decoded_token = auth.verify_id_token(token)
+        role = decoded_token.get('role', 'unknown')  # default role is unknown
+        token_user_id = decoded_token.get('user_id')
+
+        # Check if the token belongs to the current logged-in user or if the user is an admin
+        if token_user_id != user_id and role != 'admin': 
+            raise HTTPException(status_code=403, detail="You do not have permission to view this account")
+
+        # If the checks pass, proceed to retrieve the user details
+        return get_one_user_id(db=db, user_id=user_id)
+        
     except Exception as error:
         raise HTTPException(status_code=400, detail=str(error))

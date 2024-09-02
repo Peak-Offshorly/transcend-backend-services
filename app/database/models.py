@@ -244,5 +244,12 @@ class PendingActions(Base):
     action = Column(String, index=True)
     category = Column(String, index=True)
 
+class Company(Base):
+    __tablename__ = 'company'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    name = Column(String, index=True)
+
+
 
 Base.metadata.create_all(engine)

@@ -1,6 +1,7 @@
 from uuid import UUID
 from sqlalchemy.orm import Session
-from app.database.models import Users, Forms, Traits, ChosenTraits, Questions, Options, Answers, Practices, DevelopmentPlan
+from sqlalchemy import select
+from app.database.models import Users, Forms, Traits, ChosenTraits, Questions, Options, Answers, Practices, DevelopmentPlan, Sprints
 from app.schemas.models import UserCompanyDetailsSchema
 
 def update_user_company_details(db: Session, user_id: str, company_size: int, industry: str, role: str, role_description: str):
@@ -109,3 +110,26 @@ def delete_user(db: Session, user_id):
         return True
     
     return False
+
+def get_all_user_dashboard(db: Session):
+    # Join Users and Sprints tables
+    result = db.execute(
+        select(
+            Users.first_name, 
+            Users.last_name, 
+            Users.role, 
+            Sprints.number
+        ).join(Sprints, Users.id == Sprints.user_id)
+    )
+
+    users_with_sprints = []
+
+    for row in result.all():
+        user_info = {
+            "name": f"{row.first_name} {row.last_name}",
+            "role": row.role,
+            "sprint_number": row.number
+        }
+        users_with_sprints.append(user_info)
+
+    return users_with_sprints
