@@ -157,7 +157,7 @@ async def login_user_account(data: LoginSchema, db: db_dependency):
       # domain = "" BE domain for prod
       # samesite = "lax" # for prod
       # secure= True # for prod
-      domain = "transcend-backend-services-4toc.onrender.com"
+      domain = ".netlify.app"
       samesite = "None" 
       secure=False
     else: None
