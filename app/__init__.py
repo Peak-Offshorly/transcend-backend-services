@@ -7,7 +7,14 @@ def create_app() -> FastAPI:
     
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=[
+        "http://localhost:5173",  
+        "http://localhost:5174",  
+        "https://peak-transcend-dev.netlify.app",
+        "https://admin-transcend-dev.netlify.app"
+
+        # make sure to add the frontend url here for dev and staging 
+        ],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

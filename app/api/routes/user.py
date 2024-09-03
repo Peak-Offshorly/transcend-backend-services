@@ -131,7 +131,9 @@ async def create_user_account(data: SignUpSchema, db: db_dependency):
         raise HTTPException(status_code=400, detail=str(error))
 
 @router.post("/login")
-async def login_user_account(token, db: db_dependency):
+async def login_user_account(data: LoginSchema, db: db_dependency):
+  token = data.token
+  
   try:
     decoded_token = auth.verify_id_token(token)
     email = decoded_token.get('email')
@@ -151,7 +153,13 @@ async def login_user_account(token, db: db_dependency):
       status_code=200
     )
     if role == "admin":
-      domain = ".netlify.app"
+      # check environment to set domain and samesite on dev staging and prod
+      # domain = "" BE domain for prod
+      # samesite = "lax" # for prod
+      # secure= True # for prod
+      domain = "transcend-backend-services-4toc.onrender.com"
+      samesite = "None" 
+      secure=False
     else: None
 
     if domain:
@@ -159,9 +167,9 @@ async def login_user_account(token, db: db_dependency):
         key="__session",
         value=session_cookie,
         httponly=True,
-        secure=True,
+        secure=secure,
         max_age=300,  
-        samesite="lax",
+        samesite=samesite,
         domain=domain
     )
 
