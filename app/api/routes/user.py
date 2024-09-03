@@ -400,3 +400,24 @@ async def generate_custom_token(data:CustomTokenRequestSchema , db: db_dependenc
         status_code=200)
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
+
+@router.get("/verify-admin")
+async def verify_admin(request: Request):
+    try:
+      session_cookie = request.cookies.get('__session')
+      if not session_cookie:
+        raise HTTPException(status_code=401, detail="Session cookie not found")
+      decoded_claims = auth.verify_session_cookie(session_cookie, check_revoked=True)
+      user_id = decoded_claims.get('uid')
+      user_role = decoded_claims.get('role', 'unknown')
+      return JSONResponse(
+            content={"message": "Session verified successfully", "user_id": user_id, "role": user_role},
+            status_code=200
+        )
+    
+    except auth.InvalidSessionCookieError:
+        raise HTTPException(status_code=401, detail="Invalid session cookie")
+    except auth.ExpiredSessionCookieError:
+        raise HTTPException(status_code=401, detail="Session cookie has expired")
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
