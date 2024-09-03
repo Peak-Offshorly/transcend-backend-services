@@ -180,3 +180,7 @@ class CompanyDataSchema(BaseModel):
 
 class CustomTokenRequestSchema(BaseModel):
     user_id: str    
+
+class AddUserToCompanySchema(BaseModel):
+    user_id: str
+    company_id: str

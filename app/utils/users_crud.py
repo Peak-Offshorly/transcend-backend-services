@@ -135,12 +135,13 @@ def get_all_user_dashboard(db: Session):
 
     return users_with_sprints
 
-def add_user_company(db: Session, user_id: str, company_id: str):
+def add_user_to_company_crud(db: Session, user_id: str, company_id: str):
     db_user = db.query(Users).filter(Users.id == user_id).first()
     db_company = db.query(Company).filter(Company.id == company_id).first()
 
     if db_user and db_company:
         db_user.company_id = db_company.id
         db.commit()
+        db.refresh(db_user)  
 
     return db_user

@@ -8,7 +8,7 @@ from app.firebase.session import firebase, auth
 import firebase_admin
 from firebase_admin import auth, credentials
 from app.database.models import Users
-from app.schemas.models import SignUpSchema, UpdateUserSchema, LoginSchema, UserCompanyDetailsSchema,CustomTokenRequestSchema
+from app.schemas.models import SignUpSchema, UpdateUserSchema, LoginSchema, UserCompanyDetailsSchema,CustomTokenRequestSchema, AddUserToCompanySchema
 from app.database.connection import get_db
 from app.firebase.utils import verify_token
 from app.utils.users_crud import (
@@ -20,10 +20,8 @@ from app.utils.users_crud import (
     get_all_users,
     update_user_company_details,
     get_user_company_details,
-    get_all_user_dashboard
-)
-from app.utils.company_crud import (
-    get_company_by_id
+    get_all_user_dashboard,
+    add_user_to_company_crud
 )
 
 db_dependency = Annotated[Session, Depends(get_db)]
@@ -406,20 +404,28 @@ async def generate_custom_token(data:CustomTokenRequestSchema , db: db_dependenc
     raise HTTPException(status_code=400, detail=str(error))
   
 @router.post("/add-user-to-company")
-async def add_user_to_company(request: Request, db: db_dependency):
-  try:
-    body = await request.json()
-    user_id = body.get("user_id")
-    company_id = body.get("company_id")
+async def add_user_to_company(data: AddUserToCompanySchema, db: db_dependency):
+    try:
+        user_id = data.user_id
+        company_id = data.company_id
 
-    if not user_id or not company_id:
-      raise HTTPException(status_code=400, detail="user_id and company_id are required fields")
-    
-    user = get_one_user_id(db=db, user_id=user_id)
-    if not user:
-      raise HTTPException(status_code=404, detail="User not found")
-    
-    company = get_company_by_id(db=db, company_id=company_id)
-  except Exception as error:
-    raise HTTPException(status_code=400, detail=str(error))
+
+        if not user_id or not company_id:
+            raise HTTPException(status_code=400, detail="user_id and company_id are required fields")
+
+      
+        updated_user = add_user_to_company_crud(db=db, user_id=user_id, company_id=company_id)
+
+        if not updated_user:
+            raise HTTPException(status_code=404, detail="User or Company not found")
+
+        return {
+            "message": f"User with ID {user_id} has been successfully added to the company with ID {company_id}.",
+            "user_id": updated_user.id,
+            "company_id": updated_user.company_id,
+            "success": True
+        }
+
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
 
