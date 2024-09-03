@@ -22,6 +22,9 @@ from app.utils.users_crud import (
     get_user_company_details,
     get_all_user_dashboard
 )
+from app.utils.company_crud import (
+    get_company_by_id
+)
 
 db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/accounts", tags=["accounts"])
@@ -103,7 +106,8 @@ async def create_user_account(data: SignUpSchema, db: db_dependency):
             email=data.email,
             first_name=data.first_name,
             last_name=data.last_name,
-            mobile_number=data.mobile_number
+            mobile_number=data.mobile_number,
+            acc_activated=True
         )
 
         create_user(db=db, user=new_account)
@@ -400,3 +404,22 @@ async def generate_custom_token(data:CustomTokenRequestSchema , db: db_dependenc
         status_code=200)
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
+  
+@router.post("/add-user-to-company")
+async def add_user_to_company(request: Request, db: db_dependency):
+  try:
+    body = await request.json()
+    user_id = body.get("user_id")
+    company_id = body.get("company_id")
+
+    if not user_id or not company_id:
+      raise HTTPException(status_code=400, detail="user_id and company_id are required fields")
+    
+    user = get_one_user_id(db=db, user_id=user_id)
+    if not user:
+      raise HTTPException(status_code=404, detail="User not found")
+    
+    company = get_company_by_id(db=db, company_id=company_id)
+  except Exception as error:
+    raise HTTPException(status_code=400, detail=str(error))
+

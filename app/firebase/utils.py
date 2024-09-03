@@ -4,9 +4,9 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi import Depends, HTTPException, status, Response
 
 # Render path for service key
-cred = credentials.Certificate("/etc/secrets/transcend-service-account-key")
+# cred = credentials.Certificate("/etc/secrets/transcend-service-account-key")
 
-# cred = credentials.Certificate("././transcend-service-account-key.json")
+cred = credentials.Certificate("././transcend-service-account-key.json")
 
 def verify_token(res: Response, cred: HTTPAuthorizationCredentials=Depends(HTTPBearer(auto_error=False))):
     if cred is None:

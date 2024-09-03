@@ -1,7 +1,7 @@
 from uuid import UUID
 from sqlalchemy.orm import Session
 from sqlalchemy import select
-from app.database.models import Users, Forms, Traits, ChosenTraits, Questions, Options, Answers, Practices, DevelopmentPlan, Sprints
+from app.database.models import Users, Forms, Traits, ChosenTraits, Questions, Options, Answers, Practices, DevelopmentPlan, Sprints, Company
 from app.schemas.models import UserCompanyDetailsSchema
 
 def update_user_company_details(db: Session, user_id: str, company_size: int, industry: str, role: str, role_description: str):
@@ -48,7 +48,8 @@ def create_user(db: Session, user: Users):
         email = user.email,
         first_name = user.first_name,
         last_name = user.last_name,
-        mobile_number = user.mobile_number
+        mobile_number = user.mobile_number,
+        acc_activated = user.acc_activated,
     )
 
     db.add(db_user)
@@ -133,3 +134,13 @@ def get_all_user_dashboard(db: Session):
         users_with_sprints.append(user_info)
 
     return users_with_sprints
+
+def add_user_company(db: Session, user_id: str, company_id: str):
+    db_user = db.query(Users).filter(Users.id == user_id).first()
+    db_company = db.query(Company).filter(Company.id == company_id).first()
+
+    if db_user and db_company:
+        db_user.company_id = db_company.id
+        db.commit()
+
+    return db_user
