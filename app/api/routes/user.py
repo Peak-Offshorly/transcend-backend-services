@@ -8,7 +8,7 @@ from app.firebase.session import firebase, auth
 import firebase_admin
 from firebase_admin import auth, credentials
 from app.database.models import Users
-from app.schemas.models import SignUpSchema, UpdateUserSchema, LoginSchema, UserCompanyDetailsSchema,CustomTokenRequestSchema, AddUserToCompanySchema
+from app.schemas.models import SignUpSchema, UpdateUserSchema, LoginSchema, UserCompanyDetailsSchema,CustomTokenRequestSchema, AddUserToCompanySchema, AddUserToCompanyDashboardSchema
 from app.database.connection import get_db
 from app.firebase.utils import verify_token
 from app.utils.users_crud import (
@@ -21,8 +21,10 @@ from app.utils.users_crud import (
     update_user_company_details,
     get_user_company_details,
     get_all_user_dashboard,
-    add_user_to_company_crud
+    add_user_to_company_crud,
+    create_user_in_dashboard
 )
+from app.email.send_reset_password import send_reset_password
 
 db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/accounts", tags=["accounts"])
@@ -425,6 +427,70 @@ async def add_user_to_company(data: AddUserToCompanySchema, db: db_dependency):
             "company_id": updated_user.company_id,
             "success": True
         }
+
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
+
+@router.post("/add-user-to-company-dashboard")
+async def add_user_to_company_dashboard(data: AddUserToCompanyDashboardSchema, db: Session = Depends(get_db)):
+    try:
+        user_email = data.user_email
+        user_role = data.user_role
+        company_id = data.company_id
+
+        if not user_email or not user_role or not company_id:
+            raise HTTPException(status_code=400, detail="user_email, user_role, and company_id are required fields")
+
+      
+        try:
+            firebase_user = auth.create_user(
+                email=user_email,
+                email_verified=False,
+                disabled=False
+            )
+
+         
+            link = auth.generate_password_reset_link(firebase_user.email)
+            # send_custom_email(firebase_user.email, link)
+
+        except Exception as firebase_error:
+            raise HTTPException(status_code=400, detail=f"Error creating user in Firebase: {str(firebase_error)}")
+
+       
+        new_user = Users(
+            id=firebase_user.uid,
+            email=user_email,
+            role=user_role,
+            company_id=company_id
+        )
+
+      
+        created_user = create_user_in_dashboard(db=db, user=new_user)
+
+        # after creating the user we must do custom claims based on the role
+        try:
+           
+            if user_role not in ["admin", "user"]:
+                raise HTTPException(status_code=400, detail="Invalid role")
+
+           
+            auth.set_custom_user_claims(firebase_user.uid, {'role': user_role})
+            print(f"Set: User role set to {user_role}")
+
+        except Exception as claim_error:
+            
+            raise HTTPException(status_code=400, detail=f"Error setting user role: {str(claim_error)}")
+        
+        
+        await send_reset_password(firebase_user.email, link)
+        return JSONResponse(
+            content={
+                "message": f"Account successfully created for {data.user_email}",
+                "user_id": firebase_user.uid,
+                "email": data.user_email,
+            },
+            status_code=200
+        )
 
     except Exception as error:
         raise HTTPException(status_code=400, detail=str(error))

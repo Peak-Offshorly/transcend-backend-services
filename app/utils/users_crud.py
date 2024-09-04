@@ -145,3 +145,17 @@ def add_user_to_company_crud(db: Session, user_id: str, company_id: str):
         db.refresh(db_user)  
 
     return db_user
+
+def create_user_in_dashboard(db: Session, user: Users):
+    db_user = Users(
+        id = user.id,
+        email = user.email,
+        acc_activated = user.acc_activated,
+        company_id = user.company_id
+    )
+
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+
+    return db_user

@@ -184,3 +184,8 @@ class CustomTokenRequestSchema(BaseModel):
 class AddUserToCompanySchema(BaseModel):
     user_id: str
     company_id: str
+
+class AddUserToCompanyDashboardSchema(BaseModel):
+    user_email: str
+    user_role: str
+    company_id: str
