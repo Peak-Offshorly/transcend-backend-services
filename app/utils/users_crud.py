@@ -112,28 +112,38 @@ def delete_user(db: Session, user_id):
     
     return False
 
-def get_all_user_dashboard(db: Session):
-    # Join Users and Sprints tables
+def get_all_user_dashboard(db: Session, company_id: str):
+    # Query to select Users and Sprints where Users are in the specified company
     result = db.execute(
         select(
-            Users.first_name, 
-            Users.last_name, 
-            Users.role, 
-            Sprints.number
-        ).join(Sprints, Users.id == Sprints.user_id)
+            Users.first_name,
+            Users.last_name,
+            Users.role,
+            Sprints.number,
+            Users.company_id,
+            Users.id
+        )
+        .join(Sprints, Users.id == Sprints.user_id)
+        .where(Users.company_id == company_id)
     )
-
-    users_with_sprints = []
-
+    
+    users_dict = {}
     for row in result.all():
+        user_id = row.id
+        sprint_number = row.number
+        
         user_info = {
             "name": f"{row.first_name} {row.last_name}",
             "role": row.role,
-            "sprint_number": row.number
+            "sprint_number": sprint_number,
+            "company_id": row.company_id,
+            "user_id": user_id
         }
-        users_with_sprints.append(user_info)
-
-    return users_with_sprints
+        
+        if user_id not in users_dict or sprint_number > users_dict[user_id]["sprint_number"]:
+            users_dict[user_id] = user_info
+    
+    return list(users_dict.values())
 
 def add_user_to_company_crud(db: Session, user_id: str, company_id: str):
     db_user = db.query(Users).filter(Users.id == user_id).first()
@@ -159,3 +169,4 @@ def create_user_in_dashboard(db: Session, user: Users):
     db.refresh(db_user)
 
     return db_user
+

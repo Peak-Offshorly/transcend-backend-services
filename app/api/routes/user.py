@@ -366,9 +366,22 @@ async def get_user_role(request: Request):
         raise HTTPException(status_code=400, detail=str(error))
     
 @router.get("/get-all-users")
-async def get_all_users_account(db: db_dependency):
+async def get_all_users_account(request: Request, db: db_dependency):
     try:
-        users = get_all_user_dashboard(db)
+        body = await request.json()
+        user_email = body.get("user_email")
+
+        if not user_email:
+            raise HTTPException(status_code=400, detail="user_email is required")
+        
+        user = get_one_user(db=db, email=user_email)
+
+        company = user.company_id
+
+
+
+
+        users = get_all_user_dashboard(db,company)
         return users
     except Exception as error:
         raise HTTPException(status_code=400, detail=str(error))
@@ -409,6 +422,7 @@ async def generate_custom_token(data:CustomTokenRequestSchema , db: db_dependenc
         status_code=200)
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
+
   
 @router.post("/add-user-to-company")
 async def add_user_to_company(data: AddUserToCompanySchema, db: db_dependency):
@@ -471,6 +485,7 @@ async def add_user_to_company_dashboard(data: AddUserToCompanyDashboardSchema, d
 
       
         created_user = create_user_in_dashboard(db=db, user=new_user)
+        create_user.acc_activated = True
 
         # after creating the user we must do custom claims based on the role
         try:
