@@ -28,14 +28,14 @@ async def send_reset_password(email_to: str, link: str):
 
     subject = "Transcend - Reset Your Password" 
     body = {"reset_link": link}
- # Content that will be used in the HTML template
 
-    # Use the asynchronous email sending function
+
     await send_email_async(
         subject=subject,
         email_to=email_to,
         body=body,
-        template_name="password-reset-email.html",  # Name of the new template file
-        reply_to=EMAIL_FROM  # Set the reply-to address
+        template_name="password-reset-email.html", 
+        reply_to=EMAIL_FROM,  
+        purpose="reset_password"
     )
     print(f"Sent reset password email to {email_to}")

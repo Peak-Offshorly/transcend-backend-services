@@ -55,7 +55,8 @@ async def user_colleague_week_5_9_emails(db: Session):
                 email_to=colleague.email, 
                 subject=subject,
                 template_name="colleague-week-five-nine.html",
-                reply_to=user.email
+                reply_to=user.email,
+                purpose="colleague_week_5_9"
             )
             print(f'Sent email to {colleague.email}')
         except Exception as e:
@@ -104,7 +105,8 @@ async def user_colleague_week_12_emails(db: Session):
                 email_to=colleague.email, 
                 subject=subject,
                 template_name="colleague-week-twelve-survey.html",
-                reply_to=user.email
+                reply_to=user.email,
+                purpose="colleague_week_12"
             )
             print(f'Sent email to {colleague.email}')
         except Exception as e:
