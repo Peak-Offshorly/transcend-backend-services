@@ -239,3 +239,47 @@ async def get_all_companies_endpoint(db: db_dependency):
         raise HTTPException(status_code=400, detail=str(error))
     
 
+@router.get("/get-company-number-of-members/{company_id}")
+async def get_company_number_of_members_endpoint(company_id: str, db: db_dependency):
+    """
+    Retrieves the number of members in a specific company by its ID from the database.
+
+    Args:
+        company_id (str): The ID of the company to retrieve the number of members.
+        db (Session): The database session dependency for performing the operation.
+
+    Returns:
+        int: The number of members in the requested company.
+    """
+    
+    try:
+        company = get_company_by_id(db=db, company_id=company_id)
+
+        if company is None:
+            raise HTTPException(status_code=404, detail="Company not found")
+
+        return {"member_count": company.member_count}
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
+    
+@router.get("/get-company-number-of-admins/{company_id}")
+async def get_company_number_of_admins_endpoint(company_id: str, db: db_dependency):
+    """
+    Retrieves the number of admins in a specific company by its ID from the database.
+
+    Args:
+        company_id (str): The ID of the company to retrieve the number of admins.
+        db (Session): The database session dependency for performing the operation.
+    Returns:
+        int: The number of admins in the requested company.
+    """
+    
+    try:
+        company = get_company_by_id(db=db, company_id=company_id)
+
+        if company is None:
+            raise HTTPException(status_code=404, detail="Company not found")
+
+        return {"admin_count": company.admin_count}
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
