@@ -173,6 +173,7 @@ class DevelopmentActionsSchema(BaseModel):
 class CompanyDataSchema(BaseModel):
     id: Optional[str] = None
     name: str
+    
 
     class Config:
         orm_mode = True

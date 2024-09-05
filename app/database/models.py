@@ -250,6 +250,8 @@ class Company(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     name = Column(String, index=True)
+    member_count = Column(Integer, index=True)
+    admin_count = Column(Integer, index=True)
 
 
 

@@ -11,6 +11,7 @@ from app.utils.company_crud import (
     get_all_companies, 
     update_company, 
     delete_company)
+from uuid import uuid4
 
 db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/company", tags=["company"])
@@ -28,12 +29,14 @@ async def create_company_endpoint(data: CompanyDataSchema, db: db_dependency):
         JSONResponse: A JSON response with the created company's data.
 
     Example Response:
-        {
-            "company": {
-                "id": "be7d9689-3117-5819-9ffe-fa2b9ca205fb",
-                "name": "New Company"
-            }
-        }
+{
+    "company": {
+        "id": "dee1d2f4-fcba-4b26-b746-4d4d1c82b4b4",
+        "name": "Adventure"
+    },
+    "member_count": 0,
+    "admin_count": 1
+}
 
     Request Body:
         {
@@ -43,19 +46,29 @@ async def create_company_endpoint(data: CompanyDataSchema, db: db_dependency):
     """
 
     try:
-        company = create_company(db=db, company=data)
+        member_count = 0
+        admin_count = 1  # assume the user creating the company is an admin
+
+       
+        created_company = create_company(db=db, name=data.name, member_count=member_count, admin_count=admin_count)
+
+        if isinstance(created_company, dict) and "error" in created_company:
+            raise HTTPException(status_code=400, detail=created_company["error"])
+
+     
+        company_data = CompanyDataSchema(
+            id=str(created_company.id),  
+            name=created_company.name
+        )
+
         
-        if isinstance(company, dict) and "error" in company:
-            raise HTTPException(status_code=400, detail=company["error"])
+        return JSONResponse(
+            content={
+                "company": company_data.dict()
+            },
+            status_code=201
+        )
 
-        # convert UUID to string 
-        company_dict = {
-            "id": str(company.id),
-            "name": company.name,
-        }
-        company_data = CompanyDataSchema(**company_dict)
-
-        return JSONResponse(content={"company": company_data.dict()}, status_code=201)
     except Exception as error:
         raise HTTPException(status_code=400, detail=str(error))
     
