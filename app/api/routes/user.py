@@ -214,12 +214,12 @@ async def edit_user_account(data: UpdateUserSchema, db: db_dependency, token = D
   
 
 @router.delete("/delete-user")
-async def delete_user_account(request: Request, db: db_dependency):
+async def delete_user_account(email: str, db: db_dependency):
     """
     Deletes a user account from the database and Firebase Authentication.
 
     Args:
-        request (Request): The HTTP request object containing the user details.
+        email (str): The email of the user to be deleted.
         db (Session): The database session for performing the deletion operation.
 
     Returns:
@@ -232,38 +232,21 @@ async def delete_user_account(request: Request, db: db_dependency):
             "success": true
         }
 
-    Headers:
-        Authorization: Bearer <ID token>
+    Query Params:
+        email: The email of the user to be deleted.
     """
     try:
-        # Extract the Authorization header
-        auth_header = request.headers.get("Authorization")
-        if not auth_header:
-            raise HTTPException(status_code=401, detail="Authorization header missing")
-
-        # Extract the token from the Bearer token format
-        try:
-            id_token = auth_header.split(" ")[1]
-        except IndexError:
-            raise HTTPException(status_code=401, detail="Authorization header format is invalid")
-
-        # Verify the token and extract the uid
-        try:
-            decoded_token = auth.verify_id_token(id_token)
-            uid = decoded_token.get("uid")
-            email = decoded_token.get("email")  # Get email from the decoded token if available
-        except auth.InvalidIdTokenError:
-            raise HTTPException(status_code=401, detail="Invalid Firebase ID token")
-        except auth.ExpiredIdTokenError:
-            raise HTTPException(status_code=401, detail="Expired Firebase ID token")
-
-        if not uid:
-            raise HTTPException(status_code=401, detail="Token verification failed, UID not found")
+        # Check if the email parameter is provided
+        if not email:
+            raise HTTPException(status_code=400, detail="Email query parameter is required")
 
         # Retrieve the user from the database using the email
         user = get_one_user(db=db, email=email)  # Assuming the function expects an 'email'
         if not user:
             raise HTTPException(status_code=404, detail="User not found in the database")
+
+        # Get the user ID (uid) from the database user object
+        uid = user.id
 
         # Delete the user from Firebase Authentication
         auth.delete_user(uid=uid)
@@ -272,9 +255,10 @@ async def delete_user_account(request: Request, db: db_dependency):
         delete_user(db=db, user_id=uid)
 
         return JSONResponse(
-            content={"message": f"Account successfully deleted for {user.email}","success": True},
+            content={"message": f"Account successfully deleted for {user.email}", "success": True},
             status_code=200
         )
+
     except Exception as error:
         raise HTTPException(status_code=400, detail=str(error))
   
