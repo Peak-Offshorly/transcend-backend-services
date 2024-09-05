@@ -194,3 +194,7 @@ class AddUserToCompanyDashboardSchema(BaseModel):
 class CreateCompanyRequest(BaseModel):
     data: CompanyDataSchema
     users: Optional[List[AddUserToCompanyDashboardSchema]] = None
+    
+class PasswordChangeRequest(BaseModel):
+    new_password: str
+    old_password: str

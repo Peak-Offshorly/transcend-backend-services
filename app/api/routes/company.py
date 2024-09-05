@@ -26,18 +26,43 @@ router = APIRouter(prefix="/company", tags=["company"])
 @router.post("/create-company")
 async def create_company_endpoint(
     request: Request,
-    body: CreateCompanyRequest,  # Use the combined model for the request body
+    body: CreateCompanyRequest,
     db: db_dependency  
 ):
     """
     Creates a new company in the database and optionally adds multiple users to the company dashboard.
     """
     try:
-        #extracting data
+  
         data = body.data
         users = body.users
 
-        # initial number of a company
+        # auth part, get the current user
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            raise HTTPException(status_code=401, detail="Authorization header is missing")
+        id_token = auth_header.split(" ")[1]
+        decoded_token = auth.verify_id_token(id_token)
+        current_user_id = decoded_token.get("uid")
+
+        # get the current user from the database
+        current_user = db.query(Users).filter(Users.id == current_user_id).first()
+        if not current_user:
+            raise HTTPException(status_code=400, detail="Current user not found")
+
+        # check if the current user is already associated with a company
+        if current_user.company_id:
+            raise HTTPException(status_code=400, detail="Current user is already associated with a company")
+
+        # validate users data if provided
+        if users:
+            for entry in users:
+                if not entry.user_email or not entry.user_role:
+                    raise HTTPException(status_code=400, detail="user_email and user_role are required fields")
+                if entry.user_role not in ["admin", "user"]:
+                    raise HTTPException(status_code=400, detail="Invalid role")
+
+        # if all validations pass, proceed with company creation
         member_count = 0
         admin_count = 1  # assume the user creating the company is an admin
 
@@ -55,29 +80,12 @@ async def create_company_endpoint(
             name=created_company.name
         )
 
-        # content of the response
         response_content = {
             "company": company_data.dict(),
             "member_count": created_company.member_count,
             "admin_count": created_company.admin_count
         }
 
-        # authorization part, get the current user
-        auth_header = request.headers.get("Authorization")
-        if not auth_header:
-            raise HTTPException(status_code=401, detail="Authorization header is missing")
-        id_token = auth_header.split(" ")[1]
-        decoded_token = auth.verify_id_token(id_token)
-        current_user_id = decoded_token.get("uid")
-
-        # get the current user from the database
-        current_user = db.query(Users).filter(Users.id == current_user_id).first()
-
-        if not current_user:
-            raise HTTPException(status_code=400, detail="Current user not found")
-        # check if the current user is already have company
-        if current_user.company_id:
-            raise HTTPException(status_code=400, detail="Current user is already associated with a company")
         # assign the current user to the company as an admin
         current_user.company_id = created_company.id
         current_user.user_type = "admin"
@@ -85,7 +93,7 @@ async def create_company_endpoint(
         # update the current user's company and role in the database
         db.commit()
 
-        # custom user claims in Firebase 
+        # set custom user claims in Firebase for current user
         try:
             auth.set_custom_user_claims(current_user_id, {'role': 'admin'})
         except Exception as claim_error:
@@ -95,75 +103,65 @@ async def create_company_endpoint(
         if users:
             response_data = []
 
-            # iterate over the provided users 
             for entry in users:
-                user_email = entry.user_email
-                user_role = entry.user_role
-
-                if not user_email or not user_role:
-                    raise HTTPException(status_code=400, detail="user_email and user_role are required fields")
-
                 try:
                     firebase_user = auth.create_user(
-                        email=user_email,
+                        email=entry.user_email,
                         email_verified=False,
                         disabled=False
                     )
-
                     
                     link = auth.generate_password_reset_link(firebase_user.email)
+
+                    new_user = Users(
+                        id=firebase_user.uid,
+                        email=entry.user_email,
+                        user_type=entry.user_role,
+                        company_id=created_company.id  
+                    )
+
+                    db.add(new_user)
                     
+                    # update the member or admin count 
+                    if entry.user_role == "user":
+                        created_company.member_count += 1
+                    elif entry.user_role == "admin":
+                        created_company.admin_count += 1
 
-                except Exception as firebase_error:
-                    raise HTTPException(status_code=400, detail=f"Error creating user in Firebase: {str(firebase_error)}")
+                 
+                    auth.set_custom_user_claims(firebase_user.uid, {'role': entry.user_role})
 
-                new_user = Users(
-                    id=firebase_user.uid,
-                    email=user_email,
-                    user_type=user_role,
-                    company_id=created_company.id  
-                )
+                    # send password reset email
+                    await send_reset_password(firebase_user.email, link)
 
-                db.add(new_user)  
-                db.commit()  
+                    response_data.append({
+                        "message": f"Account successfully created for {entry.user_email}",
+                        "user_id": firebase_user.uid,
+                        "email": entry.user_email,
+                    })
 
-                # update the member or admin count 
-                if user_role == "user":
-                    created_company.member_count += 1
-                elif user_role == "admin":
-                    created_company.admin_count += 1
+                except Exception as user_error:
+                    # ff there's an error creating a user, we'll log it and continue
+                    print(f"Error creating user {entry.user_email}: {str(user_error)}")
+                    response_data.append({
+                        "message": f"Error creating account for {entry.user_email}",
+                        "error": str(user_error)
+                    })
 
-                # commit the updated counts to the database
-                db.commit()
+            # commit all changes after processing all users
+            db.commit()
 
-                # custom user claims in Firebase
-                try:
-                    if user_role not in ["admin", "user"]:
-                        raise HTTPException(status_code=400, detail="Invalid role")
-
-                    auth.set_custom_user_claims(firebase_user.uid, {'role': user_role})
-
-                except Exception as claim_error:
-                    raise HTTPException(status_code=400, detail=f"Error setting user role: {str(claim_error)}")
-
-                # send password reset email
-                await send_reset_password(firebase_user.email, link)
-
-              
-                response_data.append({
-                    "message": f"Account successfully created for {entry.user_email}",
-                    "user_id": firebase_user.uid,
-                    "email": entry.user_email,
-                })
-
-        
             response_content["member_count"] = created_company.member_count
             response_content["admin_count"] = created_company.admin_count
             response_content["users"] = response_data
 
         return JSONResponse(content=response_content, status_code=201)
 
+    except HTTPException as http_error:
+        # Re-raise HTTP exceptions
+        raise http_error
     except Exception as error:
+        # For any other exceptions, return a 400 Bad Request
         raise HTTPException(status_code=400, detail=str(error))
     
 @router.get("/get-company/{company_id}")
@@ -239,3 +237,47 @@ async def get_all_companies_endpoint(db: db_dependency):
         raise HTTPException(status_code=400, detail=str(error))
     
 
+@router.get("/get-company-number-of-members/{company_id}")
+async def get_company_number_of_members_endpoint(company_id: str, db: db_dependency):
+    """
+    Retrieves the number of members in a specific company by its ID from the database.
+
+    Args:
+        company_id (str): The ID of the company to retrieve the number of members.
+        db (Session): The database session dependency for performing the operation.
+
+    Returns:
+        int: The number of members in the requested company.
+    """
+    
+    try:
+        company = get_company_by_id(db=db, company_id=company_id)
+
+        if company is None:
+            raise HTTPException(status_code=404, detail="Company not found")
+
+        return {"member_count": company.member_count}
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
+    
+@router.get("/get-company-number-of-admins/{company_id}")
+async def get_company_number_of_admins_endpoint(company_id: str, db: db_dependency):
+    """
+    Retrieves the number of admins in a specific company by its ID from the database.
+
+    Args:
+        company_id (str): The ID of the company to retrieve the number of admins.
+        db (Session): The database session dependency for performing the operation.
+    Returns:
+        int: The number of admins in the requested company.
+    """
+    
+    try:
+        company = get_company_by_id(db=db, company_id=company_id)
+
+        if company is None:
+            raise HTTPException(status_code=404, detail="Company not found")
+
+        return {"admin_count": company.admin_count}
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
