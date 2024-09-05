@@ -33,11 +33,11 @@ async def create_company_endpoint(
     Creates a new company in the database and optionally adds multiple users to the company dashboard.
     """
     try:
-        # Extract data
+  
         data = body.data
         users = body.users
 
-        # Authorization part, get the current user
+        # auth part, get the current user
         auth_header = request.headers.get("Authorization")
         if not auth_header:
             raise HTTPException(status_code=401, detail="Authorization header is missing")
@@ -45,16 +45,16 @@ async def create_company_endpoint(
         decoded_token = auth.verify_id_token(id_token)
         current_user_id = decoded_token.get("uid")
 
-        # Get the current user from the database
+        # get the current user from the database
         current_user = db.query(Users).filter(Users.id == current_user_id).first()
         if not current_user:
             raise HTTPException(status_code=400, detail="Current user not found")
 
-        # Check if the current user is already associated with a company
+        # check if the current user is already associated with a company
         if current_user.company_id:
             raise HTTPException(status_code=400, detail="Current user is already associated with a company")
 
-        # Validate users data if provided
+        # validate users data if provided
         if users:
             for entry in users:
                 if not entry.user_email or not entry.user_role:
@@ -62,11 +62,11 @@ async def create_company_endpoint(
                 if entry.user_role not in ["admin", "user"]:
                     raise HTTPException(status_code=400, detail="Invalid role")
 
-        # If all validations pass, proceed with company creation
+        # if all validations pass, proceed with company creation
         member_count = 0
         admin_count = 1  # assume the user creating the company is an admin
 
-        # Create the company in the database
+        # create the company in the database
         created_company = create_company(
             db=db, name=data.name, member_count=member_count, admin_count=admin_count
         )
@@ -74,33 +74,32 @@ async def create_company_endpoint(
         if isinstance(created_company, dict) and "error" in created_company:
             raise HTTPException(status_code=400, detail=created_company["error"])
 
-        # For prompt
+        # for prompt
         company_data = CompanyDataSchema(
             id=str(created_company.id),
             name=created_company.name
         )
 
-        # Content of the response
         response_content = {
             "company": company_data.dict(),
             "member_count": created_company.member_count,
             "admin_count": created_company.admin_count
         }
 
-        # Assign the current user to the company as an admin
+        # assign the current user to the company as an admin
         current_user.company_id = created_company.id
         current_user.user_type = "admin"
 
-        # Update the current user's company and role in the database
+        # update the current user's company and role in the database
         db.commit()
 
-        # Set custom user claims in Firebase for current user
+        # set custom user claims in Firebase for current user
         try:
             auth.set_custom_user_claims(current_user_id, {'role': 'admin'})
         except Exception as claim_error:
             raise HTTPException(status_code=400, detail=f"Error setting user role for the current user: {str(claim_error)}")
 
-        # Optionally add additional users to the company 
+        # optionally add additional users to the company 
         if users:
             response_data = []
 
@@ -123,16 +122,16 @@ async def create_company_endpoint(
 
                     db.add(new_user)
                     
-                    # Update the member or admin count 
+                    # update the member or admin count 
                     if entry.user_role == "user":
                         created_company.member_count += 1
                     elif entry.user_role == "admin":
                         created_company.admin_count += 1
 
-                    # Set custom user claims in Firebase
+                 
                     auth.set_custom_user_claims(firebase_user.uid, {'role': entry.user_role})
 
-                    # Send password reset email
+                    # send password reset email
                     await send_reset_password(firebase_user.email, link)
 
                     response_data.append({
@@ -142,14 +141,14 @@ async def create_company_endpoint(
                     })
 
                 except Exception as user_error:
-                    # If there's an error creating a user, we'll log it and continue
+                    # ff there's an error creating a user, we'll log it and continue
                     print(f"Error creating user {entry.user_email}: {str(user_error)}")
                     response_data.append({
                         "message": f"Error creating account for {entry.user_email}",
                         "error": str(user_error)
                     })
 
-            # Commit all changes after processing all users
+            # commit all changes after processing all users
             db.commit()
 
             response_content["member_count"] = created_company.member_count
