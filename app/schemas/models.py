@@ -173,6 +173,7 @@ class DevelopmentActionsSchema(BaseModel):
 class CompanyDataSchema(BaseModel):
     id: Optional[str] = None
     name: str
+    
 
     class Config:
         orm_mode = True
@@ -188,3 +189,8 @@ class AddUserToCompanySchema(BaseModel):
 class AddUserToCompanyDashboardSchema(BaseModel):
     user_email: str
     user_role: str
+
+
+class CreateCompanyRequest(BaseModel):
+    data: CompanyDataSchema
+    users: Optional[List[AddUserToCompanyDashboardSchema]] = None

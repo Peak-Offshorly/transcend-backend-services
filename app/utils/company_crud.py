@@ -5,16 +5,16 @@ from app.database.models import Users, Forms, Traits, ChosenTraits, Questions, O
 from app.schemas.models import UserCompanyDetailsSchema, CompanyDataSchema
 
 # function to create a new company
-def create_company(db: Session, company: CompanyDataSchema):
-    company_id = uuid4()
-    existing_company = db.query(Company).filter(Company.name == company.name).first()
-    
+def create_company(db: Session, name: str, member_count: int, admin_count: int):
+    existing_company = db.query(Company).filter(Company.name == name).first()
     if existing_company:
         return {"error": "A company with this name already exists."}
-   
+
     db_company = Company(
-        id=company_id, 
-        name=company.name
+        id=uuid4(),  
+        name=name,
+        member_count=member_count,
+        admin_count=admin_count
     )
 
     db.add(db_company)
