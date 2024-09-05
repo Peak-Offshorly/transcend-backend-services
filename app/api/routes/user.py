@@ -213,6 +213,26 @@ async def edit_user_account(data: UpdateUserSchema, db: db_dependency, token = D
 
 @router.delete("/delete-user")
 async def delete_user_account(request: Request, db: db_dependency):
+    """
+    Deletes a user account from the database and Firebase Authentication.
+
+    Args:
+        request (Request): The HTTP request object containing the user details.
+        db (Session): The database session for performing the deletion operation.
+
+    Returns:
+        dict: A JSON response with a success message.
+
+    Example output:
+        JSON response format:
+        {
+            "message": "Account successfully deleted for will@offshorly.com",
+            "success": true
+        }
+
+    Headers:
+        Authorization: Bearer <ID token>
+    """
     try:
         # Extract the Authorization header
         auth_header = request.headers.get("Authorization")
@@ -250,7 +270,7 @@ async def delete_user_account(request: Request, db: db_dependency):
         delete_user(db=db, user_id=uid)
 
         return JSONResponse(
-            content={"message": f"Account successfully deleted for {user.email}"},
+            content={"message": f"Account successfully deleted for {user.email}","success": True},
             status_code=200
         )
     except Exception as error:
@@ -293,6 +313,31 @@ async def check_if_active_user(db: db_dependency):
   
 @router.post("/set-user-role")
 async def set_user_role(request: Request, db: db_dependency):
+    """
+    Sets the role of a user in Firebase Authentication custom claims.
+
+    Args:
+        request (Request): The HTTP request object containing the user details.
+        db (Session): The database session for updating the user's role.
+
+    Returns:
+        dict: A JSON response with a success message.
+
+    Example output:
+        JSON response format:
+        {
+            "message": "User role set to admin",
+            "success": true
+        }
+
+    Request Body:
+        {
+            "user_id": "v1OVQn3QELZpxk3nNmudJ9GtQRp2",
+            "role": "user"
+        }
+    """
+
+
     try:
 
         body = await request.json()
@@ -330,7 +375,7 @@ async def set_user_role(request: Request, db: db_dependency):
                 print(f"Set: User role set to {role}")
 
         return JSONResponse(
-            content={"message": f"User role set to {role}"},
+            content={"message": f"User role set to {role}", "success": True},
             status_code=200
         )
     except Exception as error:
@@ -338,6 +383,25 @@ async def set_user_role(request: Request, db: db_dependency):
   
 @router.get("/get-user-role")
 async def get_user_role(request: Request):
+    """
+    Gets the role of the user from Firebase Authentication custom claims.
+
+    Args:
+        request (Request): The HTTP request object containing the necessary headers.
+
+    Returns:
+        dict: A JSON response with a success message and the user's role.
+
+    Example Response:
+        {
+            "message": "User role is admin",
+            "role": "admin"
+        }
+
+    Headers:
+        Authorization: Bearer <ID token>
+    """
+
     try:
         # extract the Authorization header from the request
         auth_header = request.headers.get('Authorization')
@@ -367,6 +431,22 @@ async def get_user_role(request: Request):
     
 @router.get("/get-all-users")
 async def get_all_users_account(request: Request, db: db_dependency):
+    """
+    Retrieves the list of all users for the admin dashboard.
+
+    Args:
+        request (Request): The HTTP request object containing the necessary headers.
+        db (Session): The database session used to query the users.
+
+    Returns:
+        list: A list of all users in the database.
+
+    Request Body:
+        {
+            "user_email": "will@offshorly.com"
+        }
+    """
+
     try:
         body = await request.json()
         user_email = body.get("user_email")
@@ -377,10 +457,6 @@ async def get_all_users_account(request: Request, db: db_dependency):
         user = get_one_user(db=db, email=user_email)
 
         company = user.company_id
-
-
-
-
         users = get_all_user_dashboard(db,company)
         return users
     except Exception as error:
@@ -388,6 +464,9 @@ async def get_all_users_account(request: Request, db: db_dependency):
     
 @router.post("/view-user")
 async def view_user_account(request: Request, db: db_dependency):
+    """
+    (not working)
+    """
     try:
         body = await request.json()
         token = body.get("token")
@@ -413,15 +492,38 @@ async def view_user_account(request: Request, db: db_dependency):
     
 @router.post("/generate-custom-token")
 async def generate_custom_token(data:CustomTokenRequestSchema , db: db_dependency):
-  try:
-    user_id = data.user_id
-    custom_token = auth.create_custom_token(user_id)
-    decoded_token = custom_token.decode('utf-8')
-    return JSONResponse(
-      content={"message": "Custom token generated", "custom_token": decoded_token},
-        status_code=200)
-  except Exception as error:
-    raise HTTPException(status_code=400, detail=str(error))
+    """
+    Generates a custom token for a user using Firebase Authentication.
+
+    Args:
+        data (CustomTokenRequestSchema): The request data containing the user ID.
+        db (db_dependency): The database dependency for performing operations (if required).
+
+    Returns:
+        dict: A JSON response with a success message and the generated custom token.
+
+    Example Response:
+        {
+            "message": "Custom token generated",
+            "custom_token": "<generated_custom_token>"
+        }
+    
+    Request Body:
+    {
+        "user_id":"kWxHZ2au8oYyxXibTBIcvYCA1b93"
+    }
+    """
+
+
+    try:
+        user_id = data.user_id
+        custom_token = auth.create_custom_token(user_id)
+        decoded_token = custom_token.decode('utf-8')
+        return JSONResponse(
+            content={"message": "Custom token generated", "custom_token": decoded_token},
+            status_code=200)
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
 
 @router.get("/verify-admin")
 async def verify_admin(request: Request):
@@ -447,6 +549,30 @@ async def verify_admin(request: Request):
   
 @router.post("/add-user-to-company")
 async def add_user_to_company(data: AddUserToCompanySchema, db: db_dependency):
+    """
+    Add a user to a company in the database.
+
+    Args:
+        data (AddUserToCompanySchema): The request data containing the user ID and company ID.
+        db (Session): The database session for performing the operation.
+    
+    Returns:
+        dict: A JSON response with a success message.
+    
+    Example Response:
+        {
+            "message": "User with ID PZsrWyyv4yQQmW1OEipC3aZF33q1 has been successfully added to the company with ID be7d9689-3117-5819-9ffe-fa2b9ca205fb.",
+            "user_id": "PZsrWyyv4yQQmW1OEipC3aZF33q1",
+            "company_id": "be7d9689-3117-5819-9ffe-fa2b9ca205fb",
+            "success": true
+        }
+
+    Request Body:
+        {
+            "user_id":"PZsrWyyv4yQQmW1OEipC3aZF33q1",
+            "company_id":"be7d9689-3117-5819-9ffe-fa2b9ca205fb"
+        }
+    """
     try:
         user_id = data.user_id
         company_id = data.company_id
@@ -473,6 +599,32 @@ async def add_user_to_company(data: AddUserToCompanySchema, db: db_dependency):
 
 @router.post("/add-user-to-company-dashboard")
 async def add_user_to_company_dashboard(data: AddUserToCompanyDashboardSchema, db: Session = Depends(get_db)):
+    """
+    Adds a user to the company dashboard and creates an account in both firebase in database.
+
+    Args:
+        data (AddUserToCompanyDashboardSchema): The request data containing user email, user role, and company ID.
+        db (Session): The database session for performing the operation.
+
+    Returns:
+        dict: A JSON response with a success message, user ID, and email.
+
+    Example Response:
+        {
+            "message": "Account successfully created for user@example.com",
+            "user_id": "v1OVQn3QELZpxk3nNmudJ9GtQRp2",
+            "email": "user@example.com",
+            "success": true
+        }
+
+    Request Body:
+        {
+            "user_email": "user@example.com",
+            "user_role": "admin",
+            "company_id": "12345"
+        }
+    """
+
     try:
         user_email = data.user_email
         user_role = data.user_role

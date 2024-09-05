@@ -17,6 +17,31 @@ router = APIRouter(prefix="/company", tags=["company"])
 
 @router.post("/create-company")
 async def create_company_endpoint(data: CompanyDataSchema, db: db_dependency):
+    """
+    Creates a new company in the database.
+
+    Args:
+        data (CompanyDataSchema): The request data containing the details of the company to be created.
+        db (Session): The database session dependency for performing the operation.
+
+    Returns:
+        JSONResponse: A JSON response with the created company's data.
+
+    Example Response:
+        {
+            "company": {
+                "id": "be7d9689-3117-5819-9ffe-fa2b9ca205fb",
+                "name": "New Company"
+            }
+        }
+
+    Request Body:
+        {
+            "name": "New Company"
+        }
+    
+    """
+
     try:
         company = create_company(db=db, company=data)
         
@@ -36,6 +61,27 @@ async def create_company_endpoint(data: CompanyDataSchema, db: db_dependency):
     
 @router.get("/get-company/{company_id}")
 async def get_company_endpoint(company_id: str, db: db_dependency):
+    """
+    Retrieves a specific company by its ID from the database.
+
+    Args:
+        company_id (str): The ID of the company to retrieve.
+        db (Session): The database session dependency for performing the operation.
+
+    Returns:
+        CompanyDataSchema: The data of the requested company.
+
+    Example Response:
+        {
+            "id": "be7d9689-3117-5819-9ffe-fa2b9ca205fb",
+            "name": "Offshorly"
+        }
+
+    Input:
+        Path Parameter:
+            company_id (str): The ID of the company to be retrieved.
+    """
+
     try:
         company = get_company_by_id(db=db, company_id=company_id)
 
@@ -53,25 +99,36 @@ async def get_company_endpoint(company_id: str, db: db_dependency):
 
 @router.get("/get-all-companies")
 async def get_all_companies_endpoint(db: db_dependency):
+    """
+    Retrieves a list of all companies from the database.
+
+    Args:
+        db (Session): The database session dependency for performing the operation.
+
+    Returns:
+        list: A list of all companies in the database.
+
+    Example Response:
+        [
+            {
+                "id": "be7d9689-3117-5819-9ffe-fa2b9ca205fb",
+                "name": "Offshorly"
+            },
+            {
+                "id": "c628c17c-ef36-5ce3-9b66-43c8f58402f6",
+                "name": "Peak"
+            },
+            {
+                "id": "3a9e8927-239f-4939-ae7d-491b2fb18c7e",
+                "name": "Nokia"
+            }
+        ]
+    """
+
     try:
         companies = get_all_companies(db=db)
         return companies
     except Exception as error:
         raise HTTPException(status_code=400, detail=str(error))
     
-@router.put("/update-company/{company_id}")
-async def update_company_endpoint(company_id: str, data: CompanyDataSchema, db: db_dependency):
-    try:
-        company = update_company(db=db, company_id=company_id, name=data.name)
 
-        if company is None:
-            raise HTTPException(status_code=404, detail="Company not found")
-        
-        company_data = CompanyDataSchema(
-            id=str(company.id),  
-            name=company.name,
-        )
-        
-        return company_data
-    except Exception as error:
-        raise HTTPException(status_code=400, detail=str(error))
