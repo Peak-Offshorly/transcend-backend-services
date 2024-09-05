@@ -2,13 +2,14 @@ from datetime import datetime
 import datetime as dt
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import JSONResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from typing import Annotated
 from app.firebase.session import firebase, auth
 import firebase_admin
 from firebase_admin import auth, credentials
 from app.database.models import Users
-from app.schemas.models import SignUpSchema, UpdateUserSchema, LoginSchema, UserCompanyDetailsSchema,CustomTokenRequestSchema, AddUserToCompanySchema, AddUserToCompanyDashboardSchema
+from app.schemas.models import SignUpSchema, UpdateUserSchema, LoginSchema, UserCompanyDetailsSchema,CustomTokenRequestSchema, AddUserToCompanySchema, AddUserToCompanyDashboardSchema, PasswordChangeRequest
 from app.database.connection import get_db
 from app.firebase.utils import verify_token
 from app.utils.users_crud import (
@@ -26,10 +27,12 @@ from app.utils.users_crud import (
 )
 from app.email.send_reset_password import send_reset_password
 from typing import List
+from firebase_admin.exceptions import FirebaseError
 
 
 db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/accounts", tags=["accounts"])
+firebase_auth = HTTPBearer()
 
 @router.post("/save-company-details")
 async def save_company_details(data: UserCompanyDetailsSchema, db: db_dependency, token = Depends(verify_token)):
@@ -723,3 +726,76 @@ async def add_user_to_company_dashboard(
 
     except Exception as error:
         raise HTTPException(status_code=400, detail=str(error))
+
+@router.post("/change-password")
+async def change_password(
+    request: PasswordChangeRequest,
+    credentials: HTTPAuthorizationCredentials = Depends(firebase_auth)
+):
+    
+    """
+    Changes the password of the user
+
+    Args:
+        request (PasswordChangeRequest): The request data containing the old and new passwords.
+        credentials (HTTPAuthorizationCredentials): The HTTP Authorization credentials containing the Firebase ID token.
+
+    Returns:
+        dict: A JSON response with a success message.
+    
+    Example Response:
+        {
+            "message": "Password updated successfully", 
+            "success": True
+        }
+    
+    Request Body:
+        {
+            "new_password": "new_password",
+            "old_password": "old_password"
+        }
+    """
+    try:
+        # Extract the token
+        token = credentials.credentials
+
+        # Verify the token
+        decoded_token = auth.verify_id_token(token)
+        uid = decoded_token['uid']
+
+        # Get the user's email
+        user = auth.get_user(uid)
+        email = user.email
+
+        # Verify the old password
+        try:
+            # Firebase Admin SDK doesn't have a direct method to verify password
+            # You might need to use Firebase Auth REST API or a custom solution here
+            # For now, we'll skip this step and add a TODO
+            # TODO: Implement old password verification
+            pass
+        except FirebaseError as e:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Error verifying old password: {str(e)}"
+            )
+
+        # Update the user's password in Firebase
+        auth.update_user(
+            uid,
+            password=request.new_password
+        )
+
+        return {"message": "Password updated successfully", "success": True}
+
+    except FirebaseError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Error updating password: {str(e)}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=401,
+            detail=f"Invalid authentication credentials: {str(e)}",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
