@@ -21,6 +21,7 @@ class Users(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     is_active = Column(Boolean, default=True)
     acc_activated = Column(Boolean, default=False)
+    user_type = Column(String, index=True)
 
     traits = relationship('Traits', back_populates='users')
     chosen_traits = relationship('ChosenTraits', back_populates='users')

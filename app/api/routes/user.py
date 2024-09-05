@@ -346,19 +346,29 @@ async def set_user_role(request: Request, db: db_dependency):
         if role_from_claims == role:
             raise HTTPException(status_code=400, detail=f"User is already a {role}")
         
+        db_user = db.query(Users).filter(Users.id == user_id).first()
+        if not db_user:
+            raise HTTPException(status_code=404, detail="User not found in the database")
         if role == "admin":
            if role_from_claims == "user":
               raise HTTPException(status_code=400, detail="This user can't be promoted to admin")
            if role_from_claims == "unknown":
               auth.set_custom_user_claims(user_id, {'role': role})
+
               print(f"Set: User role set to {role}")
+              db_user.user_type = 'admin'
+              db.commit()
         if role == "user":
             if role_from_claims == "admin":
                 auth.set_custom_user_claims(user_id, {'role': role})
                 print(f"Set: User role set to {role}")
+                db_user.user_type = 'user'
+                db.commit()
             if role_from_claims == "unknown":
                 auth.set_custom_user_claims(user_id, {'role': role})
                 print(f"Set: User role set to {role}")
+                db_user.user_type = 'user'
+                db.commit()
 
         return JSONResponse(
             content={"message": f"User role set to {role}", "success": True},
