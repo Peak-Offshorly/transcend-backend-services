@@ -188,4 +188,3 @@ class AddUserToCompanySchema(BaseModel):
 class AddUserToCompanyDashboardSchema(BaseModel):
     user_email: str
     user_role: str
-    company_id: str

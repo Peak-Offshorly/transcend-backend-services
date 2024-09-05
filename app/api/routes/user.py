@@ -25,6 +25,8 @@ from app.utils.users_crud import (
     create_user_in_dashboard
 )
 from app.email.send_reset_password import send_reset_password
+from typing import List
+
 
 db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/accounts", tags=["accounts"])
@@ -598,93 +600,132 @@ async def add_user_to_company(data: AddUserToCompanySchema, db: db_dependency):
         raise HTTPException(status_code=400, detail=str(error))
 
 @router.post("/add-user-to-company-dashboard")
-async def add_user_to_company_dashboard(data: AddUserToCompanyDashboardSchema, db: Session = Depends(get_db)):
+async def add_user_to_company_dashboard(
+   request: Request,
+   data: List[AddUserToCompanyDashboardSchema], 
+   db: db_dependency
+   ):
     """
-    Adds a user to the company dashboard and creates an account in both firebase in database.
+    Adds multiple users to the company dashboard and creates an account in both Firebase and the database.
 
     Args:
-        data (AddUserToCompanyDashboardSchema): The request data containing user email, user role, and company ID.
+        data (list[AddUserToCompanyDashboardSchema]): The request data containing multiple user entries.
         db (Session): The database session for performing the operation.
 
     Returns:
-        dict: A JSON response with a success message, user ID, and email.
+        dict: A JSON response with success messages, user IDs, and emails for all users.
 
     Example Response:
-        {
-            "message": "Account successfully created for user@example.com",
-            "user_id": "v1OVQn3QELZpxk3nNmudJ9GtQRp2",
-            "email": "user@example.com",
-            "success": true
-        }
+    {
+        "success": true,
+        "users": [
+            {
+                "message": "Account successfully created for flureta@up.edu.ph",
+                "user_id": "eRnrtiGbSbOXVl14RPfnFcz5x7j2",
+                "email": "flureta@up.edu.ph"
+            },
+            {
+                "message": "Account successfully created for will@offshorly.com",
+                "user_id": "Yd9Wt2H94iWnncZrkIAJAniDH853",
+                "email": "will@offshorly.com"
+            }
+        ]
+    }
 
     Request Body:
-        {
-            "user_email": "user@example.com",
-            "user_role": "admin",
-            "company_id": "12345"
-        }
+        [
+            {
+                "user_email": "flureta@up.edu.ph",
+                "user_role": "user"
+            },
+            {
+                "user_email": "will@offshorly.com",
+                "user_role": "user"
+            }
+        ]
+
     """
 
     try:
-        user_email = data.user_email
-        user_role = data.user_role
-        company_id = data.company_id
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            raise HTTPException(status_code=401, detail="Authorization header is missing")
+        id_token = auth_header.split(" ")[1]
+        decoded_token = auth.verify_id_token(id_token)
+        current_user_id = decoded_token.get("uid")
 
-        if not user_email or not user_role or not company_id:
-            raise HTTPException(status_code=400, detail="user_email, user_role, and company_id are required fields")
+        current_user = db.query(Users).filter(Users.id == current_user_id).first()
+        current_user_company_id = current_user.company_id
 
-      
-        try:
-            firebase_user = auth.create_user(
+
+        if not current_user_company_id:
+            raise HTTPException(status_code=400, detail="Current user's company ID not found")
+
+        response_data = []
+
+        for entry in data:
+            user_email = entry.user_email
+            user_role = entry.user_role
+
+            print(f"User role: {user_role} and company_id: {current_user_company_id} and user_email: {user_email}")
+
+            if not user_email or not user_role:
+                raise HTTPException(status_code=400, detail="user_email and user_role are required fields")
+
+            # Create a new user in Firebase
+            try:
+                firebase_user = auth.create_user(
+                    email=user_email,
+                    email_verified=False,
+                    disabled=False
+                )
+
+                # Generate a password reset link and send it via email
+                link = auth.generate_password_reset_link(firebase_user.email)
+                # send_custom_email(firebase_user.email, link)
+
+            except Exception as firebase_error:
+                raise HTTPException(status_code=400, detail=f"Error creating user in Firebase: {str(firebase_error)}")
+
+            # Create the user in the database
+            new_user = Users(
+                id=firebase_user.uid,
                 email=user_email,
-                email_verified=False,
-                disabled=False
+                role=user_role,
+                company_id=current_user_company_id
             )
 
-         
-            link = auth.generate_password_reset_link(firebase_user.email)
-            # send_custom_email(firebase_user.email, link)
+            created_user = create_user_in_dashboard(db=db, user=new_user)
 
-        except Exception as firebase_error:
-            raise HTTPException(status_code=400, detail=f"Error creating user in Firebase: {str(firebase_error)}")
+            # Set custom user claims in Firebase
+            try:
+                if user_role not in ["admin", "user"]:
+                    raise HTTPException(status_code=400, detail="Invalid role")
 
-       
-        new_user = Users(
-            id=firebase_user.uid,
-            email=user_email,
-            role=user_role,
-            company_id=company_id
-        )
+                auth.set_custom_user_claims(firebase_user.uid, {'role': user_role})
+                print(f"Set: User role set to {user_role}")
 
-      
-        created_user = create_user_in_dashboard(db=db, user=new_user)
-        create_user.acc_activated = True
+            except Exception as claim_error:
+                raise HTTPException(status_code=400, detail=f"Error setting user role: {str(claim_error)}")
 
-        # after creating the user we must do custom claims based on the role
-        try:
-           
-            if user_role not in ["admin", "user"]:
-                raise HTTPException(status_code=400, detail="Invalid role")
+            # Send password reset email
+            await send_reset_password(firebase_user.email, link)
 
-           
-            auth.set_custom_user_claims(firebase_user.uid, {'role': user_role})
-            print(f"Set: User role set to {user_role}")
+            # Add success response for the current user
+            response_data.append({
+                "message": f"Account successfully created for {entry.user_email}",
+                "user_id": firebase_user.uid,
+                "email": entry.user_email,
+            })
 
-        except Exception as claim_error:
-            
-            raise HTTPException(status_code=400, detail=f"Error setting user role: {str(claim_error)}")
-        
-        
-        await send_reset_password(firebase_user.email, link)
+        # Return the response data for all users
         return JSONResponse(
             content={
-                "message": f"Account successfully created for {data.user_email}",
-                "user_id": firebase_user.uid,
-                "email": data.user_email,
+                "success": True,
+                "users": response_data
             },
             status_code=200
         )
 
     except Exception as error:
         raise HTTPException(status_code=400, detail=str(error))
-
