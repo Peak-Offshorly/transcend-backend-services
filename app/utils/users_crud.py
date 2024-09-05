@@ -1,7 +1,7 @@
 from uuid import UUID
 from sqlalchemy.orm import Session
 from sqlalchemy import select
-from app.database.models import Users, Forms, Traits, ChosenTraits, Questions, Options, Answers, Practices, DevelopmentPlan, Sprints
+from app.database.models import Users, Forms, Traits, ChosenTraits, Questions, Options, Answers, Practices, DevelopmentPlan, Sprints, Company
 from app.schemas.models import UserCompanyDetailsSchema
 
 def update_user_company_details(db: Session, user_id: str, company_size: int, industry: str, role: str, role_description: str):
@@ -48,7 +48,8 @@ def create_user(db: Session, user: Users):
         email = user.email,
         first_name = user.first_name,
         last_name = user.last_name,
-        mobile_number = user.mobile_number
+        mobile_number = user.mobile_number,
+        acc_activated = user.acc_activated,
     )
 
     db.add(db_user)
@@ -111,25 +112,61 @@ def delete_user(db: Session, user_id):
     
     return False
 
-def get_all_user_dashboard(db: Session):
-    # Join Users and Sprints tables
+def get_all_user_dashboard(db: Session, company_id: str):
+    # Query to select Users and Sprints where Users are in the specified company
     result = db.execute(
         select(
-            Users.first_name, 
-            Users.last_name, 
-            Users.role, 
-            Sprints.number
-        ).join(Sprints, Users.id == Sprints.user_id)
+            Users.first_name,
+            Users.last_name,
+            Users.role,
+            Sprints.number,
+            Users.company_id,
+            Users.id
+        )
+        .join(Sprints, Users.id == Sprints.user_id)
+        .where(Users.company_id == company_id)
     )
-
-    users_with_sprints = []
-
+    
+    users_dict = {}
     for row in result.all():
+        user_id = row.id
+        sprint_number = row.number
+        
         user_info = {
             "name": f"{row.first_name} {row.last_name}",
             "role": row.role,
-            "sprint_number": row.number
+            "sprint_number": sprint_number,
+            "company_id": row.company_id,
+            "user_id": user_id
         }
-        users_with_sprints.append(user_info)
+        
+        if user_id not in users_dict or sprint_number > users_dict[user_id]["sprint_number"]:
+            users_dict[user_id] = user_info
+    
+    return list(users_dict.values())
 
-    return users_with_sprints
+def add_user_to_company_crud(db: Session, user_id: str, company_id: str):
+    db_user = db.query(Users).filter(Users.id == user_id).first()
+    db_company = db.query(Company).filter(Company.id == company_id).first()
+
+    if db_user and db_company:
+        db_user.company_id = db_company.id
+        db.commit()
+        db.refresh(db_user)  
+
+    return db_user
+
+def create_user_in_dashboard(db: Session, user: Users):
+    db_user = Users(
+        id = user.id,
+        email = user.email,
+        acc_activated = user.acc_activated,
+        company_id = user.company_id
+    )
+
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+
+    return db_user
+

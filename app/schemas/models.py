@@ -31,7 +31,8 @@ class UserCompanyDetailsSchema(BaseModel):
         from_attributes = True
 
 class LoginSchema(BaseModel):
-    token: str
+    email: str
+    password: str
 
 class TraitsSchema(BaseModel):
     id: Optional[UUID] = None
@@ -180,3 +181,12 @@ class CompanyDataSchema(BaseModel):
 
 class CustomTokenRequestSchema(BaseModel):
     user_id: str    
+
+class AddUserToCompanySchema(BaseModel):
+    user_id: str
+    company_id: str
+
+class AddUserToCompanyDashboardSchema(BaseModel):
+    user_email: str
+    user_role: str
+    company_id: str

@@ -8,7 +8,7 @@ from app.firebase.session import firebase, auth
 import firebase_admin
 from firebase_admin import auth, credentials
 from app.database.models import Users
-from app.schemas.models import SignUpSchema, UpdateUserSchema, LoginSchema, UserCompanyDetailsSchema,CustomTokenRequestSchema
+from app.schemas.models import SignUpSchema, UpdateUserSchema, LoginSchema, UserCompanyDetailsSchema,CustomTokenRequestSchema, AddUserToCompanySchema, AddUserToCompanyDashboardSchema
 from app.database.connection import get_db
 from app.firebase.utils import verify_token
 from app.utils.users_crud import (
@@ -20,8 +20,11 @@ from app.utils.users_crud import (
     get_all_users,
     update_user_company_details,
     get_user_company_details,
-    get_all_user_dashboard
+    get_all_user_dashboard,
+    add_user_to_company_crud,
+    create_user_in_dashboard
 )
+from app.email.send_reset_password import send_reset_password
 
 db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/accounts", tags=["accounts"])
@@ -103,7 +106,8 @@ async def create_user_account(data: SignUpSchema, db: db_dependency):
             email=data.email,
             first_name=data.first_name,
             last_name=data.last_name,
-            mobile_number=data.mobile_number
+            mobile_number=data.mobile_number,
+            acc_activated=True
         )
 
         create_user(db=db, user=new_account)
@@ -132,11 +136,17 @@ async def create_user_account(data: SignUpSchema, db: db_dependency):
 
 @router.post("/login")
 async def login_user_account(data: LoginSchema, db: db_dependency):
-  token = data.token
-  
+  email = data.email
+  password = data.password
+
   try:
+    user = firebase.auth().sign_in_with_email_and_password(
+      email = email,
+      password = password
+    )
+
+    token = user["idToken"]
     decoded_token = auth.verify_id_token(token)
-    email = decoded_token.get('email')
     role = decoded_token.get('role', 'unknown') # default role is unknown
     # print(f"Login: User role set to {role}")
     user_db = get_one_user(db=db, email=email)
@@ -153,26 +163,25 @@ async def login_user_account(data: LoginSchema, db: db_dependency):
       status_code=200
     )
     if role == "admin":
-      # check environment to set domain and samesite on dev staging and prod
-      # domain = "" BE domain for prod
-      # samesite = "lax" # for prod
-      # secure= True # for prod
-      domain = ".netlify.app"
-      samesite = "None" 
-      secure=False
-    else: None
-
-    if domain:
       response.set_cookie(
-        key="__session",
-        value=session_cookie,
-        httponly=True,
-        secure=secure,
-        max_age=300,  
-        samesite=samesite,
-        domain=domain
-    )
-
+              key="__session",
+              value=session_cookie,
+              httponly=True,
+              secure=True,
+              max_age=100,  
+              samesite="strict",  
+              domain="127.0.0.1"  # domain if deployed = ".netlify.app"  for local use "127.0.0.1"
+        )
+    if role == "user":
+      response.set_cookie(
+              key="__session",
+              value=session_cookie,
+              httponly=True,
+              secure=True,
+              max_age=100,  
+              samesite="strict",  
+              domain="127.0.0.1"  # domain if deployed = "peak-transcend-dev.netlify.app"
+      )
     # print(f"Login: User role set to {role}")
     return response
   except Exception as error:
@@ -357,9 +366,22 @@ async def get_user_role(request: Request):
         raise HTTPException(status_code=400, detail=str(error))
     
 @router.get("/get-all-users")
-async def get_all_users_account(db: db_dependency):
+async def get_all_users_account(request: Request, db: db_dependency):
     try:
-        users = get_all_user_dashboard(db)
+        body = await request.json()
+        user_email = body.get("user_email")
+
+        if not user_email:
+            raise HTTPException(status_code=400, detail="user_email is required")
+        
+        user = get_one_user(db=db, email=user_email)
+
+        company = user.company_id
+
+
+
+
+        users = get_all_user_dashboard(db,company)
         return users
     except Exception as error:
         raise HTTPException(status_code=400, detail=str(error))
@@ -421,3 +443,96 @@ async def verify_admin(request: Request):
         raise HTTPException(status_code=401, detail="Session cookie has expired")
     except Exception as error:
         raise HTTPException(status_code=400, detail=str(error))
+
+  
+@router.post("/add-user-to-company")
+async def add_user_to_company(data: AddUserToCompanySchema, db: db_dependency):
+    try:
+        user_id = data.user_id
+        company_id = data.company_id
+
+
+        if not user_id or not company_id:
+            raise HTTPException(status_code=400, detail="user_id and company_id are required fields")
+
+      
+        updated_user = add_user_to_company_crud(db=db, user_id=user_id, company_id=company_id)
+
+        if not updated_user:
+            raise HTTPException(status_code=404, detail="User or Company not found")
+
+        return {
+            "message": f"User with ID {user_id} has been successfully added to the company with ID {company_id}.",
+            "user_id": updated_user.id,
+            "company_id": updated_user.company_id,
+            "success": True
+        }
+
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
+
+@router.post("/add-user-to-company-dashboard")
+async def add_user_to_company_dashboard(data: AddUserToCompanyDashboardSchema, db: Session = Depends(get_db)):
+    try:
+        user_email = data.user_email
+        user_role = data.user_role
+        company_id = data.company_id
+
+        if not user_email or not user_role or not company_id:
+            raise HTTPException(status_code=400, detail="user_email, user_role, and company_id are required fields")
+
+      
+        try:
+            firebase_user = auth.create_user(
+                email=user_email,
+                email_verified=False,
+                disabled=False
+            )
+
+         
+            link = auth.generate_password_reset_link(firebase_user.email)
+            # send_custom_email(firebase_user.email, link)
+
+        except Exception as firebase_error:
+            raise HTTPException(status_code=400, detail=f"Error creating user in Firebase: {str(firebase_error)}")
+
+       
+        new_user = Users(
+            id=firebase_user.uid,
+            email=user_email,
+            role=user_role,
+            company_id=company_id
+        )
+
+      
+        created_user = create_user_in_dashboard(db=db, user=new_user)
+        create_user.acc_activated = True
+
+        # after creating the user we must do custom claims based on the role
+        try:
+           
+            if user_role not in ["admin", "user"]:
+                raise HTTPException(status_code=400, detail="Invalid role")
+
+           
+            auth.set_custom_user_claims(firebase_user.uid, {'role': user_role})
+            print(f"Set: User role set to {user_role}")
+
+        except Exception as claim_error:
+            
+            raise HTTPException(status_code=400, detail=f"Error setting user role: {str(claim_error)}")
+        
+        
+        await send_reset_password(firebase_user.email, link)
+        return JSONResponse(
+            content={
+                "message": f"Account successfully created for {data.user_email}",
+                "user_id": firebase_user.uid,
+                "email": data.user_email,
+            },
+            status_code=200
+        )
+
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
+
