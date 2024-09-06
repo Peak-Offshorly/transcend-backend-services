@@ -279,3 +279,60 @@ async def get_company_number_of_admins_endpoint(company_id: str, db: db_dependen
         return {"admin_count": company.admin_count}
     except Exception as error:
         raise HTTPException(status_code=400, detail=str(error))
+    
+@router.get("/get-company-by-user-token")
+async def get_company_by_user_token(request: Request, db: db_dependency):
+    """
+    Retrieves the company associated with the user token.
+
+    Args:
+        request (Request): The request object containing the user token.
+        db (Session): The database session dependency for performing the operation.
+
+    Returns:
+        CompanyDataSchema: The data of the company associated with the user token.
+
+    Example Response:
+    {
+        "company_id": "4259b944-db61-4780-99fb-2bec855f734a",
+        "company_name": "Test Company"
+    }
+    """
+    
+    try:
+        # auth part, get the current user
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            raise HTTPException(status_code=401, detail="Authorization header is missing")
+        id_token = auth_header.split(" ")[1]
+        decoded_token = auth.verify_id_token(id_token)
+        current_user_id = decoded_token.get("uid")
+
+        # get the current user from the database
+        current_user = db.query(Users).filter(Users.id == current_user_id).first()
+        if not current_user:
+            raise HTTPException(status_code=400, detail="Current user not found")
+
+        if not current_user.company_id:
+            raise HTTPException(status_code=404, detail="User is not associated with a company")
+
+        company = get_company_by_id(db=db, company_id=current_user.company_id)
+
+        if company is None:
+            raise HTTPException(status_code=404, detail="Company not found")
+
+        company_data = CompanyDataSchema(
+            id=str(company.id),
+            name=company.name
+        )
+
+        return {
+            "company_id": company_data.id,
+            "company_name": company_data.name
+        }
+    except HTTPException as http_error:
+  
+        raise http_error
+    except Exception as error:
+  
+        raise HTTPException(status_code=400, detail=str(error))
