@@ -6,7 +6,6 @@ class HealthResponse(BaseModel):
     status: str
 
 class SignUpSchema(BaseModel):
-    uid: str
     email: str
     first_name: str
     last_name: str
@@ -174,7 +173,28 @@ class DevelopmentActionsSchema(BaseModel):
 class CompanyDataSchema(BaseModel):
     id: Optional[str] = None
     name: str
+    
 
     class Config:
         orm_mode = True
         from_attributes = True
+
+class CustomTokenRequestSchema(BaseModel):
+    user_id: str    
+
+class AddUserToCompanySchema(BaseModel):
+    user_id: str
+    company_id: str
+
+class AddUserToCompanyDashboardSchema(BaseModel):
+    user_email: str
+    user_role: str
+
+
+class CreateCompanyRequest(BaseModel):
+    data: CompanyDataSchema
+    users: Optional[List[AddUserToCompanyDashboardSchema]] = None
+    
+class PasswordChangeRequest(BaseModel):
+    new_password: str
+    old_password: str
