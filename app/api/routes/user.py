@@ -25,6 +25,7 @@ from app.utils.users_crud import (
     add_user_to_company_crud,
     create_user_in_dashboard
 )
+from app.utils.company_crud import get_company_by_id
 from app.email.send_reset_password import send_reset_password
 from typing import List
 from firebase_admin.exceptions import FirebaseError
@@ -250,6 +251,16 @@ async def delete_user_account(email: str, db: db_dependency):
 
         # Get the user ID (uid) from the database user object
         uid = user.id
+
+        company = get_company_by_id(db=db, company_id=user.company_id)
+        if company:
+            if user.user_type == 'admin':
+                company.admin_count -= 1
+            if user.user_type == 'member':
+                company.member_count -= 1
+            db.commit()
+            
+        
 
         # Delete the user from Firebase Authentication
         auth.delete_user(uid=uid)
