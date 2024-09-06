@@ -461,31 +461,54 @@ async def get_all_users_account(request: Request, db: db_dependency):
     except Exception as error:
         raise HTTPException(status_code=400, detail=str(error))
     
+
 @router.post("/view-user")
 async def view_user_account(request: Request, db: db_dependency):
-    """
-    (not working)
-    """
     try:
         body = await request.json()
-        token = body.get("token")
         user_id = body.get("user_id")
 
-        if not token:
-            raise HTTPException(status_code=400, detail="id_token is required")
+        if not user_id:
+            raise HTTPException(status_code=400, detail="user_id is required")
 
-        # Verify the token and get the role and user_id
-        decoded_token = auth.verify_id_token(token)
-        role = decoded_token.get('role', 'unknown')  # default role is unknown
-        token_user_id = decoded_token.get('user_id')
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            raise HTTPException(status_code=401, detail="Authorization header is missing")
 
-        # Check if the token belongs to the current logged-in user or if the user is an admin
-        if token_user_id != user_id and role != 'admin': 
+        id_token = auth_header.split(" ")[1]
+        decoded_token = auth.verify_id_token(id_token)
+        current_user_id = decoded_token.get("uid")
+
+        current_user = db.query(Users).filter(Users.id == current_user_id).first()
+
+        if not current_user:
+            raise HTTPException(status_code=404, detail="Current user not found")
+        print(f"Current user: {current_user.email}\n Current user role: {current_user.role}")
+        # Check if the current user is an admin or if they're viewing their own profile
+        if current_user.user_type == 'admin' or current_user.id == user_id:
+            requested_user = db.query(Users).filter(Users.id == user_id).first()
+            if not requested_user:
+                raise HTTPException(status_code=404, detail="Requested user not found")
+            
+            return {
+                "id": requested_user.id,
+                "email": requested_user.email,
+                "first_name": requested_user.first_name,
+                "last_name": requested_user.last_name,
+                "mobile_number": requested_user.mobile_number,
+                "company_size": requested_user.company_size,
+                "industry": requested_user.industry,
+                "role": requested_user.role,
+                "role_description": requested_user.role_description,
+                "company_id": requested_user.company_id,
+                "created_at": requested_user.created_at,
+                "is_active": requested_user.is_active,
+                "acc_activated": requested_user.acc_activated,
+                "user_type": requested_user.user_type
+            }
+        else:
             raise HTTPException(status_code=403, detail="You do not have permission to view this account")
 
-        # If the checks pass, proceed to retrieve the user details
-        return get_one_user_id(db=db, user_id=user_id)
-        
     except Exception as error:
         raise HTTPException(status_code=400, detail=str(error))
     
