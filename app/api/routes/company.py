@@ -10,7 +10,10 @@ from app.utils.company_crud import (
     get_company_by_id, 
     get_all_companies, 
     update_company, 
-    delete_company)
+    delete_company,
+    get_strengths_by_company_id,
+    get_weakness_by_company_id,
+    get_significant_strengths_weakness)
 
 db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/company", tags=["company"])
@@ -49,3 +52,24 @@ async def get_company_endpoint(company_id: str, db: db_dependency):
         return company_data
     except Exception as error:
         raise HTTPException(status_code=400, detail=str(error))
+
+@router.get("/employee-strengths")
+async def get_employee_strengths_endpoint(company_id: str, db: db_dependency):
+  try:
+    return get_strengths_by_company_id(db=db, company_id=company_id)
+  except Exception as error:
+    raise HTTPException(status_code=400, detail=str(error))
+  
+@router.get("/employee-weakness")
+async def get_employee_weakness_endpoint(company_id: str, db: db_dependency):
+  try:
+    return get_weakness_by_company_id(db=db, company_id=company_id)
+  except Exception as error:
+    raise HTTPException(status_code=400, detail=str(error))
+  
+@router.get("/significant-strengths-weakness")
+async def get_significant_strengths_weakness_endpoint(company_id: str, db: db_dependency):
+  try:
+    return get_significant_strengths_weakness(db=db, company_id=company_id)
+  except Exception as error:
+    raise HTTPException(status_code=400, detail=str(error))
