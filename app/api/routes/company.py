@@ -33,7 +33,6 @@ async def create_company_endpoint(
     Creates a new company in the database and optionally adds multiple users to the company dashboard.
     """
     try:
-  
         data = body.data
         users = body.users
 
@@ -59,8 +58,8 @@ async def create_company_endpoint(
             for entry in users:
                 if not entry.user_email or not entry.user_role:
                     raise HTTPException(status_code=400, detail="user_email and user_role are required fields")
-                if entry.user_role not in ["admin", "user"]:
-                    raise HTTPException(status_code=400, detail="Invalid role")
+                if entry.user_role not in ["admin", "member"]:
+                    raise HTTPException(status_code=400, detail="Invalid role. Role must be either 'admin' or 'member'.")
 
         # if all validations pass, proceed with company creation
         member_count = 0
@@ -123,12 +122,11 @@ async def create_company_endpoint(
                     db.add(new_user)
                     
                     # update the member or admin count 
-                    if entry.user_role == "user":
+                    if entry.user_role == "member":
                         created_company.member_count += 1
                     elif entry.user_role == "admin":
                         created_company.admin_count += 1
 
-                 
                     auth.set_custom_user_claims(firebase_user.uid, {'role': entry.user_role})
 
                     # send password reset email
@@ -141,7 +139,7 @@ async def create_company_endpoint(
                     })
 
                 except Exception as user_error:
-                    # ff there's an error creating a user, we'll log it and continue
+                    # if there's an error creating a user, we'll log it and continue
                     print(f"Error creating user {entry.user_email}: {str(user_error)}")
                     response_data.append({
                         "message": f"Error creating account for {entry.user_email}",
@@ -153,7 +151,7 @@ async def create_company_endpoint(
 
             response_content["member_count"] = created_company.member_count
             response_content["admin_count"] = created_company.admin_count
-            response_content["users"] = response_data
+            response_content["members"] = response_data
 
         return JSONResponse(content=response_content, status_code=201)
 

@@ -177,7 +177,7 @@ async def login_user_account(data: LoginSchema, db: db_dependency):
               samesite="strict",  
               domain="127.0.0.1"  # domain if deployed = ".netlify.app"  for local use "127.0.0.1"
         )
-    if role == "user":
+    if role == "member":
       response.set_cookie(
               key="__session",
               value=session_cookie,
@@ -322,13 +322,11 @@ async def set_user_role(request: Request, db: db_dependency):
     Request Body:
         {
             "user_id": "v1OVQn3QELZpxk3nNmudJ9GtQRp2",
-            "role": "user"
+            "role": "member"
         }
     """
 
-
     try:
-
         body = await request.json()
         user_id = body.get("user_id")
         role = body.get("role")
@@ -342,7 +340,7 @@ async def set_user_role(request: Request, db: db_dependency):
         print(f"Current role: {role_from_claims}")
         
         # only two roles are allowed
-        if role not in ["admin", "user"]:
+        if role not in ["admin", "member"]:
             raise HTTPException(status_code=400, detail="Invalid role")
         
         # no repeat role assignment
@@ -352,25 +350,27 @@ async def set_user_role(request: Request, db: db_dependency):
         db_user = db.query(Users).filter(Users.id == user_id).first()
         if not db_user:
             raise HTTPException(status_code=404, detail="User not found in the database")
-        if role == "admin":
-           if role_from_claims == "user":
-              raise HTTPException(status_code=400, detail="This user can't be promoted to admin")
-           if role_from_claims == "unknown":
-              auth.set_custom_user_claims(user_id, {'role': role})
 
-              print(f"Set: User role set to {role}")
-              db_user.user_type = 'admin'
-              db.commit()
-        if role == "user":
+        if role == "admin":
+            if role_from_claims == "member":
+                raise HTTPException(status_code=400, detail="This user can't be promoted to admin")
+            if role_from_claims == "unknown":
+                auth.set_custom_user_claims(user_id, {'role': role})
+
+                print(f"Set: User role set to {role}")
+                db_user.user_type = 'admin'
+                db.commit()
+
+        if role == "member":
             if role_from_claims == "admin":
                 auth.set_custom_user_claims(user_id, {'role': role})
                 print(f"Set: User role set to {role}")
-                db_user.user_type = 'user'
+                db_user.user_type = 'member'
                 db.commit()
             if role_from_claims == "unknown":
                 auth.set_custom_user_claims(user_id, {'role': role})
                 print(f"Set: User role set to {role}")
-                db_user.user_type = 'user'
+                db_user.user_type = 'member'
                 db.commit()
 
         return JSONResponse(
@@ -664,8 +664,6 @@ async def add_user_to_company_dashboard(
             user_email = entry.user_email
             user_role = entry.user_role
 
-            print(f"User role: {user_role} and company_id: {current_user_company_id} and user_email: {user_email}")
-
             if not user_email or not user_role:
                 raise HTTPException(status_code=400, detail="user_email and user_role are required fields")
 
@@ -696,7 +694,7 @@ async def add_user_to_company_dashboard(
 
             # Set custom user claims in Firebase
             try:
-                if user_role not in ["admin", "user"]:
+                if user_role not in ["admin", "member"]:
                     raise HTTPException(status_code=400, detail="Invalid role")
 
                 auth.set_custom_user_claims(firebase_user.uid, {'role': user_role})
