@@ -13,7 +13,8 @@ from app.utils.company_crud import (
     delete_company,
     get_strengths_by_company_id,
     get_weakness_by_company_id,
-    get_significant_strengths_weakness)
+    get_significant_strengths_weakness,
+    get_org_growth_percentages)
 
 from uuid import uuid4
 from typing import Optional, List
@@ -216,6 +217,51 @@ async def get_significant_strengths_weakness_endpoint(request: Request, db: db_d
         raise HTTPException(status_code=404, detail="Company not found")
     
     response = get_significant_strengths_weakness(db=db, company_id=current_user.company_id)
+    response['company_id'] = current_user.company_id
+    return response
+  except Exception as error:
+    raise HTTPException(status_code=400, detail=str(error))
+  
+@router.get("/org-growth-percentages")
+async def org_growth_percentages_endpoint(request: Request, db: db_dependency):
+  """
+  Retrieves the three percentage values in the organizational leadership growth index section
+  Args:
+      request (Request): The request object containing the user token.
+      db (Session): The database session dependency for performing the operation.
+  Returns:
+      dict: A dictionary containing four keys - percent_effective_leader, percent_effective_strength_area, percent_effective_weakness_area, and company_id.
+  Example Response:
+  {
+      "percent_effective_leader": 0.00000000000000000000,
+      "percent_effective_strength_area": 33.3333333333333333,
+      "percent_effective_weakness_area": 66.6666666666666667,
+      "company_id": "c628c17c-ef36-5ce3-9b66-43c8f58402f6"
+  }
+  """
+  try:
+    # auth part, get the current user
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header is missing")
+    id_token = auth_header.split(" ")[1]
+    decoded_token = auth.verify_id_token(id_token)
+    current_user_id = decoded_token.get("uid")
+
+    # get the current user from the database
+    current_user = db.query(Users).filter(Users.id == current_user_id).first()
+    if not current_user:
+        raise HTTPException(status_code=400, detail="Current user not found")
+
+    if not current_user.company_id:
+        raise HTTPException(status_code=404, detail="User is not associated with a company")
+
+    company = get_company_by_id(db=db, company_id=current_user.company_id)
+
+    if company is None:
+        raise HTTPException(status_code=404, detail="Company not found")
+    
+    response = get_org_growth_percentages(db=db, company_id=current_user.company_id)
     response['company_id'] = current_user.company_id
     return response
   except Exception as error:
