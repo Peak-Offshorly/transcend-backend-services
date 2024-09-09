@@ -67,7 +67,8 @@ async def user_weekly_email(db: Session):
                     email_to=user.email,
                     subject=subject,
                     template_name="user-weekly-email.html",
-                    reply_to=user.email
+                    reply_to=user.email,
+                    purpose="user_weekly_email"
                 )
                 print(f'Sent email to {user.email}')
         except Exception as e:
