@@ -16,12 +16,14 @@ from app.utils.company_crud import (
     get_significant_strengths_weakness)
 
 from app.utils.users_crud import (
-    create_user_in_dashboard
+    create_user_in_dashboard,
+    get_one_user_id
 )
 from uuid import uuid4
 from typing import Optional, List
 from app.email.send_reset_password import send_reset_password
 from firebase_admin import auth, credentials
+from firebase_admin.exceptions import FirebaseError
 
 db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/company", tags=["company"])
@@ -402,48 +404,120 @@ async def get_all_companies_endpoint(db: db_dependency):
         raise HTTPException(status_code=400, detail=str(error))
     
 
-@router.get("/get-company-number-of-members/{company_id}")
-async def get_company_number_of_members_endpoint(company_id: str, db: db_dependency):
+@router.get("/get-company-number-of-members")
+async def get_company_number_of_members_endpoint(
+    request: Request,
+    db: db_dependency
+):
     """
-    Retrieves the number of members in a specific company by its ID from the database.
+    Retrieves the number of members in the company associated with the current user.
 
     Args:
-        company_id (str): The ID of the company to retrieve the number of members.
+        request (Request): The HTTP request object containing the necessary headers.
         db (Session): The database session dependency for performing the operation.
-
+        
     Returns:
-        int: The number of members in the requested company.
+        dict: A JSON response with the number of members in the user's company.
     """
-    
     try:
-        company = get_company_by_id(db=db, company_id=company_id)
+        # Extract the Authorization header
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            raise HTTPException(status_code=401, detail="Authorization header is missing")
 
-        if company is None:
+        # Verify the token and get the current user ID
+        id_token = auth_header.split(" ")[1]
+        decoded_token = auth.verify_id_token(id_token)
+        current_user_id = decoded_token.get("uid")
+
+        # Fetch the current user's details from the database
+        current_user = get_one_user_id(db=db, user_id=current_user_id)
+        if not current_user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Get the user's type to ensure they have access
+        current_user_user_type = current_user.user_type
+
+        if current_user_user_type not in ["admin", "member"]:
+            raise HTTPException(status_code=403, detail="User does not have permission to view member count")
+
+        # Get the company ID from the current user's details
+        current_user_company_id = current_user.company_id
+        if not current_user_company_id:
+            raise HTTPException(status_code=404, detail="User's company ID not found")
+
+        # Retrieve the company details from the database
+        company = get_company_by_id(db=db, company_id=current_user_company_id)
+        if not company:
             raise HTTPException(status_code=404, detail="Company not found")
 
+        # Return the number of members in the company
         return {"member_count": company.member_count}
+
+    except FirebaseError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Authentication error: {str(e)}"
+        )
     except Exception as error:
         raise HTTPException(status_code=400, detail=str(error))
     
-@router.get("/get-company-number-of-admins/{company_id}")
-async def get_company_number_of_admins_endpoint(company_id: str, db: db_dependency):
+@router.get("/get-company-number-of-admins")
+async def get_company_number_of_admins_endpoint(
+    request: Request,
+    db: db_dependency
+):
     """
-    Retrieves the number of admins in a specific company by its ID from the database.
+    Retrieves the number of admins in the company associated with the current user.
 
     Args:
-        company_id (str): The ID of the company to retrieve the number of admins.
+        request (Request): The HTTP request object containing the necessary headers.
         db (Session): The database session dependency for performing the operation.
+        
     Returns:
-        int: The number of admins in the requested company.
+        dict: A JSON response with the number of admins in the user's company.
     """
-    
     try:
-        company = get_company_by_id(db=db, company_id=company_id)
+   
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            raise HTTPException(status_code=401, detail="Authorization header is missing")
+        
+    
+        id_token = auth_header.split(" ")[1]
+        decoded_token = auth.verify_id_token(id_token)
+        current_user_id = decoded_token.get("uid")
 
-        if company is None:
+
+        current_user = get_one_user_id(db=db, user_id=current_user_id)
+
+        if not current_user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        current_user_user_type = current_user.user_type
+
+        if current_user_user_type != "admin":
+            raise HTTPException(status_code=404, detail="User is not an admin")
+        
+        current_user_company_id = current_user.company_id
+
+        if not current_user_company_id:
+            raise HTTPException(status_code=404, detail="User's company ID not found")
+
+  
+        company = get_company_by_id(db=db, company_id=current_user_company_id)
+
+        if not company:
             raise HTTPException(status_code=404, detail="Company not found")
 
+
         return {"admin_count": company.admin_count}
+
+    except FirebaseError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Authentication error: {str(e)}"
+        )
     except Exception as error:
         raise HTTPException(status_code=400, detail=str(error))
     
