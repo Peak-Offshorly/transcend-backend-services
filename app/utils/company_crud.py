@@ -1,7 +1,8 @@
 from uuid import uuid4
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func, text
-from app.database.models import Users, Forms, Traits, ChosenTraits, Questions, Options, Answers, Practices, DevelopmentPlan, Sprints, Company
+from sqlalchemy import select, func, case
+from app.database.models import Users, Forms, Traits, ChosenTraits, Questions, Options, Answers, Practices, DevelopmentPlan, Sprints, Company, UserColleagues, UserColleaguesSurvey
+from app.schemas.models import UserCompanyDetailsSchema
 from datetime import date
 from app.schemas.models import UserCompanyDetailsSchema, CompanyDataSchema
 
@@ -160,4 +161,41 @@ def get_significant_strengths_weakness(db: Session, company_id: str):
                 "employee_count": weakness.employee_count,
             } for weakness in significant_weakness
         ]
+    }
+
+def get_org_growth_percentages(db: Session, company_id: str):
+    employees = (
+        select(
+            UserColleagues.id,
+            UserColleagues.email,
+            Users.company_id
+        )
+        .join(Users, Users.id == UserColleagues.user_id)
+        .where(Users.company_id == company_id)
+        .cte('employees')
+    )
+    survey_data = (
+        select(
+            UserColleaguesSurvey.effective_leader,
+            UserColleaguesSurvey.effective_strength_area,
+            UserColleaguesSurvey.effective_weakness_area
+        )
+        .join(employees, employees.c.id == UserColleaguesSurvey.user_colleague_id)
+        .cte('survey_data')
+    )
+    query = (
+        select(
+            (func.sum(case((survey_data.c.effective_leader > 0, 1), else_=0)) * 100.0 / func.count()).label('percent_effective_leader'),
+            (func.sum(case((survey_data.c.effective_strength_area > 0, 1), else_=0)) * 100.0 / func.count()).label('percent_effective_strength_area'),
+            (func.sum(case((survey_data.c.effective_weakness_area > 0, 1), else_=0)) * 100.0 / func.count()).label('percent_effective_weakness_area')
+        )
+        .select_from(survey_data)
+    )
+
+    result = db.execute(query).first()
+
+    return {
+        'percent_effective_leader': result.percent_effective_leader if result else None,
+        'percent_effective_strength_area': result.percent_effective_strength_area if result else None,
+        'percent_effective_weakness_area': result.percent_effective_weakness_area if result else None
     }
