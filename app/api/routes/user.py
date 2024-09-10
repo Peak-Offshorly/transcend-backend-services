@@ -662,6 +662,7 @@ async def add_user_to_company(
         user = get_one_user_id(db=db, user_id=data.user_id)
  
         user_company = get_company_by_id(db=db, company_id=user.company_id)
+        current_user_company = get_company_by_id(db=db, company_id=current_user_company_id)
         if user_company:
             raise HTTPException(status_code=400, detail="User already belongs to a company")
 
@@ -671,6 +672,9 @@ async def add_user_to_company(
             raise HTTPException(status_code=400, detail="user_id is a required field")
 
         updated_user = add_user_to_company_crud(db=db, user_id=user_id, company_id=current_user_company_id)
+
+        current_user_company.member_count += 1
+        db.commit()
 
         if not updated_user:
             raise HTTPException(status_code=404, detail="User not found or could not be added to the company")
