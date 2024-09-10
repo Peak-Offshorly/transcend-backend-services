@@ -50,6 +50,7 @@ def create_user(db: Session, user: Users):
         last_name = user.last_name,
         mobile_number = user.mobile_number,
         acc_activated = user.acc_activated,
+        user_type = user.user_type,
     )
 
     db.add(db_user)

@@ -114,15 +114,11 @@ async def create_user_account(data: SignUpSchema, db: db_dependency):
             first_name=data.first_name,
             last_name=data.last_name,
             mobile_number=data.mobile_number,
-            acc_activated=True
+            acc_activated=True,
+            user_type = 'unknown'
         )
 
         create_user(db=db, user=new_account)
-
-        # set user role in Firebase custom claims
-        role = 'unknown'  # default role is unknown
-        auth.set_custom_user_claims(firebase_user.uid, {'role': role})
-        print(f"Create: User role set to {role}")
 
         return JSONResponse(
             content={
@@ -130,7 +126,8 @@ async def create_user_account(data: SignUpSchema, db: db_dependency):
                 "user_id": firebase_user.uid,
                 "email": data.email,
                 "display_name": f"{data.first_name} {data.last_name}",
-                "verification_link": verification_link
+                "verification_link": verification_link,
+                "user_type": new_account.user_type
             },
             status_code=200
         )
@@ -315,7 +312,7 @@ async def check_if_active_user(db: db_dependency):
 @router.post("/set-user-role")
 async def set_user_role(request: Request, db: db_dependency):
     """
-    Sets the role of a user in Firebase Authentication custom claims.
+    Sets the role of a user in the database.
 
     Args:
         request (Request): The HTTP request object containing the user details.
@@ -346,43 +343,36 @@ async def set_user_role(request: Request, db: db_dependency):
         if not user_id or not role:
             raise HTTPException(status_code=400, detail="user_id and role are required fields")
         
-        user = auth.get_user(user_id)
-        custom_claims = user.custom_claims or {}
-        role_from_claims = custom_claims.get('role', 'unknown')  
-        print(f"Current role: {role_from_claims}")
-        
         # only two roles are allowed
         if role not in ["admin", "member"]:
             raise HTTPException(status_code=400, detail="Invalid role")
+
+        user = get_one_user_id(db=db, user_id=user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found in the database")
+            
+        user_user_type = user.user_type
+       
+        
         
         # no repeat role assignment
-        if role_from_claims == role:
+        if user_user_type == role:
             raise HTTPException(status_code=400, detail=f"User is already a {role}")
         
-        db_user = db.query(Users).filter(Users.id == user_id).first()
-        if not db_user:
-            raise HTTPException(status_code=404, detail="User not found in the database")
 
         if role == "admin":
-            if role_from_claims == "member":
+            if user_user_type == "member":
                 raise HTTPException(status_code=400, detail="This user can't be promoted to admin")
-            if role_from_claims == "unknown":
-                auth.set_custom_user_claims(user_id, {'role': role})
-
-                print(f"Set: User role set to {role}")
-                db_user.user_type = 'admin'
+            if user_user_type == "unknown":
+                user.user_type = 'admin'
                 db.commit()
 
         if role == "member":
-            if role_from_claims == "admin":
-                auth.set_custom_user_claims(user_id, {'role': role})
-                print(f"Set: User role set to {role}")
-                db_user.user_type = 'member'
+            if user_user_type == "admin":
+                user.user_type = 'member'
                 db.commit()
-            if role_from_claims == "unknown":
-                auth.set_custom_user_claims(user_id, {'role': role})
-                print(f"Set: User role set to {role}")
-                db_user.user_type = 'member'
+            if user_user_type == "unknown":
+                user.user_type = 'member'
                 db.commit()
 
         return JSONResponse(
@@ -434,6 +424,42 @@ async def get_user_role(request: Request):
         # return the response with the role attribute
         return JSONResponse(
             content={"message": f"User role is {role}", "role": role},
+            status_code=200
+        )
+
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
+
+@router.get("/get-user-role-db")
+async def get_user_type_db(user_id: str, db: db_dependency):
+    """
+    Gets the role of the user from the database.
+
+    Args:
+        user_id (str): The user ID to query the role from the database.
+        db (Session): The database session for querying the user's role.
+
+    Returns:
+        dict: A JSON response with a success message and the user's role.
+
+    Example Response:
+        {
+            "message": "User role is admin",
+            "role": "admin"
+        }
+
+    Query Params:
+        user_id: The user ID to query the role from the database.
+    """
+
+    try:
+        user = get_one_user_id(db=db, user_id=user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        user_type = user.user_type
+        return JSONResponse(
+            content={"message": f"User role is {user_type}", "role": user_type},
             status_code=200
         )
 
@@ -636,6 +662,7 @@ async def add_user_to_company(
         user = get_one_user_id(db=db, user_id=data.user_id)
  
         user_company = get_company_by_id(db=db, company_id=user.company_id)
+        current_user_company = get_company_by_id(db=db, company_id=current_user_company_id)
         if user_company:
             raise HTTPException(status_code=400, detail="User already belongs to a company")
 
@@ -645,6 +672,9 @@ async def add_user_to_company(
             raise HTTPException(status_code=400, detail="user_id is a required field")
 
         updated_user = add_user_to_company_crud(db=db, user_id=user_id, company_id=current_user_company_id)
+
+        current_user_company.member_count += 1
+        db.commit()
 
         if not updated_user:
             raise HTTPException(status_code=404, detail="User not found or could not be added to the company")
@@ -763,16 +793,6 @@ async def add_user_to_company_dashboard(
             )
 
             created_user = create_user_in_dashboard(db=db, user=new_user)
-
-            # set custom user claims in Firebase
-            try:
-
-
-                auth.set_custom_user_claims(firebase_user.uid, {'role': user_role})
-                print(f"Set: User role set to {user_role}")
-
-            except Exception as claim_error:
-                raise HTTPException(status_code=400, detail=f"Error setting user role: {str(claim_error)}")
 
             # Send password reset email
             await send_reset_password(firebase_user.email, link)
