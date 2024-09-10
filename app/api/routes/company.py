@@ -51,14 +51,15 @@ async def create_company_endpoint(
         current_user_id = decoded_token.get("uid")
 
         # get the current user from the database
-        current_user = db.query(Users).filter(Users.id == current_user_id).first()
+        current_user = get_one_user_id(db=db, user_id=current_user_id)
         if not current_user:
             raise HTTPException(status_code=400, detail="Current user not found")
 
         # check if the current user is already associated with a company
         if current_user.company_id:
             raise HTTPException(status_code=400, detail="Current user is already associated with a company")
-
+        if current_user.user_type != "admin":
+            raise HTTPException(status_code=400, detail="Only admins can create companies")
         # validate users data if provided
         if users:
             for entry in users:
