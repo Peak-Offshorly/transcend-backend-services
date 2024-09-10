@@ -113,7 +113,6 @@ def delete_user(db: Session, user_id):
     return False
 
 def get_all_user_dashboard(db: Session, company_id: str):
-    # Query to select Users and Sprints where Users are in the specified company
     result = db.execute(
         select(
             Users.first_name,
@@ -123,15 +122,15 @@ def get_all_user_dashboard(db: Session, company_id: str):
             Users.company_id,
             Users.id
         )
-        .join(Sprints, Users.id == Sprints.user_id)
+        .join(Sprints, Users.id == Sprints.user_id, isouter=True)  
         .where(Users.company_id == company_id)
     )
     
     users_dict = {}
     for row in result.all():
         user_id = row.id
-        sprint_number = row.number
-        
+        sprint_number = row.number  # this will be None if the user has no associated sprint
+
         user_info = {
             "name": f"{row.first_name} {row.last_name}",
             "role": row.role,
@@ -140,7 +139,8 @@ def get_all_user_dashboard(db: Session, company_id: str):
             "user_id": user_id
         }
         
-        if user_id not in users_dict or sprint_number > users_dict[user_id]["sprint_number"]:
+        # add user to the dictionary if not already added or if this sprint number is more recent
+        if user_id not in users_dict or (sprint_number is not None and (users_dict[user_id]["sprint_number"] is None or sprint_number > users_dict[user_id]["sprint_number"])):
             users_dict[user_id] = user_info
     
     return list(users_dict.values())

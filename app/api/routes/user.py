@@ -576,7 +576,11 @@ async def verify_admin(request: Request):
 
   
 @router.post("/add-user-to-company")
-async def add_user_to_company(request: Request, data: AddUserToCompanySchema, db: db_dependency):
+async def add_user_to_company(
+   request: Request, 
+   data: AddUserToCompanySchema, 
+   db: db_dependency
+   ):
     """
     Add a user to a company in the database.
 
@@ -628,6 +632,12 @@ async def add_user_to_company(request: Request, data: AddUserToCompanySchema, db
         current_user_company_id = current_user.company_id
         if not current_user_company_id:
             raise HTTPException(status_code=400, detail="Current user's company ID not found")
+
+        user = get_one_user_id(db=db, user_id=data.user_id)
+ 
+        user_company = get_company_by_id(db=db, company_id=user.company_id)
+        if user_company:
+            raise HTTPException(status_code=400, detail="User already belongs to a company")
 
         # proceed with adding the user to the current user's company
         user_id = data.user_id
@@ -704,12 +714,18 @@ async def add_user_to_company_dashboard(
         decoded_token = auth.verify_id_token(id_token)
         current_user_id = decoded_token.get("uid")
 
-        current_user = db.query(Users).filter(Users.id == current_user_id).first()
+        current_user = get_one_user_id(db=db, user_id=current_user_id)
         current_user_company_id = current_user.company_id
 
+        if not current_user:
+            raise HTTPException(status_code=404, detail="Current user not found")
+        
+        if current_user.user_type != "admin":
+            raise HTTPException(status_code=403, detail="Only admins can access this endpoint")
 
         if not current_user_company_id:
             raise HTTPException(status_code=400, detail="Current user's company ID not found")
+        
 
         response_data = []
 
