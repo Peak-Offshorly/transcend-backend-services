@@ -170,3 +170,14 @@ def create_user_in_dashboard(db: Session, user: Users):
 
     return db_user
 
+def get_latest_sprint_for_user(db: Session, user_id: str):
+    
+    result = db.execute(
+        select(Sprints.number)
+        .where(Sprints.user_id == user_id)
+        .order_by(Sprints.number.desc())
+        .limit(1)
+    ).first()
+
+    latest_sprint_number = result[0] if result else None
+    return latest_sprint_number

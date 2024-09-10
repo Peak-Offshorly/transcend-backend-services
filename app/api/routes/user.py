@@ -23,13 +23,14 @@ from app.utils.users_crud import (
     get_user_company_details,
     get_all_user_dashboard,
     add_user_to_company_crud,
-    create_user_in_dashboard
+    create_user_in_dashboard,
+    get_latest_sprint_for_user
 )
 from app.utils.company_crud import get_company_by_id
 from app.email.send_reset_password import send_reset_password
 from typing import List
 from firebase_admin.exceptions import FirebaseError
-
+import requests
 
 db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/accounts", tags=["accounts"])
@@ -240,16 +241,16 @@ async def delete_user_account(email: str, db: db_dependency):
         email: The email of the user to be deleted.
     """
     try:
-        # Check if the email parameter is provided
+        # check if the email parameter is provided
         if not email:
             raise HTTPException(status_code=400, detail="Email query parameter is required")
 
-        # Retrieve the user from the database using the email
-        user = get_one_user(db=db, email=email)  # Assuming the function expects an 'email'
+        # retrieve the user from the database using the email
+        user = get_one_user(db=db, email=email)  
         if not user:
             raise HTTPException(status_code=404, detail="User not found in the database")
 
-        # Get the user ID (uid) from the database user object
+        # get the user ID (uid) from the database user object
         uid = user.id
 
         company = get_company_by_id(db=db, company_id=user.company_id)
@@ -458,13 +459,15 @@ async def get_all_users_account(request: Request, db: db_dependency):
     """
 
     try:
-        body = await request.json()
-        user_email = body.get("user_email")
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            raise HTTPException(status_code=401, detail="Authorization header is missing")
 
-        if not user_email:
-            raise HTTPException(status_code=400, detail="user_email is required")
+        id_token = auth_header.split(" ")[1]
+        decoded_token = auth.verify_id_token(id_token)
+        current_user_id = decoded_token.get("uid")
         
-        user = get_one_user(db=db, email=user_email)
+        user = get_one_user_id(db=db, user_id=current_user_id)
 
         company = user.company_id
         users = get_all_user_dashboard(db,company)
@@ -495,27 +498,19 @@ async def view_user_account(request: Request, db: db_dependency):
         if not current_user:
             raise HTTPException(status_code=404, detail="Current user not found")
         print(f"Current user: {current_user.email}\n Current user role: {current_user.role}")
-        # Check if the current user is an admin or if they're viewing their own profile
+        # check if the current user is an admin or if they're viewing their own profile
         if current_user.user_type == 'admin' or current_user.id == user_id:
             requested_user = db.query(Users).filter(Users.id == user_id).first()
             if not requested_user:
                 raise HTTPException(status_code=404, detail="Requested user not found")
             
+            # get the latest sprint number for the requested user
+            latest_sprint_number = get_latest_sprint_for_user(db, user_id)
+            
             return {
-                "id": requested_user.id,
-                "email": requested_user.email,
-                "first_name": requested_user.first_name,
-                "last_name": requested_user.last_name,
-                "mobile_number": requested_user.mobile_number,
-                "company_size": requested_user.company_size,
-                "industry": requested_user.industry,
+                "name": requested_user.first_name + ' ' + requested_user.last_name,
                 "role": requested_user.role,
-                "role_description": requested_user.role_description,
-                "company_id": requested_user.company_id,
-                "created_at": requested_user.created_at,
-                "is_active": requested_user.is_active,
-                "acc_activated": requested_user.acc_activated,
-                "user_type": requested_user.user_type
+                "latest_sprint_number": latest_sprint_number  # Include latest sprint number
             }
         else:
             raise HTTPException(status_code=403, detail="You do not have permission to view this account")
@@ -581,7 +576,7 @@ async def verify_admin(request: Request):
 
   
 @router.post("/add-user-to-company")
-async def add_user_to_company(data: AddUserToCompanySchema, db: db_dependency):
+async def add_user_to_company(request: Request, data: AddUserToCompanySchema, db: db_dependency):
     """
     Add a user to a company in the database.
 
@@ -607,21 +602,45 @@ async def add_user_to_company(data: AddUserToCompanySchema, db: db_dependency):
         }
     """
     try:
+        
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            raise HTTPException(status_code=401, detail="Authorization header is missing")
+
+        # verify the token 
+        id_token = auth_header.split(" ")[1]
+        decoded_token = auth.verify_id_token(id_token)
+        current_user_id = decoded_token.get("uid")
+
+        if not current_user_id:
+            raise HTTPException(status_code=401, detail="Invalid token or user ID not found")
+
+        # fetch the current user from the database
+        current_user = db.query(Users).filter(Users.id == current_user_id).first()
+        if not current_user:
+            raise HTTPException(status_code=404, detail="Current user not found")
+
+        # ensure the current user is an admin
+        if current_user.user_type != "admin":
+            raise HTTPException(status_code=403, detail="Only admins can access this endpoint")
+
+        # use the current user's company ID
+        current_user_company_id = current_user.company_id
+        if not current_user_company_id:
+            raise HTTPException(status_code=400, detail="Current user's company ID not found")
+
+        # proceed with adding the user to the current user's company
         user_id = data.user_id
-        company_id = data.company_id
+        if not user_id:
+            raise HTTPException(status_code=400, detail="user_id is a required field")
 
-
-        if not user_id or not company_id:
-            raise HTTPException(status_code=400, detail="user_id and company_id are required fields")
-
-      
-        updated_user = add_user_to_company_crud(db=db, user_id=user_id, company_id=company_id)
+        updated_user = add_user_to_company_crud(db=db, user_id=user_id, company_id=current_user_company_id)
 
         if not updated_user:
-            raise HTTPException(status_code=404, detail="User or Company not found")
+            raise HTTPException(status_code=404, detail="User not found or could not be added to the company")
 
         return {
-            "message": f"User with ID {user_id} has been successfully added to the company with ID {company_id}.",
+            "message": f"User with ID {user_id} has been successfully added to the company with ID {current_user_company_id}.",
             "user_id": updated_user.id,
             "company_id": updated_user.company_id,
             "success": True
@@ -700,8 +719,11 @@ async def add_user_to_company_dashboard(
 
             if not user_email or not user_role:
                 raise HTTPException(status_code=400, detail="user_email and user_role are required fields")
-
-            # Create a new user in Firebase
+            
+            if user_role not in ["admin", "member"]:
+                raise HTTPException(status_code=400, detail="Invalid role")
+            
+            # create a new user in Firebase
             try:
                 firebase_user = auth.create_user(
                     email=user_email,
@@ -709,14 +731,14 @@ async def add_user_to_company_dashboard(
                     disabled=False
                 )
 
-                # Generate a password reset link and send it via email
+                # generate a password reset link and send it via email
                 link = auth.generate_password_reset_link(firebase_user.email)
                 # send_custom_email(firebase_user.email, link)
 
             except Exception as firebase_error:
                 raise HTTPException(status_code=400, detail=f"Error creating user in Firebase: {str(firebase_error)}")
 
-            # Create the user in the database
+            # create the user in the database
             new_user = Users(
                 id=firebase_user.uid,
                 email=user_email,
@@ -726,10 +748,9 @@ async def add_user_to_company_dashboard(
 
             created_user = create_user_in_dashboard(db=db, user=new_user)
 
-            # Set custom user claims in Firebase
+            # set custom user claims in Firebase
             try:
-                if user_role not in ["admin", "member"]:
-                    raise HTTPException(status_code=400, detail="Invalid role")
+
 
                 auth.set_custom_user_claims(firebase_user.uid, {'role': user_role})
                 print(f"Set: User role set to {user_role}")
@@ -764,7 +785,6 @@ async def change_password(
     request: PasswordChangeRequest,
     credentials: HTTPAuthorizationCredentials = Depends(firebase_auth)
 ):
-    
     """
     Changes the password of the user
 
@@ -788,28 +808,28 @@ async def change_password(
         }
     """
     try:
-        # Extract the token
         token = credentials.credentials
 
-        # Verify the token
+       
         decoded_token = auth.verify_id_token(token)
         uid = decoded_token['uid']
 
-        # Get the user's email
+     
         user = auth.get_user(uid)
         email = user.email
 
-        # Verify the old password
+        # verify the old password by attempting to log in
         try:
-            # Firebase Admin SDK doesn't have a direct method to verify password
-            # You might need to use Firebase Auth REST API or a custom solution here
-            # For now, we'll skip this step and add a TODO
-            # TODO: Implement old password verification
-            pass
-        except FirebaseError as e:
+            firebase_user = firebase.auth().sign_in_with_email_and_password(
+                email=email,
+                password=request.old_password
+            )
+
+            # if login is successful, continue with the password update
+        except Exception as login_error:
             raise HTTPException(
                 status_code=400,
-                detail=f"Error verifying old password: {str(e)}"
+                detail="Old password is incorrect"
             )
 
         # Update the user's password in Firebase
