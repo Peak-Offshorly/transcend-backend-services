@@ -9,7 +9,7 @@ from app.firebase.session import firebase, auth
 import firebase_admin
 from firebase_admin import auth, credentials
 from app.database.models import Users
-from app.schemas.models import SignUpSchema, UpdateUserSchema, LoginSchema, UserCompanyDetailsSchema,CustomTokenRequestSchema, AddUserToCompanySchema, AddUserToCompanyDashboardSchema, PasswordChangeRequest
+from app.schemas.models import SignUpSchema, UpdateUserSchema, LoginSchema, UserCompanyDetailsSchema,CustomTokenRequestSchema, AddUserToCompanySchema, AddUserToCompanyDashboardSchema, PasswordChangeRequest, UpdatePersonalDetailsSchema
 from app.database.connection import get_db
 from app.firebase.utils import verify_token
 from app.utils.users_crud import (
@@ -24,7 +24,8 @@ from app.utils.users_crud import (
     get_all_user_dashboard,
     add_user_to_company_crud,
     create_user_in_dashboard,
-    get_latest_sprint_for_user
+    get_latest_sprint_for_user,
+    update_personal_details
 )
 from app.utils.company_crud import get_company_by_id
 from app.email.send_reset_password import send_reset_password
@@ -887,3 +888,56 @@ async def change_password(
             detail=f"Invalid authentication credentials: {str(e)}",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+@router.post("/edit-personal-details")
+async def edit_personal_details(data: UpdatePersonalDetailsSchema, db: db_dependency, request: Request):
+  """
+    Changes the personal details of the user
+
+    Args:
+        request: The request object containing the user token.
+
+    Returns:
+        dict: A JSON response with a success message.
+    
+    Example Response:
+        {
+            "message": "Account successfully updated for userID}"
+        }
+    
+    Request Body:
+        {
+            "first_name": "first_name",
+            "last_name": "last_name",
+            "email": "email",
+            "mobile_number": "mobile_number",
+            "role": "role"
+        }
+  """
+  # auth part, get the current user
+  auth_header = request.headers.get("Authorization")
+  if not auth_header:
+    raise HTTPException(status_code=401, detail="Authorization header is missing")
+  id_token = auth_header.split(" ")[1]
+  decoded_token = auth.verify_id_token(id_token)
+  current_user_id = decoded_token.get("uid")
+
+  # get the current user from the database
+  current_user = db.query(Users).filter(Users.id == current_user_id).first()
+  if not current_user:
+    raise HTTPException(status_code=400, detail="Current user not found")
+
+  email = data.email
+  first_name = data.first_name
+  last_name = data.last_name
+  mobile_number = data.mobile_number
+  role = data.role
+  try:
+    update_personal_details(db=db, user_id=current_user_id, email=email, first_name=first_name, last_name=last_name, mobile_number=mobile_number, role=role)
+
+    return JSONResponse(
+      content={"message":  f"Account successfully updated for {current_user_id}"},
+      status_code=200
+    )
+  except Exception as error:
+    raise HTTPException(status_code=400, detail=str(error))
