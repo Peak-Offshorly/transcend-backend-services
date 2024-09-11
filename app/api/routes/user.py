@@ -523,7 +523,7 @@ async def view_user_account(request: Request, db: db_dependency):
 
         if not current_user:
             raise HTTPException(status_code=404, detail="Current user not found")
-        print(f"Current user: {current_user.email}\n Current user role: {current_user.role}")
+        # print(f"Current user: {current_user.email}\n Current user role: {current_user.role}")
         # check if the current user is an admin or if they're viewing their own profile
         if current_user.user_type == 'admin' or current_user.id == user_id:
             requested_user = db.query(Users).filter(Users.id == user_id).first()
@@ -532,9 +532,14 @@ async def view_user_account(request: Request, db: db_dependency):
             
             # get the latest sprint number for the requested user
             latest_sprint_number = get_latest_sprint_for_user(db, user_id)
-            
+
+            first_name = requested_user.first_name if requested_user.first_name is not None else None
+            last_name = requested_user.last_name if requested_user.last_name is not None else None
+
             return {
-                "name": requested_user.first_name + ' ' + requested_user.last_name,
+                "first_name": first_name,
+                "last_name": last_name,
+                "email": requested_user.email,
                 "role": requested_user.role,
                 "latest_sprint_number": latest_sprint_number  # Include latest sprint number
             }
