@@ -133,8 +133,11 @@ def get_all_user_dashboard(db: Session, company_id: str):
         user_id = row.id
         sprint_number = row.number  # this will be None if the user has no associated sprint
 
+        first_name = row.first_name if row.first_name is not None else None
+        last_name = row.last_name if row.last_name is not None else None
         user_info = {
-            "name": f"{row.first_name} {row.last_name}",
+            "first_name": first_name,
+            "last_name": last_name,
             "email": row.email,
             "role": row.role,
             "sprint_number": sprint_number,
