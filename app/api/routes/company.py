@@ -58,8 +58,7 @@ async def create_company_endpoint(
         # check if the current user is already associated with a company
         if current_user.company_id:
             raise HTTPException(status_code=400, detail="Current user is already associated with a company")
-        if current_user.user_type != "admin":
-            raise HTTPException(status_code=400, detail="Only admins can create companies")
+
         # validate users data if provided
         if users:
             for entry in users:
