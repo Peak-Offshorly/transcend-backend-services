@@ -118,6 +118,7 @@ def get_all_user_dashboard(db: Session, company_id: str):
         select(
             Users.first_name,
             Users.last_name,
+            Users.email,
             Users.role,
             Sprints.number,
             Users.company_id,
@@ -134,6 +135,7 @@ def get_all_user_dashboard(db: Session, company_id: str):
 
         user_info = {
             "name": f"{row.first_name} {row.last_name}",
+            "email": row.email,
             "role": row.role,
             "sprint_number": sprint_number,
             "company_id": row.company_id,
