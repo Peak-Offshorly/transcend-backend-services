@@ -197,3 +197,10 @@ class CreateCompanyRequest(BaseModel):
 class PasswordChangeRequest(BaseModel):
     new_password: str
     old_password: str
+
+class UpdatePersonalDetailsSchema(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    email: Optional[str] = None
+    mobile_number: Optional[str] = None
+    role: Optional[str] = None
