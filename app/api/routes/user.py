@@ -32,8 +32,12 @@ from app.email.send_reset_password import send_reset_password
 from typing import List
 from firebase_admin.exceptions import FirebaseError
 import requests
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 db_dependency = Annotated[Session, Depends(get_db)]
+limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/accounts", tags=["accounts"])
 firebase_auth = HTTPBearer()
 
@@ -951,35 +955,35 @@ async def edit_personal_details(data: UpdatePersonalDetailsSchema, db: db_depend
 
 
 @router.post("/request-password-reset")
-async def request_password_reset(data: ResetPasswordRequest):
+@limiter.limit("1/minute")  # Apply rate limiting
+async def request_password_reset(request: Request, data: ResetPasswordRequest, db: db_dependency):
     """
     Endpoint to request a password reset link for a user's email.
 
-    Args:
-        request (Request): The request object containing the user's email.
-
     Returns:
-        JSONResponse: A JSON response indicating the success or failure of sending the reset link.
+        dict: A JSON response with a success message.
+    
+    Example Response:
+        {
+            "success": True,
+            "message": "Password reset link sent to user_email"
+        }
+    
+    Request Body:
+        {
+            "email": "user_email"
+        }
     """
+    user_email = data.email
+    if not user_email:
+        raise HTTPException(status_code=400, detail="Email is required")
 
     try:
-        user_email = data.email
-        if not user_email:
-            raise HTTPException(status_code=400, detail="Email is required")
-
-        # Check if the email is registered in Firebase
-        try:
-            user = auth.get_user_by_email(user_email)
-        except auth.UserNotFoundError:
-            raise HTTPException(status_code=404, detail="User with this email does not exist")
-
-        # Generate the password reset link
+        user = auth.get_user_by_email(user_email)
         link = auth.generate_password_reset_link(user_email)
-
-        # Send the password reset link to the email
         await send_reset_password(user_email, link)
-
         return {"success": True, "message": f"Password reset link sent to {user_email}"}
-
+    except auth.UserNotFoundError:
+        raise HTTPException(status_code=404, detail="User with this email does not exist")
     except Exception as error:
         raise HTTPException(status_code=500, detail=str(error))
