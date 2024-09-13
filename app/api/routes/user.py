@@ -951,11 +951,7 @@ async def edit_personal_details(data: UpdatePersonalDetailsSchema, db: db_depend
     raise HTTPException(status_code=400, detail=str(error))
 
 @router.post("/change-user-photo")
-async def change_user_photo(
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db),
-    request: Request = None
-):
+async def change_user_photo(file: UploadFile = File(...), db: Session = Depends(get_db), request: Request = None):
     """
     Changes the user photo uploaded by a user and stores it in cloud storage
 
