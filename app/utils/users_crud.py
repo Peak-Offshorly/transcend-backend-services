@@ -122,7 +122,8 @@ def get_all_user_dashboard(db: Session, company_id: str):
             Users.role,
             Sprints.number,
             Users.company_id,
-            Users.id
+            Users.id,
+            Users.user_type
         )
         .join(Sprints, Users.id == Sprints.user_id, isouter=True)  
         .where(Users.company_id == company_id)
@@ -142,7 +143,8 @@ def get_all_user_dashboard(db: Session, company_id: str):
             "role": row.role,
             "sprint_number": sprint_number,
             "company_id": row.company_id,
-            "user_id": user_id
+            "user_id": user_id,
+            "user_type": row.user_type
         }
         
         # add user to the dictionary if not already added or if this sprint number is more recent
@@ -167,7 +169,9 @@ def create_user_in_dashboard(db: Session, user: Users):
         id = user.id,
         email = user.email,
         acc_activated = user.acc_activated,
-        company_id = user.company_id
+        company_id = user.company_id,
+        user_type = user.user_type
+
     )
 
     db.add(db_user)
