@@ -33,11 +33,11 @@ from app.email.send_reset_password import send_reset_password
 from typing import List
 from firebase_admin.exceptions import FirebaseError
 import requests
-from uuid import uuid4
-import os
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
+from uuid import uuid4
+import os
 
 db_dependency = Annotated[Session, Depends(get_db)]
 limiter = Limiter(key_func=get_remote_address)
@@ -949,9 +949,13 @@ async def edit_personal_details(data: UpdatePersonalDetailsSchema, db: db_depend
     )
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
-
+  
 @router.post("/change-user-photo")
-async def change_user_photo(file: UploadFile = File(...), db: Session = Depends(get_db), request: Request = None):
+async def change_user_photo(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    request: Request = None
+):
     """
     Changes the user photo uploaded by a user and stores it in cloud storage
 
@@ -1004,6 +1008,11 @@ async def change_user_photo(file: UploadFile = File(...), db: Session = Depends(
                 "message": f"User photo successfully updated for {current_user_id}",
                 "photo_url": photo_url
             },
+            status_code=200
+    )
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
+
 
 @router.post("/request-password-reset")
 @limiter.limit("1/minute")  # Apply rate limiting
@@ -1105,6 +1114,6 @@ async def update_user_type(request: Request, db: db_dependency):
         return JSONResponse(
             content={"message": f"User role set to {role}", "success": True},
             status_code=200
-        )
+            )
     except Exception as error:
         raise HTTPException(status_code=400, detail=str(error))
