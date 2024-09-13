@@ -9,7 +9,7 @@ from app.firebase.session import firebase, auth
 import firebase_admin
 from firebase_admin import auth, credentials
 from app.database.models import Users
-from app.schemas.models import SignUpSchema, UpdateUserSchema, LoginSchema, UserCompanyDetailsSchema,CustomTokenRequestSchema, AddUserToCompanySchema, AddUserToCompanyDashboardSchema, PasswordChangeRequest, UpdatePersonalDetailsSchema
+from app.schemas.models import SignUpSchema, UpdateUserSchema, LoginSchema, UserCompanyDetailsSchema,CustomTokenRequestSchema, AddUserToCompanySchema, AddUserToCompanyDashboardSchema, PasswordChangeRequest, UpdatePersonalDetailsSchema, ResetPasswordRequest
 from app.database.connection import get_db
 from app.firebase.utils import verify_token
 from app.utils.users_crud import (
@@ -527,7 +527,7 @@ async def view_user_account(request: Request, db: db_dependency):
         # print(f"Current user: {current_user.email}\n Current user role: {current_user.role}")
         # check if the current user is an admin or if they're viewing their own profile
         if current_user.user_type == 'admin' or current_user.id == user_id:
-            requested_user = db.query(Users).filter(Users.id == user_id).first()
+            requested_user = get_one_user_id(db=db, user_id=user_id)
             if not requested_user:
                 raise HTTPException(status_code=404, detail="Requested user not found")
             
@@ -542,7 +542,8 @@ async def view_user_account(request: Request, db: db_dependency):
                 "last_name": last_name,
                 "email": requested_user.email,
                 "role": requested_user.role,
-                "latest_sprint_number": latest_sprint_number  # Include latest sprint number
+                "latest_sprint_number": latest_sprint_number,  # Include latest sprint number
+                "user_type": requested_user.user_type
             }
         else:
             raise HTTPException(status_code=403, detail="You do not have permission to view this account")
@@ -947,3 +948,38 @@ async def edit_personal_details(data: UpdatePersonalDetailsSchema, db: db_depend
     )
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
+
+
+@router.post("/request-password-reset")
+async def request_password_reset(data: ResetPasswordRequest):
+    """
+    Endpoint to request a password reset link for a user's email.
+
+    Args:
+        request (Request): The request object containing the user's email.
+
+    Returns:
+        JSONResponse: A JSON response indicating the success or failure of sending the reset link.
+    """
+
+    try:
+        user_email = data.email
+        if not user_email:
+            raise HTTPException(status_code=400, detail="Email is required")
+
+        # Check if the email is registered in Firebase
+        try:
+            user = auth.get_user_by_email(user_email)
+        except auth.UserNotFoundError:
+            raise HTTPException(status_code=404, detail="User with this email does not exist")
+
+        # Generate the password reset link
+        link = auth.generate_password_reset_link(user_email)
+
+        # Send the password reset link to the email
+        await send_reset_password(user_email, link)
+
+        return {"success": True, "message": f"Password reset link sent to {user_email}"}
+
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=str(error))
