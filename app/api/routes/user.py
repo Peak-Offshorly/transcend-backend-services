@@ -741,6 +741,7 @@ async def add_user_to_company_dashboard(
         ]
 
     """
+
     try:
         auth_header = request.headers.get("Authorization")
         if not auth_header:
@@ -761,6 +762,7 @@ async def add_user_to_company_dashboard(
         if not current_user_company_id:
             raise HTTPException(status_code=400, detail="Current user's company ID not found")
         
+
         response_data = []
 
         for entry in data:
@@ -773,6 +775,7 @@ async def add_user_to_company_dashboard(
             if user_role not in ["admin", "member"]:
                 raise HTTPException(status_code=400, detail="Invalid role")
             
+            # create a new user in Firebase
             try:
                 firebase_user = auth.create_user(
                     email=user_email,
@@ -780,22 +783,14 @@ async def add_user_to_company_dashboard(
                     disabled=False
                 )
 
-                # Set the validity of the password reset link to 24 hours (86400 seconds)
-                action_code_settings = auth.ActionCodeSettings(
-                    url='https://peak-transcend-dev.netlify.app/auth?mode=resetPassword',
-                    handle_code_in_app=True,
-                    expire_in=timedelta(hours=24)
-                )
-
-                # generate a password reset link with 24-hour validity
-                link = auth.generate_password_reset_link(
-                    firebase_user.email,
-                    action_code_settings=action_code_settings
-                )
+                # generate a password reset link and send it via email
+                link = auth.generate_password_reset_link(firebase_user.email)
+                # send_custom_email(firebase_user.email, link)
 
             except Exception as firebase_error:
                 raise HTTPException(status_code=400, detail=f"Error creating user in Firebase: {str(firebase_error)}")
 
+            # create the user in the database
             new_user = Users(
                 id=firebase_user.uid,
                 email=user_email,
@@ -808,12 +803,14 @@ async def add_user_to_company_dashboard(
             # Send password reset email
             await send_reset_password(firebase_user.email, link)
 
+            # Add success response for the current user
             response_data.append({
                 "message": f"Account successfully created for {entry.user_email}",
                 "user_id": firebase_user.uid,
                 "email": entry.user_email,
             })
 
+        # Return the response data for all users
         return JSONResponse(
             content={
                 "success": True,
@@ -824,6 +821,7 @@ async def add_user_to_company_dashboard(
 
     except Exception as error:
         raise HTTPException(status_code=400, detail=str(error))
+
 
 @router.post("/change-password")
 async def change_password(
