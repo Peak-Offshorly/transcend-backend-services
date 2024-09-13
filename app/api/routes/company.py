@@ -630,11 +630,7 @@ async def org_growth_percentages_endpoint(request: Request, db: db_dependency):
     raise HTTPException(status_code=400, detail=str(error))
   
 @router.post("/change-company-photo")
-async def change_company_photo(
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db),
-    request: Request = None
-):
+async def change_company_photo(file: UploadFile = File(...), db: Session = Depends(get_db), request: Request = None):
     """
     Changes the company photo uploaded by a user and stores it in Firebase Storage
 
