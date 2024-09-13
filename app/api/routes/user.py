@@ -220,8 +220,8 @@ async def edit_user_account(data: UpdateUserSchema, db: db_dependency, token = D
     raise HTTPException(status_code=400, detail=str(error))
   
 
-@router.delete("/delete-user")
-async def delete_user_account(email: str, db: db_dependency):
+@router.delete("/delete-user")  # must be userid
+async def delete_user_account(user_id: str, db: db_dependency):
     """
     Deletes a user account from the database and Firebase Authentication.
 
@@ -244,11 +244,11 @@ async def delete_user_account(email: str, db: db_dependency):
     """
     try:
         # check if the email parameter is provided
-        if not email:
-            raise HTTPException(status_code=400, detail="Email query parameter is required")
+        if not user_id:
+            raise HTTPException(status_code=400, detail="User ID query parameter is required")
 
         # retrieve the user from the database using the email
-        user = get_one_user(db=db, email=email)  
+        user = get_one_user_id(db=db, user_id=user_id)  
         if not user:
             raise HTTPException(status_code=404, detail="User not found in the database")
 
@@ -257,14 +257,12 @@ async def delete_user_account(email: str, db: db_dependency):
 
         company = get_company_by_id(db=db, company_id=user.company_id)
         if company:
-            if user.user_type == 'admin':
+            if user.user_type == 'admin' and company.admin_count > 0:
                 company.admin_count -= 1
-            if user.user_type == 'member':
+            if user.user_type == 'member' and company.member_count > 0:
                 company.member_count -= 1
             db.commit()
             
-        
-
         # Delete the user from Firebase Authentication
         auth.delete_user(uid=uid)
 
@@ -355,30 +353,18 @@ async def set_user_role(request: Request, db: db_dependency):
         user = get_one_user_id(db=db, user_id=user_id)
         if not user:
             raise HTTPException(status_code=404, detail="User not found in the database")
-            
+        if user.user_type != 'unknown':
+            raise HTTPException(status_code=400, detail="User role already set")   
+        
         user_user_type = user.user_type
        
-        
-        
         # no repeat role assignment
         if user_user_type == role:
             raise HTTPException(status_code=400, detail=f"User is already a {role}")
         
 
-        if role == "admin":
-            if user_user_type == "member":
-                raise HTTPException(status_code=400, detail="This user can't be promoted to admin")
-            if user_user_type == "unknown":
-                user.user_type = 'admin'
-                db.commit()
-
-        if role == "member":
-            if user_user_type == "admin":
-                user.user_type = 'member'
-                db.commit()
-            if user_user_type == "unknown":
-                user.user_type = 'member'
-                db.commit()
+        user.user_type = role
+        db.commit()
 
         return JSONResponse(
             content={"message": f"User role set to {role}", "success": True},
@@ -767,6 +753,7 @@ async def add_user_to_company_dashboard(
         if not current_user_company_id:
             raise HTTPException(status_code=400, detail="Current user's company ID not found")
         
+        current_user_company = get_company_by_id(db=db, company_id=current_user_company_id)
 
         response_data = []
 
@@ -799,18 +786,24 @@ async def add_user_to_company_dashboard(
             new_user = Users(
                 id=firebase_user.uid,
                 email=user_email,
-                role=user_role,
-                company_id=current_user_company_id
+                acc_activated=False,
+                company_id=current_user_company_id,
+                user_type=user_role,
             )
 
             created_user = create_user_in_dashboard(db=db, user=new_user)
+            if user_role == "admin":
+                current_user_company.admin_count += 1
+            if user_role == "member":
+                current_user_company.member_count += 1
+            db.commit()
 
             # Send password reset email
             await send_reset_password(firebase_user.email, link)
 
             # Add success response for the current user
             response_data.append({
-                "message": f"Account successfully created for {entry.user_email}",
+                "message": f"Account successfully created for {new_user.email}",
                 "user_id": firebase_user.uid,
                 "email": entry.user_email,
             })
@@ -987,3 +980,73 @@ async def request_password_reset(request: Request, data: ResetPasswordRequest, d
         raise HTTPException(status_code=404, detail="User with this email does not exist")
     except Exception as error:
         raise HTTPException(status_code=500, detail=str(error))
+    
+@router.post("/update-user-type")
+async def update_user_type(request: Request, db: db_dependency):
+    """
+    Updates the user type of a user in the database.
+
+    Args:
+        data (dict): The request data containing the user ID and user type.
+        db (Session): The database session for performing the operation.
+
+    Returns:
+        dict: A JSON response with a success message.
+
+    Example Response:
+        {
+            "message": "User type updated successfully",
+            "success": True
+        }
+    
+
+    """
+    try:
+
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            raise HTTPException(status_code=401, detail="Authorization header is missing")
+
+        id_token = auth_header.split(" ")[1]
+        decoded_token = auth.verify_id_token(id_token)
+        current_user_id = decoded_token.get("uid")
+
+        current_user = get_one_user_id(db=db, user_id=current_user_id)
+        if not current_user:
+            raise HTTPException(status_code=404, detail="Current user not found")
+
+        if current_user.user_type != "admin":
+            raise HTTPException(status_code=403, detail="Only admins can set user roles")
+        
+        body = await request.json()
+        user_id = body.get("user_id")
+        role = body.get("role")
+
+        if not user_id or not role:
+            raise HTTPException(status_code=400, detail="user_id and role are required fields")
+        
+        # only two roles are allowed
+        if role not in ["admin", "member"]:
+            raise HTTPException(status_code=400, detail="Invalid role")
+
+        user = get_one_user_id(db=db, user_id=user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found in the database")
+            
+        user_user_type = user.user_type
+       
+        
+        # no repeat role assignment
+        if user_user_type == role:
+            raise HTTPException(status_code=400, detail=f"User is already a {role}")
+        
+
+        user.user_type = role
+        db.commit()
+
+        return JSONResponse(
+            content={"message": f"User role set to {role}", "success": True},
+            status_code=200
+        )
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
