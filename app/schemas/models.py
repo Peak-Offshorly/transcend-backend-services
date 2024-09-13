@@ -204,3 +204,7 @@ class UpdatePersonalDetailsSchema(BaseModel):
     email: Optional[str] = None
     mobile_number: Optional[str] = None
     role: Optional[str] = None
+
+class ResetPasswordRequest(BaseModel):
+    email: str
+    user_type: Optional[str] = None

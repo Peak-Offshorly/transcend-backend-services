@@ -39,3 +39,4 @@ async def send_reset_password(email_to: str, link: str):
         purpose="reset_password"
     )
     print(f"Sent reset password email to {email_to}")
+
