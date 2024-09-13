@@ -199,3 +199,12 @@ def get_org_growth_percentages(db: Session, company_id: str):
         'percent_effective_strength_area': result.percent_effective_strength_area if result else None,
         'percent_effective_weakness_area': result.percent_effective_weakness_area if result else None
     }
+
+def update_company_photo(db: Session, company_id: str, photo_url: str):
+    db_company = db.query(Company).filter(Company.id == company_id).first()
+
+    if db_company:
+        db_company.company_photo_url = photo_url
+        db.commit()
+
+    return db_company
