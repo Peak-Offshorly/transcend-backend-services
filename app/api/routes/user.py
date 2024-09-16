@@ -353,8 +353,8 @@ async def set_user_role(request: Request, db: db_dependency):
         user = get_one_user_id(db=db, user_id=user_id)
         if not user:
             raise HTTPException(status_code=404, detail="User not found in the database")
-        # if user.user_type != 'unknown':  # correction for bug 
-        #     raise HTTPException(status_code=400, detail="User role already set")   
+        if user.user_type != 'unknown':
+            raise HTTPException(status_code=400, detail="User role already set")   
         
         user_user_type = user.user_type
        
