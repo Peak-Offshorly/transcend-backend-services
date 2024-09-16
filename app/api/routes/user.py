@@ -1,13 +1,13 @@
 from datetime import datetime
 import datetime as dt
-from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
-from typing import Annotated, Optional
+from typing import Annotated
 from app.firebase.session import firebase, auth
 import firebase_admin
-from firebase_admin import auth, credentials, storage
+from firebase_admin import auth, credentials
 from app.database.models import Users
 from app.schemas.models import SignUpSchema, UpdateUserSchema, LoginSchema, UserCompanyDetailsSchema,CustomTokenRequestSchema, AddUserToCompanySchema, AddUserToCompanyDashboardSchema, PasswordChangeRequest, UpdatePersonalDetailsSchema, ResetPasswordRequest
 from app.database.connection import get_db
@@ -25,8 +25,7 @@ from app.utils.users_crud import (
     add_user_to_company_crud,
     create_user_in_dashboard,
     get_latest_sprint_for_user,
-    update_personal_details,
-    update_user_photo
+    update_personal_details
 )
 from app.utils.company_crud import get_company_by_id
 from app.email.send_reset_password import send_reset_password
@@ -36,14 +35,11 @@ import requests
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
-from uuid import uuid4
-import os
 
 db_dependency = Annotated[Session, Depends(get_db)]
 limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/accounts", tags=["accounts"])
 firebase_auth = HTTPBearer()
-bucket = storage.bucket()
 
 @router.post("/save-company-details")
 async def save_company_details(data: UserCompanyDetailsSchema, db: db_dependency, token = Depends(verify_token)):
@@ -949,69 +945,6 @@ async def edit_personal_details(data: UpdatePersonalDetailsSchema, db: db_depend
     )
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
-  
-@router.post("/change-user-photo")
-async def change_user_photo(
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db),
-    request: Request = None
-):
-    """
-    Changes the user photo uploaded by a user and stores it in cloud storage
-
-    Args:
-        file: The uploaded image file.
-        request: The request object containing the user token.
-
-    Returns:
-        dict: A JSON response with a success message and the new photo URL.
-    
-    Example Response:
-        {
-            "message": "User photo successfully updated for {user_id}",
-            "photo_url": "https://storage.googleapis.com/your-bucket-name/user_photos/photo_123456.jpg"
-        }
-    """
-    # Auth part, get the current user
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Authorization header is missing")
-    id_token = auth_header.split(" ")[1]
-    decoded_token = auth.verify_id_token(id_token)
-    current_user_id = decoded_token.get("uid")
-
-    # Get the current user from the database
-    current_user = db.query(Users).filter(Users.id == current_user_id).first()
-    if not current_user:
-        raise HTTPException(status_code=400, detail="Current user not found")
-
-    try:
-        # Generate a unique filename
-        file_extension = os.path.splitext(file.filename)[1]
-        new_filename = f"user_photos/photo_{uuid4()}{file_extension}"
-
-        # Upload the file to Google Cloud Storage
-        blob = bucket.blob(new_filename)
-        blob.upload_from_file(file.file)
-
-        # Make the blob publicly accessible
-        blob.make_public()
-
-        # Get the public URL
-        photo_url = blob.public_url
-
-        # Update the user's photo URL in the database
-        update_user_photo(db=db, user_id=current_user_id, photo_url=photo_url)
-
-        return JSONResponse(
-            content={
-                "message": f"User photo successfully updated for {current_user_id}",
-                "photo_url": photo_url
-            },
-            status_code=200
-    )
-    except Exception as error:
-        raise HTTPException(status_code=400, detail=str(error))
 
 
 @router.post("/request-password-reset")
@@ -1114,6 +1047,6 @@ async def update_user_type(request: Request, db: db_dependency):
         return JSONResponse(
             content={"message": f"User role set to {role}", "success": True},
             status_code=200
-            )
+        )
     except Exception as error:
         raise HTTPException(status_code=400, detail=str(error))
