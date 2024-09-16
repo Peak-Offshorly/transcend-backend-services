@@ -209,3 +209,12 @@ def update_personal_details(db: Session, user_id=None, email=None, first_name=No
         db.commit()
 
     return db_user
+
+def update_user_photo(db: Session, user_id: str, photo_url: str):
+    db_user = db.query(Users).filter(Users.id == user_id).first()
+
+    if db_user:
+        db_user.user_photo_url = photo_url
+        db.commit()
+
+    return db_user
