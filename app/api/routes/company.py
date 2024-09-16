@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Body, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Body
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from typing import Annotated
@@ -14,8 +14,7 @@ from app.utils.company_crud import (
     get_strengths_by_company_id,
     get_weakness_by_company_id,
     get_significant_strengths_weakness,
-    get_org_growth_percentages,
-    update_company_photo)
+    get_org_growth_percentages)
 
 from app.utils.users_crud import (
     create_user_in_dashboard,
@@ -24,13 +23,11 @@ from app.utils.users_crud import (
 from uuid import uuid4
 from typing import Optional, List
 from app.email.send_reset_password import send_reset_password
-from firebase_admin import auth, credentials, storage
+from firebase_admin import auth, credentials
 from firebase_admin.exceptions import FirebaseError
-import os
 
 db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/company", tags=["company"])
-bucket = storage.bucket()
 
 @router.post("/create-company")
 async def create_company_endpoint(
@@ -627,75 +624,3 @@ async def org_growth_percentages_endpoint(request: Request, db: db_dependency):
     return response
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
-  
-@router.post("/change-company-photo")
-async def change_company_photo(
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db),
-    request: Request = None
-):
-    """
-    Changes the company photo uploaded by a user and stores it in Firebase Storage
-    Args:
-        file: The uploaded image file.
-        request: The request object containing the user token.
-    Returns:
-        dict: A JSON response with a success message and the new photo URL.
-    
-    Example Response:
-        {
-            "message": "Company photo successfully updated for {user_id}",
-            "photo_url": "https://firebasestorage.googleapis.com/..."
-        }
-    """
-    # Auth part, get the current user
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Authorization header is missing")
-    id_token = auth_header.split(" ")[1]
-    try:
-        decoded_token = auth.verify_id_token(id_token)
-        current_user_id = decoded_token['uid']
-    except Exception as e:
-        raise HTTPException(status_code=401, detail="Invalid authentication token")
-
-    # Get the current user from the database
-    current_user = db.query(Users).filter(Users.id == current_user_id).first()
-    if not current_user:
-        raise HTTPException(status_code=400, detail="Current user not found")
-
-    try:
-        # Generate a unique filename
-        file_extension = os.path.splitext(file.filename)[1]
-        new_filename = f"company_photos/{current_user_id}/photo_{uuid4()}{file_extension}"
-
-        # Upload the file to Firebase Storage
-        blob = bucket.blob(new_filename)
-        blob.upload_from_file(file.file)
-
-        # Make the blob publicly accessible
-        blob.make_public()
-
-        # Get the public URL
-        photo_url = blob.public_url
-
-        if not current_user.company_id:
-            raise HTTPException(status_code=404, detail="User is not associated with a company")
-
-        company = get_company_by_id(db=db, company_id=current_user.company_id)
-
-        if company is None:
-            raise HTTPException(status_code=404, detail="Company not found")
-
-        # Update the user's company photo URL in the database
-        update_company_photo(db=db, company_id=current_user.company_id, photo_url=photo_url)
-
-        return JSONResponse(
-            content={
-                "message": f"Company photo successfully updated for {current_user.company_id}",
-                "photo_url": photo_url
-            },
-            status_code=200
-        )
-    except Exception as error:
-        raise HTTPException(status_code=400, detail=str(error))
