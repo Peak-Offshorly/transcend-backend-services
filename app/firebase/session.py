@@ -16,7 +16,9 @@ if not firebase_admin._apps:
     cred = credentials.Certificate("/etc/secrets/transcend-service-account-key")
 
     # cred = credentials.Certificate("././transcend-service-account-key.json")
-    firebase_admin.initialize_app(cred)
+    firebase_admin.initialize_app(cred, {
+        'storageBucket': FIREBASE_CONFIG_STORAGEBUCKET
+    })
     print("Firebase Initialized")
 
 firebaseConfig = {

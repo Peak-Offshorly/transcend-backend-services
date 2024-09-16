@@ -22,6 +22,7 @@ class Users(Base):
     is_active = Column(Boolean, default=True)
     acc_activated = Column(Boolean, default=False)
     user_type = Column(String, index=True)
+    user_photo_url = Column(String, index=True)
 
     traits = relationship('Traits', back_populates='users')
     chosen_traits = relationship('ChosenTraits', back_populates='users')
@@ -253,6 +254,7 @@ class Company(Base):
     name = Column(String, index=True)
     member_count = Column(Integer, index=True)
     admin_count = Column(Integer, index=True)
+    company_photo_url = Column(String, index=True)
 
 
 
