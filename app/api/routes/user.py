@@ -897,10 +897,10 @@ async def change_password(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-@router.post("/edit-personal-details")
-async def edit_personal_details(data: UpdatePersonalDetailsSchema, db: db_dependency, request: Request):
+@router.post("/complete-profile-details")
+async def edit_personal_details(user_id: str, data: UpdatePersonalDetailsSchema, db: db_dependency, request: Request):
   """
-    Changes the personal details of the user
+    Changes the personal details and password of the user
 
     Args:
         request: The request object containing the user token.
@@ -910,38 +910,46 @@ async def edit_personal_details(data: UpdatePersonalDetailsSchema, db: db_depend
     
     Example Response:
         {
-            "message": "Account successfully updated for userID}"
+            "message": "Account successfully updated for {userID}"
         }
     
     Request Body:
         {
             "first_name": "first_name",
             "last_name": "last_name",
-            "email": "email",
             "mobile_number": "mobile_number",
-            "role": "role"
+            "job_title": "job_title",
+            "password": "password"
         }
   """
-  # auth part, get the current user
-  auth_header = request.headers.get("Authorization")
-  if not auth_header:
-    raise HTTPException(status_code=401, detail="Authorization header is missing")
-  id_token = auth_header.split(" ")[1]
-  decoded_token = auth.verify_id_token(id_token)
-  current_user_id = decoded_token.get("uid")
-
-  # get the current user from the database
-  current_user = db.query(Users).filter(Users.id == current_user_id).first()
-  if not current_user:
-    raise HTTPException(status_code=400, detail="Current user not found")
-
-  email = data.email
-  first_name = data.first_name
-  last_name = data.last_name
-  mobile_number = data.mobile_number
-  role = data.role
   try:
-    update_personal_details(db=db, user_id=current_user_id, email=email, first_name=first_name, last_name=last_name, mobile_number=mobile_number, role=role)
+    current_user_id = user_id
+    # check if the email parameter is provided
+    if not user_id:
+        raise HTTPException(status_code=400, detail="User ID query parameter is required")
+
+    # retrieve the user from the database using the user_id parameter
+    user = get_one_user_id(db=db, user_id=current_user_id)  
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found in the database")
+
+    # get the current user from the database
+    current_user = db.query(Users).filter(Users.id == current_user_id).first()
+    if not current_user:
+        raise HTTPException(status_code=400, detail="Current user not found")
+
+    email = data.email
+    first_name = data.first_name
+    last_name = data.last_name
+    mobile_number = data.mobile_number
+    job_title = data.job_title
+    update_personal_details(db=db, user_id=current_user_id, email=email, first_name=first_name, last_name=last_name, mobile_number=mobile_number, job_title=job_title)
+    
+    # Update the user's password in Firebase
+    auth.update_user(
+        current_user_id,
+        password=data.password
+    )
 
     return JSONResponse(
       content={"message":  f"Account successfully updated for {current_user_id}"},
