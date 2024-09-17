@@ -30,6 +30,7 @@ from app.utils.users_crud import (
 )
 from app.utils.company_crud import get_company_by_id
 from app.email.send_reset_password import send_reset_password
+from app.email.send_complete_profile_email import send_complete_profile
 from typing import List
 from firebase_admin.exceptions import FirebaseError
 import requests
@@ -779,10 +780,6 @@ async def add_user_to_company_dashboard(
                     disabled=False
                 )
 
-                # generate a password reset link and send it via email
-                link = auth.generate_password_reset_link(firebase_user.email)
-                # send_custom_email(firebase_user.email, link)
-
             except Exception as firebase_error:
                 raise HTTPException(status_code=400, detail=f"Error creating user in Firebase: {str(firebase_error)}")
 
@@ -802,8 +799,9 @@ async def add_user_to_company_dashboard(
                 current_user_company.member_count += 1
             db.commit()
 
-            # Send password reset email
-            await send_reset_password(firebase_user.email, link)
+            # Send complete profile email
+            link = f"https://peak-transcend.netlify.app/update-invite-user?user_id={firebase_user.uid}"
+            await send_complete_profile(firebase_user.email, link)
 
             # Add success response for the current user
             response_data.append({
