@@ -27,7 +27,7 @@ conf = ConnectionConfig(
 async def send_complete_profile(email_to: str, link: str):
 
     subject = "Transcend - Complete Your Profile" 
-    body = {"reset_link": link}
+    body = {"personal_form": link}
 
 
     await send_email_async(
@@ -36,7 +36,7 @@ async def send_complete_profile(email_to: str, link: str):
         body=body,
         template_name="complete-profile-email.html", 
         reply_to=EMAIL_FROM,  
-        purpose="reset_password"
+        purpose="complete_profile"
     )
     print(f"Sent complete profile email to {email_to}")
 

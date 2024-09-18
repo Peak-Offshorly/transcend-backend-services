@@ -379,7 +379,7 @@ async def set_user_role(request: Request, db: db_dependency):
         raise HTTPException(status_code=400, detail=str(error))
   
 @router.get("/get-user-role")
-async def get_user_role(request: Request):
+async def get_user_role(request: Request, db: db_dependency):
     """
     Gets the role of the user from Firebase Authentication custom claims.
 
@@ -414,7 +414,9 @@ async def get_user_role(request: Request):
         # verify 
         print("Get: Verifying token")
         decoded_token = auth.verify_id_token(token)
-        role = decoded_token.get('role', 'unknown')  # default role is 'unknown'
+        current_user_id = decoded_token.get("uid")
+        user = get_one_user_id(db=db, user_id=current_user_id)
+        role = user.user_type
         print(f"Get: User role is {role}")
 
         # return the response with the role attribute
@@ -800,7 +802,7 @@ async def add_user_to_company_dashboard(
             db.commit()
 
             # Send complete profile email
-            link = f"https://peak-transcend.netlify.app/update-invite-user?user_id={firebase_user.uid}"
+            link = f"https://peak-transcend-dev.netlify.app/login"
             await send_complete_profile(firebase_user.email, link)
 
             # Add success response for the current user

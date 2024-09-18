@@ -173,6 +173,7 @@ class DevelopmentActionsSchema(BaseModel):
 class CompanyDataSchema(BaseModel):
     id: Optional[str] = None
     name: str
+    company_photo_url: Optional[str] = None
     
 
     class Config:

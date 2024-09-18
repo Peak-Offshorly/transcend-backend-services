@@ -568,12 +568,14 @@ async def get_company_by_user_token(request: Request, db: db_dependency):
 
         company_data = CompanyDataSchema(
             id=str(company.id),
-            name=company.name
+            name=company.name,
+            company_photo_url=company.company_photo_url
         )
 
         return {
             "company_id": company_data.id,
-            "company_name": company_data.name
+            "company_name": company_data.name,
+            "company_photo_url": company_data.company_photo_url
         }
     except HTTPException as http_error:
   
