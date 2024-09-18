@@ -24,6 +24,7 @@ from app.utils.users_crud import (
 from uuid import uuid4
 from typing import Optional, List
 from app.email.send_reset_password import send_reset_password
+from app.email.send_complete_profile_email import send_complete_profile
 from firebase_admin import auth, credentials, storage
 from firebase_admin.exceptions import FirebaseError
 import os
@@ -119,8 +120,6 @@ async def create_company_endpoint(
                         disabled=False
                     )
                     
-                    link = auth.generate_password_reset_link(firebase_user.email)
-
                     new_user = Users(
                         id=firebase_user.uid,
                         email=entry.user_email,
@@ -138,8 +137,9 @@ async def create_company_endpoint(
 
                     auth.set_custom_user_claims(firebase_user.uid, {'role': entry.user_role})
 
-                    # send password reset email
-                    await send_reset_password(firebase_user.email, link)
+                    # Send complete profile email
+                    link = f"https://peak-transcend-dev.netlify.app/login"
+                    await send_complete_profile(firebase_user.email, link)
 
                     response_data.append({
                         "message": f"Account successfully created for {entry.user_email}",
