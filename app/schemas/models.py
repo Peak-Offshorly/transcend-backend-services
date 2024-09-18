@@ -204,7 +204,8 @@ class UpdatePersonalDetailsSchema(BaseModel):
     last_name: Optional[str] = None
     email: Optional[str] = None
     mobile_number: Optional[str] = None
-    role: Optional[str] = None
+    job_title: Optional[str] = None
+    password: str
 
 class ResetPasswordRequest(BaseModel):
     email: str

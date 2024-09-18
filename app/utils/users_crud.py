@@ -192,7 +192,7 @@ def get_latest_sprint_for_user(db: Session, user_id: str):
     latest_sprint_number = result[0] if result else None
     return latest_sprint_number
 
-def update_personal_details(db: Session, user_id=None, email=None, first_name=None, last_name=None, mobile_number=None, role=None):
+def update_personal_details(db: Session, user_id=None, email=None, first_name=None, last_name=None, mobile_number=None, job_title=None):
     db_user = db.query(Users).filter(Users.id == user_id).first()
 
     if db_user:
@@ -204,8 +204,8 @@ def update_personal_details(db: Session, user_id=None, email=None, first_name=No
             db_user.last_name = last_name
         if mobile_number is not None and mobile_number.strip():
             db_user.mobile_number = mobile_number
-        if role is not None and role.strip():
-            db_user.role = role
+        if job_title is not None and job_title.strip():
+            db_user.role = job_title
         db.commit()
 
     return db_user
