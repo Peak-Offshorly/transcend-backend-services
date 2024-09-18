@@ -9,7 +9,7 @@ from app.firebase.session import firebase, auth
 import firebase_admin
 from firebase_admin import auth, credentials, storage
 from app.database.models import Users
-from app.schemas.models import SignUpSchema, UpdateUserSchema, LoginSchema, UserCompanyDetailsSchema,CustomTokenRequestSchema, AddUserToCompanySchema, AddUserToCompanyDashboardSchema, PasswordChangeRequest, UpdatePersonalDetailsSchema, ResetPasswordRequest
+from app.schemas.models import SignUpSchema, UpdateUserSchema, LoginSchema, UserCompanyDetailsSchema,CustomTokenRequestSchema, AddUserToCompanySchema, AddUserToCompanyDashboardSchema, PasswordChangeRequest, UpdatePersonalDetailsSchema, ResetPasswordRequest, UpdateFirstAndLastNameSchema
 from app.database.connection import get_db
 from app.firebase.utils import verify_token
 from app.utils.users_crud import (
@@ -26,7 +26,8 @@ from app.utils.users_crud import (
     create_user_in_dashboard,
     get_latest_sprint_for_user,
     update_personal_details,
-    update_user_photo
+    update_user_photo,
+    update_first_and_last_name
 )
 from app.utils.company_crud import get_company_by_id
 from app.email.send_reset_password import send_reset_password
@@ -1109,5 +1110,52 @@ async def change_user_photo(file: UploadFile = File(...), db: Session = Depends(
             },
             status_code=200
     )
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
+    
+@router.post("/change-first-and-last-name")
+async def change_first_and_last_name(data: UpdateFirstAndLastNameSchema, db: Session = Depends(get_db), request: Request = None):
+    """
+    Changes the user's first and last name
+    Args:
+        request: The request object containing the user token.
+    Returns:
+        dict: A JSON response with a success message
+    Example Response:
+        {
+            "message": "User first and last name updated for {user_id}",
+        }
+    Request Body:
+        {
+            "first_name": "first_name",
+            "last_name": "last_name"
+        }
+  """
+    try:
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            raise HTTPException(status_code=401, detail="Authorization header is missing")
+        id_token = auth_header.split(" ")[1]
+        decoded_token = auth.verify_id_token(id_token)
+        user_id = decoded_token.get("uid")
+
+        # retrieve the user from the database using the user_id parameter
+        user = get_one_user_id(db=db, user_id=user_id)  
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found in the database")
+
+        # get the current user from the database
+        current_user = db.query(Users).filter(Users.id == user_id).first()
+        if not current_user:
+            raise HTTPException(status_code=400, detail="Current user not found")
+
+        first_name = data.first_name
+        last_name = data.last_name
+        update_first_and_last_name(db=db, user_id=user_id, first_name=first_name, last_name=last_name)
+        
+        return JSONResponse(
+        content={"message":  f"Account successfully updated for {user_id}"},
+        status_code=200
+        )
     except Exception as error:
         raise HTTPException(status_code=400, detail=str(error))

@@ -209,3 +209,7 @@ class UpdatePersonalDetailsSchema(BaseModel):
 class ResetPasswordRequest(BaseModel):
     email: str
     user_type: Optional[str] = None
+
+class UpdateFirstAndLastNameSchema(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
