@@ -216,3 +216,15 @@ def update_user_photo(db: Session, user_id: str, photo_url: str):
         db.commit()
 
     return db_user
+
+def update_first_and_last_name(db: Session, user_id=None, first_name=None, last_name=None):
+    db_user = db.query(Users).filter(Users.id == user_id).first()
+
+    if db_user:
+        if first_name is not None and first_name.strip():
+            db_user.first_name = first_name
+        if last_name is not None and last_name.strip():
+            db_user.last_name = last_name
+        db.commit()
+
+    return db_user
