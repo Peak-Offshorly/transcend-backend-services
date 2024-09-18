@@ -19,7 +19,8 @@ from app.utils.company_crud import (
 
 from app.utils.users_crud import (
     create_user_in_dashboard,
-    get_one_user_id
+    get_one_user_id,
+    get_one_user
 )
 from uuid import uuid4
 from typing import Optional, List
@@ -64,6 +65,8 @@ async def create_company_endpoint(
             raise HTTPException(status_code=400, detail="Current user is already associated with a company")
 
         # validate users data if provided
+        users_with_company = []
+        users_with_account = []
         if users:
             for entry in users:
                 if not entry.user_email or not entry.user_role:
@@ -71,6 +74,24 @@ async def create_company_endpoint(
                 if entry.user_role not in ["admin", "member"]:
                     raise HTTPException(status_code=400, detail="Invalid role. Role must be either 'admin' or 'member'.")
 
+                to_be_added_user = get_one_user(db=db, email=entry.user_email)
+                # for now we will not allow adding user to the company if user already have account
+                if to_be_added_user:
+                    if to_be_added_user.company_id:
+                        # for future use incase that we need to add user to the company even user already have account
+                        users_with_company.append(entry.user_email)
+                    users_with_account.append(entry.user_email)
+                        
+        if users_with_account:
+            error_detail = {
+                "invalid_users": users_with_account,
+                "message": f"User(s) {users_with_account} are invalid invites",
+                "success": False
+            }
+            raise HTTPException(
+                status_code=400,
+                detail=error_detail
+            )
         # if all validations pass, proceed with company creation
         member_count = 0
         admin_count = 1  # assume the user creating the company is an admin
