@@ -936,12 +936,11 @@ async def edit_personal_details(user_id: str, data: UpdatePersonalDetailsSchema,
     if not current_user:
         raise HTTPException(status_code=400, detail="Current user not found")
 
-    email = data.email
     first_name = data.first_name
     last_name = data.last_name
     mobile_number = data.mobile_number
     job_title = data.job_title
-    update_personal_details(db=db, user_id=current_user_id, email=email, first_name=first_name, last_name=last_name, mobile_number=mobile_number, job_title=job_title)
+    update_personal_details(db=db, user_id=current_user_id, first_name=first_name, last_name=last_name, mobile_number=mobile_number, job_title=job_title)
     
     # Update the user's password in Firebase
     auth.update_user(
