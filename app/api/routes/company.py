@@ -82,7 +82,7 @@ async def create_company_endpoint(
                         users_with_company.append(entry.user_email)
                     users_with_account.append(entry.user_email)
                         
-        if users_with_account:
+        if len(users_with_account) > 0:
             error_detail = {
                 "invalid_users": users_with_account,
                 "message": f"User(s) {users_with_account} are invalid invites",
