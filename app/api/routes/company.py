@@ -159,7 +159,7 @@ async def create_company_endpoint(
                     auth.set_custom_user_claims(firebase_user.uid, {'role': entry.user_role})
 
                     # Send complete profile email
-                    link = f"https://peak-transcend-dev.netlify.app/login"
+                    link = f"https://peak-transcend-dev.netlify.app/update-invite-user?id={firebase_user.uid}"
                     await send_complete_profile(firebase_user.email, link)
 
                     response_data.append({
