@@ -32,6 +32,7 @@ from app.utils.users_crud import (
 from app.utils.company_crud import get_company_by_id
 from app.email.send_reset_password import send_reset_password
 from app.email.send_complete_profile_email import send_complete_profile
+from app.email.send_verification_email import send_verification_email
 from typing import List
 from firebase_admin.exceptions import FirebaseError
 import requests
@@ -130,6 +131,8 @@ async def create_user_account(data: SignUpSchema, db: db_dependency):
         )
 
         create_user(db=db, user=new_account)
+        # send verification email
+        await send_verification_email(data.email, verification_link)
 
         return JSONResponse(
             content={
