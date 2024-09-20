@@ -123,12 +123,7 @@ async def create_company_endpoint(
         # update the current user's company and role in the database
         db.commit()
 
-        # set custom user claims in Firebase for current user
-        try:
-            auth.set_custom_user_claims(current_user_id, {'role': 'admin'})
-        except Exception as claim_error:
-            raise HTTPException(status_code=400, detail=f"Error setting user role for the current user: {str(claim_error)}")
-
+        
         # optionally add additional users to the company 
         if users:
             response_data = []

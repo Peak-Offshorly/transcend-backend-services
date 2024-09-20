@@ -1029,35 +1029,49 @@ async def update_user_type(request: Request, db: db_dependency):
 
         if current_user.user_type != "admin":
             raise HTTPException(status_code=403, detail="Only admins can set user roles")
+        current_user_company_id = current_user.company_id
+        current_user_company = get_company_by_id(db=db, company_id=current_user_company_id)
+        if not current_user_company:
+            raise HTTPException(status_code=404, detail="Current user's company not found")
         
         body = await request.json()
         user_id = body.get("user_id")
-        role = body.get("role")
+        new_role = body.get("role")
 
-        if not user_id or not role:
+        if not user_id or not new_role:
             raise HTTPException(status_code=400, detail="user_id and role are required fields")
         
         # only two roles are allowed
-        if role not in ["admin", "member"]:
+        if new_role not in ["admin", "member"]:
             raise HTTPException(status_code=400, detail="Invalid role")
 
         user = get_one_user_id(db=db, user_id=user_id)
         if not user:
             raise HTTPException(status_code=404, detail="User not found in the database")
-            
-        user_user_type = user.user_type
-       
-        
+
+        old_role = user.user_type
         # no repeat role assignment
-        if user_user_type == role:
-            raise HTTPException(status_code=400, detail=f"User is already a {role}")
+        if old_role == new_role:
+            raise HTTPException(status_code=400, detail=f"User is already a {new_role}") 
+        
+         # update user role
+        user.user_type = new_role
+       
+        if old_role == "admin":
+            current_user_company.admin_count -= 1
+            current_user_company.member_count += 1
+        elif old_role == "member":
+            current_user_company.admin_count += 1
+            current_user_company.member_count -= 1
+        
+   
         
 
-        user.user_type = role
+     
         db.commit()
 
         return JSONResponse(
-            content={"message": f"User role set to {role}", "success": True},
+            content={"message": f"User role updated from {old_role} to {new_role}", "success": True},
             status_code=200
         )
     except Exception as error:
