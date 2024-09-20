@@ -47,7 +47,7 @@ async def send_email_async(subject: str, email_to: str, body: Dict[str, Any], te
         subtype=MessageType.html,
         reply_to=[reply_to]
     )
-    if purpose == "reset_password" or purpose == "complete_profile":
+    if purpose == "reset_password" or purpose == "complete_profile" or purpose == "verify_account":
         conf.MAIL_FROM_NAME = "Transcend Team"
     fm = FastMail(conf)
     await fm.send_message(message, template_name=template_name)
