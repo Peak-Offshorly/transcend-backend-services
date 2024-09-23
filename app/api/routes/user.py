@@ -752,6 +752,10 @@ async def add_user_to_company_dashboard(
         decoded_token = auth.verify_id_token(id_token)
         current_user_id = decoded_token.get("uid")
 
+        # check if the user's email is verified
+        if not decoded_token.get("email_verified"):
+            raise HTTPException(status_code=403, detail="Email address not verified. Please verify your email before proceeding.")
+
         current_user = get_one_user_id(db=db, user_id=current_user_id)
         current_user_company_id = current_user.company_id
 
