@@ -59,7 +59,8 @@ async def create_company_endpoint(
         current_user = get_one_user_id(db=db, user_id=current_user_id)
         if not current_user:
             raise HTTPException(status_code=400, detail="Current user not found")
-
+        current_user_firstname = current_user.first_name
+        current_user_lastname = current_user.last_name
         # check if the current user is already associated with a company
         if current_user.company_id:
             raise HTTPException(status_code=400, detail="Current user is already associated with a company")
@@ -155,7 +156,7 @@ async def create_company_endpoint(
 
                     # Send complete profile email
                     link = f"https://peak-transcend-staging.netlify.app/update-invite-user?id={firebase_user.uid}"
-                    await send_complete_profile(firebase_user.email, link)
+                    await send_complete_profile(firebase_user.email, link, current_user_firstname, current_user_lastname)
 
                     response_data.append({
                         "message": f"Account successfully created for {entry.user_email}",

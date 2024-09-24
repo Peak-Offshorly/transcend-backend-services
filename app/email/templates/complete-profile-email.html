@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to [Your Organization]</title>
+    <title>Complete Your Profile</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -26,6 +26,10 @@
             padding-bottom: 20px;
             margin-bottom: 20px;
         }
+        .header img {
+            max-width: 200px; /* Adjust width as per your image size */
+            height: auto;
+        }
         .button {
             display: inline-block;
             padding: 10px 20px;
@@ -43,11 +47,10 @@
             transition: background-color 0.6s, color 0.6s; 
         }
 
-        .button:hover {
+        .button:hover { 
             background-color: #0d47a1; /* Change background color on hover */
             color: white; /* Change text color on hover */
         }
-
 
         .footer {
             font-size: 12px;
@@ -60,10 +63,10 @@
 <body>
     <div class="container">
         <div class="header">
-            <h2>Welcome to Transcend!</h2>
+            <img src="https://i.imgur.com/A1AQuxn.png" alt="Transcend Logo">
         </div>
-        <p>Good day,</p>
-        <p>You have been invited by an admin to join an organization. A new account has been created for you, and we require you to complete your profile details and set your password to activate your account.</p>
+        <p>Welcome to Transcend, a proven leadership development process that combines expert insights, tailored development ‘sprints’, peer feedback, and AI-driven coaching.</p>
+        <p>You have been invited by {{admin_firstname}} {{admin_lastname}} to launch your leadership development process. A new account has been created for you, and we require you to complete your profile details and set your password to activate your account.</p>
         <p>To set your profile and get started, please click the button below:</p>
         <p style="text-align: center;">
             <a href="{{ personal_form }}" class="button">Complete your profile</a>

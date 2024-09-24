@@ -26,6 +26,10 @@
             padding-bottom: 20px;
             margin-bottom: 20px;
         }
+        .header img {
+            max-width: 200px; /* adjust width image size */
+            height: auto;
+        }
         .button {
             display: inline-block;
             padding: 10px 20px;
@@ -44,8 +48,8 @@
         }
 
         .button:hover {
-            background-color: #0d47a1; /* Change background color on hover */
-            color: white; /* Change text color on hover */
+            background-color: #0d47a1; /* change background color on hover */
+            color: white; /* change text color on hover */
         }
 
         .footer {
@@ -59,11 +63,10 @@
 <body>
     <div class="container">
         <div class="header">
-            <h2>Verify Your Account</h2>
+            <img src="https://i.imgur.com/A1AQuxn.png" alt="Transcend Logo">
         </div>
-        <p>Good day,</p>
-        <p>Welcome to Transcend! We're excited to have you join our community. Before you can start using your account, we need to verify your email address.</p>
-        <p>To verify your email and activate your account, please click the button below:</p>
+        <p>Welcome to Transcend! Verifying your email address helps us confirm we have the right contact information to send you important messages throughout the leadership development process.</p>
+        <p>To verify your email, please click the button below:</p>
         <p style="text-align: center;">
             <a href="{{ verification_link }}" class="button">Verify Your Account</a>
         </p>
