@@ -24,10 +24,13 @@ conf = ConnectionConfig(
     TEMPLATE_FOLDER="././app/email/templates"
 )
 
-async def send_complete_profile(email_to: str, link: str):
+async def send_complete_profile(email_to: str, link: str, firstname: str, lastname: str):
 
-    subject = "Transcend - Complete Your Profile" 
-    body = {"personal_form": link}
+    subject = "Begin your leadership development journey" 
+    body = {
+        "personal_form": link, 
+        "admin_firstname": firstname, 
+        "admin_lastname": lastname}
 
 
     await send_email_async(

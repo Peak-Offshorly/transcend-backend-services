@@ -26,7 +26,7 @@ conf = ConnectionConfig(
 
 
 async def send_verification_email(email_to: str, verification_link: str):
-    subject = "Transcend - Verify Your Account"  
+    subject = "Please verify your email address for Transcend"  
     body = {"verification_link": verification_link}  
 
 
