@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Account</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f7f7f7;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 1px solid #eaeaea;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+        .header img {
+            max-width: 200px; /* adjust width image size */
+            height: auto;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 20px 0;
+            background-color: white;
+            color: #0d47a1;
+            text-decoration: none;
+            border: 3px solid #0d47a1;
+            border-radius: 5px;
+            font-family: 'Arial', sans-serif; 
+            font-size: 16px; 
+            font-weight: bold; 
+            letter-spacing: 1px; 
+            text-transform: uppercase;
+            transition: background-color 0.6s, color 0.6s; 
+        }
+
+        .button:hover {
+            background-color: #0d47a1; /* change background color on hover */
+            color: white; /* change text color on hover */
+        }
+
+        .footer {
+            font-size: 12px;
+            color: #888;
+            text-align: left;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="https://i.imgur.com/A1AQuxn.png" alt="Transcend Logo">
+        </div>
+        <p>Welcome to Transcend! Verifying your email address helps us confirm we have the right contact information to send you important messages throughout the leadership development process.</p>
+        <p>To verify your email, please click the button below:</p>
+        <p style="text-align: center;">
+            <a href="{{ verification_link }}" class="button">Verify Your Account</a>
+        </p>
+        <p>If the button above does not work, copy and paste the following link into your web browser:</p>
+        <p><a href="{{ verification_link }}">{{ verification_link }}</a></p>
+        <p>If you have any questions or need further assistance, please do not hesitate to contact us.</p>
+        <div class="footer">
+            <p>Thank you,</p>
+            <p>The Transcend Team</p>
+        </div>
+    </div>
+</body>
+</html>

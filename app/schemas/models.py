@@ -6,11 +6,11 @@ class HealthResponse(BaseModel):
     status: str
 
 class SignUpSchema(BaseModel):
-    uid: str
     email: str
     first_name: str
     last_name: str
     mobile_number: str
+    password: str
 
 class UpdateUserSchema(BaseModel):
     id: Optional[str] = None
@@ -170,3 +170,46 @@ class DataFormSchema(BaseModel):
 class DevelopmentActionsSchema(BaseModel):
     user_id: str
     trait_type: str
+class CompanyDataSchema(BaseModel):
+    id: Optional[str] = None
+    name: str
+    company_photo_url: Optional[str] = None
+    
+
+    class Config:
+        orm_mode = True
+        from_attributes = True
+
+class CustomTokenRequestSchema(BaseModel):
+    user_id: str    
+
+class AddUserToCompanySchema(BaseModel):
+    user_id: str
+
+class AddUserToCompanyDashboardSchema(BaseModel):
+    user_email: str
+    user_role: str
+
+
+class CreateCompanyRequest(BaseModel):
+    data: CompanyDataSchema
+    users: Optional[List[AddUserToCompanyDashboardSchema]] = None
+    
+class PasswordChangeRequest(BaseModel):
+    new_password: str
+    old_password: str
+
+class UpdatePersonalDetailsSchema(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    mobile_number: Optional[str] = None
+    job_title: Optional[str] = None
+    password: str
+
+class ResetPasswordRequest(BaseModel):
+    email: str
+    user_type: Optional[str] = None
+
+class UpdateFirstAndLastNameSchema(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None

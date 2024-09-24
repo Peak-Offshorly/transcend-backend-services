@@ -1,5 +1,5 @@
 {
-    "traits": [
+   "traits": [
       "ADAPTABILITY",
       "AGENT OF CHANGE",
       "BUILDING TEAMS",
@@ -18,8 +18,8 @@
       "PRAISE AND RECOGNITION",
       "RESILIENCE AND STRESS MANAGEMENT",
       "STRATEGIC FOCUS"
-    ],
-    "traits_avg": [
+   ],
+   "traits_avg": [
       0.9504950495,
       0.8910891089,
       1.01980198,
@@ -59,5 +59,4 @@
       0.8908778627,
       0.9135937091
     ]
-  }
-  
+}

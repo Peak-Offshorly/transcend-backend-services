@@ -189,3 +189,15 @@ async def get_sprint_start_end_date_sprint_number(db: Session, user_id: str, spr
         "start_date": existing_sprint.start_date,
         "end_date": existing_sprint.end_date
     }
+
+async def sprint_clear_fields(db: Session, user_id: str, sprint_id: str):
+    existing_sprint = db.query(Sprints).filter(
+        Sprints.user_id == user_id,
+        Sprints.id == sprint_id
+    ).first()
+
+    if existing_sprint:
+        existing_sprint.strength_practice_form_id = None
+        existing_sprint.weakness_practice_form_id = None
+
+    db.commit()

@@ -8,21 +8,46 @@ from app.schemas.models import ChosenTraitsSchema, FormAnswerSchema, PracticeSch
 from app.database.connection import get_db
 from app.firebase.utils import verify_token
 from app.utils.dates_crud import compute_second_sprint_dates
-from app.utils.dev_plan_crud import dev_plan_create_get_one, dev_plan_update_chosen_traits, dev_plan_update_sprint, dev_plan_update_chosen_strength_practice, dev_plan_update_chosen_weakness_practice
-from app.utils.forms_crud import form_questions_options_get_all, forms_create_one, forms_with_questions_options_get_all, forms_with_questions_options_sprint_id_get_all
-from app.utils.answers_crud import answers_save_one
-from app.utils.sprints_crud import sprint_create_get_one, sprint_update_strength_form_id, sprint_update_weakness_form_id, sprint_update_second_sprint_dates, get_sprint_start_end_date_sprint_number, sprint_get_current
+from app.utils.answers_crud import answers_save_one, are_matching_answers
+from app.utils.pending_actions_crud import pending_actions_clear_all
+from app.utils.dev_plan_crud import(
+    dev_plan_create_get_one, 
+    dev_plan_update_chosen_traits, 
+    dev_plan_update_sprint, 
+    dev_plan_update_chosen_strength_practice, 
+    dev_plan_update_chosen_weakness_practice, 
+    dev_plan_clear_fields
+)
+from app.utils.forms_crud import(
+    form_questions_options_get_all, 
+    forms_create_one, 
+    forms_with_questions_options_get_all, 
+    forms_with_questions_options_sprint_id_get_all,
+    delete_form_and_associations_form_name
+)
+from app.utils.sprints_crud import(
+    sprint_create_get_one, 
+    sprint_update_strength_form_id, 
+    sprint_update_weakness_form_id, 
+    sprint_update_second_sprint_dates, 
+    get_sprint_start_end_date_sprint_number, 
+    sprint_get_current,
+    sprint_clear_fields
+)
 from app.utils.practices_crud import(
   practice_save_one,
   practices_by_trait_type_get,
   practices_by_trait_type_get_2nd_sprint,
   practices_clear_existing,
-  chosen_practices_save_one
+  chosen_practices_save_one,
+  practices_and_chosen_practices_clear_all,
+  personal_practice_category_and_chosen_personal_practices_clear_all
 ) 
 from app.utils.traits_crud import(
     traits_get_top_bottom_five,
     chosen_traits_create,
-    chosen_traits_get
+    chosen_traits_get,
+    chosen_traits_clear
 )
 
 db_dependency = Annotated[Session, Depends(get_db)]
@@ -46,8 +71,6 @@ async def get_strengths_weaknesses(user_id: str, db: db_dependency, token = Depe
 @router.post("/save-strength-weakness")
 async def save_traits_chosen(chosen_traits: ChosenTraitsSchema, db: db_dependency, token = Depends(verify_token)):
   user_id = chosen_traits.user_id
-  print(token)
-  print(user_id)
   if token != user_id:
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
@@ -63,31 +86,92 @@ async def save_traits_chosen(chosen_traits: ChosenTraitsSchema, db: db_dependenc
     dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db) 
     dev_plan_id = dev_plan["dev_plan_id"]
 
-    # Iterate over strength and weakness
-    for trait_type, data in trait_data.items():
-      trait_id = data.id
-      trait_name = data.name
-      t_score = data.t_score
-    
-      # Create Form for certain trait
-      trait_form = await create_trait_form(db=db, user_id=user_id, trait=trait_name, dev_plan_id=dev_plan_id, trait_type=trait_type)
-
-      # Create ChosenTrait entry, attach form id for certain trait Form
-      chosen_traits_create(
-        db=db, 
-        user_id=user_id, 
-        form_id=trait_form["form_id"],
-        trait_id=trait_id, 
-        trait_name=trait_name, 
-        t_score=t_score, 
-        trait_type=trait_type,
-        dev_plan_id=dev_plan_id
-      )
-    
+    # ----Clear succeeding forms/practices/traits
     chosen_traits = chosen_traits_get(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
-    chosen_strength_id = chosen_traits["chosen_strength"]["id"]
-    chosen_weakness_id = chosen_traits["chosen_weakness"]["id"]
-    await dev_plan_update_chosen_traits(user_id=user_id, chosen_strength_id=chosen_strength_id, chosen_weakness_id=chosen_weakness_id, db=db)
+    if chosen_traits:
+        if chosen_traits["chosen_strength"]["name"] != trait_data["strength"].name or chosen_traits["chosen_weakness"]["name"] != trait_data["weakness"].name:
+          # Clear dev plan fields
+          await dev_plan_clear_fields(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
+
+          # Clear sprint strength/weakness_practice_form_id fields
+          sprint = await sprint_get_current(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
+          if sprint["sprint_id"] is not None:
+            await sprint_clear_fields(db=db, user_id=user_id, sprint_id=sprint["sprint_id"])
+
+          # Clear practices and chosen_practices for certain dev plan id 
+          chosen_strength_id = chosen_traits["chosen_strength"]["id"]
+          chosen_weakness_id = chosen_traits["chosen_weakness"]["id"]
+          await practices_and_chosen_practices_clear_all(db=db, chosen_strength_id=chosen_strength_id, chosen_weakness_id=chosen_weakness_id, dev_plan_id=dev_plan_id, user_id=user_id)
+          # Clear 1_STRENGTH/WEAKNESS_PRACTICE_QUESTIONS
+          delete_form_and_associations_form_name(db=db, dev_plan_id=dev_plan_id, form_name="1_STRENGTH_PRACTICE_QUESTIONS")
+          delete_form_and_associations_form_name(db=db, dev_plan_id=dev_plan_id, form_name="1_WEAKNESS_PRACTICE_QUESTIONS")
+
+          # Clear chosen_traits
+          chosen_traits = chosen_traits_clear(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
+          # Clear 1_STRENGTH/WEAKNESS_QUESTIONS
+          delete_form_and_associations_form_name(db=db, dev_plan_id=dev_plan_id, form_name="1_STRENGTH_QUESTIONS")
+          delete_form_and_associations_form_name(db=db, dev_plan_id=dev_plan_id, form_name="1_WEAKNESS_QUESTIONS")  
+
+          # Clear personal_practice_category and chosen_personal_practices for certain dev plan id
+          await personal_practice_category_and_chosen_personal_practices_clear_all(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
+          # Clear 1_MIND_BODY_QUESTIONS
+          delete_form_and_associations_form_name(db=db, dev_plan_id=dev_plan_id, form_name="1_MIND_BODY_QUESTIONS")
+
+          # Clear pending actions
+          await pending_actions_clear_all(db=db, user_id=user_id)
+
+          # Iterate over strength and weakness
+          for trait_type, data in trait_data.items():
+            trait_id = data.id
+            trait_name = data.name
+            t_score = data.t_score
+          
+            # Create Form for certain trait
+            trait_form = await create_trait_form(db=db, user_id=user_id, trait=trait_name, dev_plan_id=dev_plan_id, trait_type=trait_type)
+
+            # Create ChosenTrait entry, attach form id for certain trait Form
+            chosen_traits_create(
+              db=db, 
+              user_id=user_id, 
+              form_id=trait_form["form_id"],
+              trait_id=trait_id, 
+              trait_name=trait_name, 
+              t_score=t_score, 
+              trait_type=trait_type,
+              dev_plan_id=dev_plan_id
+            )
+          
+          chosen_traits = chosen_traits_get(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
+          chosen_strength_id = chosen_traits["chosen_strength"]["id"]
+          chosen_weakness_id = chosen_traits["chosen_weakness"]["id"]
+          await dev_plan_update_chosen_traits(user_id=user_id, chosen_strength_id=chosen_strength_id, chosen_weakness_id=chosen_weakness_id, db=db)
+      
+    else:
+      # Iterate over strength and weakness
+      for trait_type, data in trait_data.items():
+        trait_id = data.id
+        trait_name = data.name
+        t_score = data.t_score
+
+        # Create Form for certain trait
+        trait_form = await create_trait_form(db=db, user_id=user_id, trait=trait_name, dev_plan_id=dev_plan_id, trait_type=trait_type)
+        # Create ChosenTrait entry, attach form id for certain trait Form
+        chosen_traits_create(
+          db=db, 
+          user_id=user_id, 
+          form_id=trait_form["form_id"],
+          trait_id=trait_id, 
+          trait_name=trait_name, 
+          t_score=t_score, 
+          trait_type=trait_type,
+          dev_plan_id=dev_plan_id
+        )
+
+      chosen_traits = chosen_traits_get(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
+      chosen_strength_id = chosen_traits["chosen_strength"]["id"]
+      chosen_weakness_id = chosen_traits["chosen_weakness"]["id"]
+      await dev_plan_update_chosen_traits(user_id=user_id, chosen_strength_id=chosen_strength_id, chosen_weakness_id=chosen_weakness_id, db=db)
+      
 
     return { "message": "Strength and Weakness added and Forms created." }
   except Exception as error:
@@ -202,10 +286,10 @@ async def save_traits_answers(answers: FormAnswerSchema, db: db_dependency, toke
       # Add to recommended practices until we have 5
       recommended_practices += sorted_answers_2[:5 - len(recommended_practices)]
     
-    # Check "To a Large Extent" answers if needed
-    if len(recommended_practices) < 5 and extent_answers["To a Large Extent"]:
+    # Check "To a Large Extent" and "To the Fullest Extent"answers if needed
+    if len(recommended_practices) < 5 and (extent_answers["To a Large Extent"] or extent_answers["To the Fullest Extent"]):
       # Sort the answers by rank
-      sorted_answers_3 = sorted(extent_answers["To a Large Extent"], key=lambda x: x.question_rank)
+      sorted_answers_3 = sorted(extent_answers["To a Large Extent"] + extent_answers["To the Fullest Extent"], key=lambda x: x.question_rank)
       # Add to recommended practices until we have 5
       recommended_practices += sorted_answers_3[:5 - len(recommended_practices)]
 

@@ -112,3 +112,26 @@ async def initial_questions_answers_all_forms_get_all(db: Session, user_id: str)
     ).options(joinedload(Forms.answers)).all()
 
     return all_forms_with_answers
+
+
+'''
+Checks if new answers match existing answers
+
+If answers do not exist for a form
+Returns None
+
+Otherwise
+Returns True/False
+'''
+async def are_matching_answers(db: Session, user_id: str, form_name: str, sprint_number: str, dev_plan_id: str, new_answers):
+    existing_answers = await answers_get_all(db=db, user_id=user_id, form_name=form_name, sprint_number=sprint_number, dev_plan_id=dev_plan_id)
+    if existing_answers:
+        existing_answers_dict = {
+            str(answer.question_id): answer.answer for answer in existing_answers
+        }
+        new_answers_dict = {
+            str(answer.question_id): answer.answer for answer in new_answers
+        }
+        return existing_answers_dict == new_answers_dict
+
+    return None

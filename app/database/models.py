@@ -20,6 +20,9 @@ class Users(Base):
     company_id = Column(String, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     is_active = Column(Boolean, default=True)
+    acc_activated = Column(Boolean, default=False)
+    user_type = Column(String, index=True)
+    user_photo_url = Column(String, index=True)
 
     traits = relationship('Traits', back_populates='users')
     chosen_traits = relationship('ChosenTraits', back_populates='users')
@@ -243,6 +246,16 @@ class PendingActions(Base):
     user_id = Column(String, ForeignKey("users.id"))
     action = Column(String, index=True)
     category = Column(String, index=True)
+
+class Company(Base):
+    __tablename__ = 'company'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    name = Column(String, index=True)
+    member_count = Column(Integer, index=True)
+    admin_count = Column(Integer, index=True)
+    company_photo_url = Column(String, index=True)
+
 
 
 Base.metadata.create_all(engine)
