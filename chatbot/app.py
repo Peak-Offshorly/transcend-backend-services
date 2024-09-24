@@ -9,6 +9,8 @@ from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 import tiktoken
 from langchain_anthropic import ChatAnthropic
+from langchain.globals import set_llm_cache
+from langchain.cache import InMemoryCache
 from starlette.websockets import WebSocketState
 from asyncio import Lock
 
@@ -45,8 +47,7 @@ client_sessions = {}
 
 # Initialize ChatOpenAI
 llm = ChatAnthropic(model='claude-3-opus-20240229')
-# llm = ChatOpenAI(model='gpt-4o')
-
+set_llm_cache(InMemoryCache())
 # Set up for RAG
 vectorstore = PineconeVectorStore(embedding=OpenAIEmbeddings(), index_name="peak-ai")
 retriever = vectorstore.as_retriever()
