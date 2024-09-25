@@ -757,10 +757,14 @@ async def add_user_to_company_dashboard(
             raise HTTPException(status_code=403, detail="Email address not verified. Please verify your email before proceeding.")
 
         current_user = get_one_user_id(db=db, user_id=current_user_id)
-        current_user_company_id = current_user.company_id
 
         if not current_user:
             raise HTTPException(status_code=404, detail="Current user not found")
+    
+        current_user_company_id = current_user.company_id
+        current_user_first_name = current_user.first_name
+        current_user_last_name = current_user.last_name
+
         
         if current_user.user_type != "admin":
             raise HTTPException(status_code=403, detail="Only admins can access this endpoint")
@@ -811,7 +815,7 @@ async def add_user_to_company_dashboard(
 
             # Send complete profile email
             link = f"https://peak-transcend-staging.netlify.app/update-invite-user?id={firebase_user.uid}"
-            await send_complete_profile(firebase_user.email, link)
+            await send_complete_profile(firebase_user.email, link, current_user_first_name, current_user_last_name)
 
             # Add success response for the current user
             response_data.append({
