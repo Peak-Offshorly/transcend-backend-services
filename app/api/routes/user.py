@@ -814,7 +814,7 @@ async def add_user_to_company_dashboard(
             db.commit()
 
             # Send complete profile email
-            link = f"https://peak-transcend-staging.netlify.app/update-invite-user?id={firebase_user.uid}"
+            link = f"https://peak-transcend.netlify.app/update-invite-user?id={firebase_user.uid}"
             await send_complete_profile(firebase_user.email, link, current_user_first_name, current_user_last_name)
 
             # Add success response for the current user
