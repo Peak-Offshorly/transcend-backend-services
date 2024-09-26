@@ -12,7 +12,8 @@ def create_app() -> FastAPI:
         "http://localhost:5174",  
         "https://peak-transcend-dev.netlify.app",
         "https://peak-transcend-staging.netlify.app",
-        "https://peak-transcend.netlify.app"
+        "https://peak-transcend.netlify.app",
+        "https://app.peakleadershipinstitute.com"
 
         # make sure to add the frontend url here for dev and staging 
         ],
