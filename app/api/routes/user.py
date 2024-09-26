@@ -544,7 +544,8 @@ async def view_user_account(request: Request, db: db_dependency):
                 "email": requested_user.email,
                 "role": requested_user.role,
                 "latest_sprint_number": latest_sprint_number,  # Include latest sprint number
-                "user_type": requested_user.user_type
+                "user_type": requested_user.user_type,
+                "user_photo_url": requested_user.user_photo_url
             }
         else:
             raise HTTPException(status_code=403, detail="You do not have permission to view this account")
