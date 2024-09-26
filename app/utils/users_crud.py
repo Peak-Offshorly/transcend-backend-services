@@ -146,7 +146,7 @@ def get_all_user_dashboard(db: Session, company_id: str):
             "company_id": row.company_id,
             "user_id": user_id,
             "user_type": row.user_type,
-            "photo_url": row.user_photo_url
+            "user_photo_url": row.user_photo_url
         }
         
         # add user to the dictionary if not already added or if this sprint number is more recent
