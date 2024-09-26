@@ -25,7 +25,7 @@ conf = ConnectionConfig(
 
 async def send_reset_password(email_to: str, link: str):
 
-    subject = "Begin your leadership development journey" 
+    subject = "Reset your password for Transcend" 
     body = {"reset_link": link}
 
 
