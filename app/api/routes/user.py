@@ -1092,7 +1092,8 @@ async def update_user_type(request: Request, db: db_dependency):
 @router.post("/change-user-photo")
 async def change_user_photo(file: UploadFile = File(...), db: Session = Depends(get_db), request: Request = None):
     """
-    Changes the user photo uploaded by a user and stores it in cloud storage
+    Changes the user photo uploaded by a user stores it in cloud storage,
+    and removes the old photo if it exists.
     Args:
         file: The uploaded image file.
         request: The request object containing the user token.
@@ -1117,9 +1118,17 @@ async def change_user_photo(file: UploadFile = File(...), db: Session = Depends(
     if not current_user:
         raise HTTPException(status_code=400, detail="Current user not found")
     try:
+        if current_user.user_photo_url:
+            try:
+                old_blob_name = current_user.user_photo_url.split("/")[-1]
+                old_blob = bucket.blob(f"user_photos/{current_user_id}/{old_blob_name}")
+                old_blob.delete()
+            except Exception as e:
+                print(f"Error deleting old photo: {str(e)}")
+                # We'll continue even if deletion fails
         # Generate a unique filename
         file_extension = os.path.splitext(file.filename)[1]
-        new_filename = f"user_photos/photo_{uuid4()}{file_extension}"
+        new_filename = f"user_photos/{current_user_id}/photo_{uuid4()}{file_extension}"
         # Upload the file to Google Cloud Storage
         blob = bucket.blob(new_filename)
         blob.upload_from_file(file.file)

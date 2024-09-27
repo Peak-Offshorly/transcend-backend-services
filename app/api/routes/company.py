@@ -654,7 +654,8 @@ async def change_company_photo(
     request: Request = None
 ):
     """
-    Changes the company photo uploaded by a user and stores it in Firebase Storage
+    Changes the company photo uploaded by a user, stores it in Firebase Storage,
+    and removes the old photo if it exists.
     Args:
         file: The uploaded image file.
         request: The request object containing the user token.
@@ -682,11 +683,23 @@ async def change_company_photo(
     current_user = db.query(Users).filter(Users.id == current_user_id).first()
     if not current_user:
         raise HTTPException(status_code=400, detail="Current user not found")
+    
+    user_company_id = current_user.company_id
+    current_company = db.query(Company).filter(Company.id == user_company_id).first()
 
     try:
+        if current_company.company_photo_url:
+            try:
+                old_blob_name = current_company.company_photo_url.split("/")[-1]
+                old_blob = bucket.blob(f"company_photos/{user_company_id}/{old_blob_name}")
+                old_blob.delete()
+            except Exception as e:
+                print(f"Error deleting old photo: {str(e)}")
+                # We'll continue even if deletion fails
+    
         # Generate a unique filename
         file_extension = os.path.splitext(file.filename)[1]
-        new_filename = f"company_photos/{current_user_id}/photo_{uuid4()}{file_extension}"
+        new_filename = f"company_photos/{user_company_id}/photo_{uuid4()}{file_extension}"
 
         # Upload the file to Firebase Storage
         blob = bucket.blob(new_filename)
