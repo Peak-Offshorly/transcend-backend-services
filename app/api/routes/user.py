@@ -9,7 +9,7 @@ from app.firebase.session import firebase, auth
 import firebase_admin
 from firebase_admin import auth, credentials, storage
 from app.database.models import Users, UserInvitation
-from app.schemas.models import SignUpSchema, UpdateUserSchema, LoginSchema, UserCompanyDetailsSchema,CustomTokenRequestSchema, AddUserToCompanySchema, AddUserToCompanyDashboardSchema, PasswordChangeRequest, UpdatePersonalDetailsSchema, ResetPasswordRequest, UpdateFirstAndLastNameSchema
+from app.schemas.models import SignUpSchema, UpdateUserSchema, LoginSchema, UserCompanyDetailsSchema,CustomTokenRequestSchema, AddUserToCompanySchema, AddUserToCompanyDashboardSchema, PasswordChangeRequest, UpdatePersonalDetailsSchema, ResetPasswordRequest, UpdateFirstAndLastNameSchema, ResendLinkSchema
 from app.database.connection import get_db
 from app.firebase.utils import verify_token
 from app.utils.users_crud import (
@@ -1213,3 +1213,41 @@ async def change_first_and_last_name(data: UpdateFirstAndLastNameSchema, db: Ses
         )
     except Exception as error:
         raise HTTPException(status_code=400, detail=str(error))
+
+@router.post("/resend-verification-link")
+@limiter.limit("1/minute")  # Apply rate limiting
+async def resend_verification_link(request: Request, data: ResendLinkSchema, db: db_dependency):
+    """
+    Endpoint to resend an email verification link to the user's email.
+
+    Returns:
+        dict: A JSON response with a success message.
+    
+    Example Response:
+        {
+            "success": True,
+            "message": "Verification link sent to user_email"
+        }
+    
+    Request Body:
+        {
+            "email": "user_email"
+        }
+    """
+    user_email = data.email
+    if not user_email:
+        raise HTTPException(status_code=400, detail="Email is required")
+
+    try:
+        user = auth.get_user_by_email(user_email)
+        if user.email_verified:
+            return {"success": True, "message": "Email already verified."}
+
+        verification_link = auth.generate_email_verification_link(user_email)
+        await send_verification_email(user_email, verification_link)
+        return {"success": True, "message": f"Verification link sent to {user_email}"}
+    except auth.UserNotFoundError:
+        raise HTTPException(status_code=404, detail="User with this email does not exist")
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=str(error))
+    
