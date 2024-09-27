@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request, Body, Up
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from typing import Annotated
-from app.database.models import Company, Users
+from app.database.models import Company, Users, UserInvitation
 from app.schemas.models import CompanyDataSchema, AddUserToCompanyDashboardSchema, CreateCompanyRequest
 from app.database.connection import get_db
 from app.utils.company_crud import (
@@ -20,7 +20,8 @@ from app.utils.company_crud import (
 from app.utils.users_crud import (
     create_user_in_dashboard,
     get_one_user_id,
-    get_one_user
+    get_one_user,
+    create_user_invitation
 )
 from uuid import uuid4
 from typing import Optional, List
@@ -28,7 +29,9 @@ from app.email.send_reset_password import send_reset_password
 from app.email.send_complete_profile_email import send_complete_profile
 from firebase_admin import auth, credentials, storage
 from firebase_admin.exceptions import FirebaseError
+from datetime import datetime, timedelta, timezone
 import os
+import secrets
 
 db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/company", tags=["company"])
@@ -154,8 +157,14 @@ async def create_company_endpoint(
 
                     auth.set_custom_user_claims(firebase_user.uid, {'role': entry.user_role})
 
+                    # create the oob_code and the expiration_time for the new_invitation
+                    oob_code = secrets.token_urlsafe(32)
+                    expiration_time = datetime.now(timezone.utc) + timedelta(hours=24)  # OOB code expires in 24 hours
+                    
+                    created_invitation = create_user_invitation(db=db, user=new_user, oob_code=oob_code, expiration_time=expiration_time)
+
                     # Send complete profile email
-                    link = f"https://app.peakleadershipinstitute.com/update-invite-user?id={firebase_user.uid}"
+                    link = f"https://app.peakleadershipinstitute.com/update-invite-user?oob={oob_code}"
                     await send_complete_profile(firebase_user.email, link, current_user_firstname, current_user_lastname)
 
                     response_data.append({
