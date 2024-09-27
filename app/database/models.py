@@ -30,6 +30,7 @@ class Users(Base):
     chosen_practices = relationship('ChosenPractices', back_populates='users')
     personal_practice_category = relationship('PersonalPracticeCategory', back_populates='users')
     chosen_personal_practices = relationship('ChosenPersonalPractices', back_populates='users')
+    invitation = relationship("UserInvitation", back_populates="users", uselist=False)
 
 class InitialAnswerTracker(Base):
     __tablename__ = 'initial_answer_tracker'
@@ -255,7 +256,20 @@ class Company(Base):
     member_count = Column(Integer, index=True)
     admin_count = Column(Integer, index=True)
     company_photo_url = Column(String, index=True)
+    invitations = relationship("UserInvitation", back_populates="company")
 
+class UserInvitation(Base):
+    __tablename__ = 'user_invitation'
 
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()), unique=True, nullable=False)
+    email = Column(String, nullable=False)
+    oob_code = Column(String, unique=True, nullable=False)
+    expiration_time = Column(DateTime, nullable=False)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("company.id"), nullable=False)
+    user_id = Column(String, ForeignKey("users.id"), nullable=True)
+
+    # Relationships
+    company = relationship("Company", back_populates="invitations")
+    users = relationship("Users", back_populates="invitation")
 
 Base.metadata.create_all(engine)

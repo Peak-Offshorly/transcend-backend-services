@@ -1,7 +1,7 @@
 from uuid import UUID
 from sqlalchemy.orm import Session
-from sqlalchemy import select
-from app.database.models import Users, Forms, Traits, ChosenTraits, Questions, Options, Answers, Practices, DevelopmentPlan, Sprints, Company
+from sqlalchemy import select, DateTime
+from app.database.models import Users, Forms, Traits, ChosenTraits, Questions, Options, Answers, Practices, DevelopmentPlan, Sprints, Company, UserInvitation
 from app.schemas.models import UserCompanyDetailsSchema
 
 def update_user_company_details(db: Session, user_id: str, company_size: int, industry: str, role: str, role_description: str):
@@ -230,3 +230,15 @@ def update_first_and_last_name(db: Session, user_id=None, first_name=None, last_
         db.commit()
 
     return db_user
+
+def create_user_invitation(db: Session, user: Users, oob_code: str, expiration_time: DateTime):
+    # create the user invitation in the database
+    new_invitation = UserInvitation(
+        email=user.email,
+        oob_code=oob_code,
+        expiration_time=expiration_time,
+        company_id=user.company_id,
+        user_id=user.id
+    )
+    db.add(new_invitation)
+    db.commit()

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import datetime as dt
 from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFile, File
 from fastapi.responses import JSONResponse
@@ -8,7 +8,7 @@ from typing import Annotated
 from app.firebase.session import firebase, auth
 import firebase_admin
 from firebase_admin import auth, credentials, storage
-from app.database.models import Users
+from app.database.models import Users, UserInvitation
 from app.schemas.models import SignUpSchema, UpdateUserSchema, LoginSchema, UserCompanyDetailsSchema,CustomTokenRequestSchema, AddUserToCompanySchema, AddUserToCompanyDashboardSchema, PasswordChangeRequest, UpdatePersonalDetailsSchema, ResetPasswordRequest, UpdateFirstAndLastNameSchema
 from app.database.connection import get_db
 from app.firebase.utils import verify_token
@@ -27,7 +27,8 @@ from app.utils.users_crud import (
     get_latest_sprint_for_user,
     update_personal_details,
     update_user_photo,
-    update_first_and_last_name
+    update_first_and_last_name,
+    create_user_invitation
 )
 from app.utils.company_crud import get_company_by_id
 from app.email.send_reset_password import send_reset_password
@@ -41,6 +42,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 from uuid import uuid4
 import os
+import secrets
 
 db_dependency = Annotated[Session, Depends(get_db)]
 limiter = Limiter(key_func=get_remote_address)
@@ -814,8 +816,14 @@ async def add_user_to_company_dashboard(
                 current_user_company.member_count += 1
             db.commit()
 
+            # create the oob_code and the expiration_time for the new_invitation
+            oob_code = secrets.token_urlsafe(32)
+            expiration_time = datetime.now(timezone.utc) + timedelta(hours=24)  # OOB code expires in 24 hours
+            
+            created_invitation = create_user_invitation(db=db, user=new_user, oob_code=oob_code, expiration_time=expiration_time)
+
             # Send complete profile email
-            link = f"https://app.peakleadershipinstitute.com/update-invite-user?id={firebase_user.uid}"
+            link = f"https://app.peakleadershipinstitute.com/update-invite-user?oob={oob_code}"
             await send_complete_profile(firebase_user.email, link, current_user_first_name, current_user_last_name)
 
             # Add success response for the current user
@@ -823,6 +831,7 @@ async def add_user_to_company_dashboard(
                 "message": f"Account successfully created for {new_user.email}",
                 "user_id": firebase_user.uid,
                 "email": entry.user_email,
+                "oob_code": oob_code
             })
 
         # Return the response data for all users
@@ -911,7 +920,7 @@ async def change_password(
         )
 
 @router.post("/complete-profile-details")
-async def edit_personal_details(user_id: str, data: UpdatePersonalDetailsSchema, db: db_dependency, request: Request):
+async def edit_personal_details(oob_code: str, data: UpdatePersonalDetailsSchema, db: db_dependency, request: Request):
   """
     Changes the personal details and password of the user
 
@@ -936,10 +945,16 @@ async def edit_personal_details(user_id: str, data: UpdatePersonalDetailsSchema,
         }
   """
   try:
-    current_user_id = user_id
-    # check if the email parameter is provided
-    if not user_id:
-        raise HTTPException(status_code=400, detail="User ID query parameter is required")
+    # Verify the OOB code and get the invitation
+    invitation = db.query(UserInvitation).filter(
+        UserInvitation.oob_code == oob_code,
+        UserInvitation.expiration_time > datetime.now(timezone.utc)
+    ).first()
+
+    if not invitation:
+        raise HTTPException(status_code=400, detail="Invalid or expired invitation code")
+    
+    current_user_id = invitation.user_id
 
     # retrieve the user from the database using the user_id parameter
     user = get_one_user_id(db=db, user_id=current_user_id)  
@@ -962,6 +977,10 @@ async def edit_personal_details(user_id: str, data: UpdatePersonalDetailsSchema,
         current_user_id,
         password=data.password
     )
+
+    # Delete the used invitation
+    db.delete(invitation)
+    db.commit()
 
     return JSONResponse(
       content={"message":  f"Account successfully updated for {current_user_id}"},
