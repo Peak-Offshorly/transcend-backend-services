@@ -213,6 +213,7 @@ class ResetPasswordRequest(BaseModel):
 class UpdateFirstAndLastNameSchema(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    mobile_number: Optional[str] = None
 
 class ResendLinkSchema(BaseModel):
     email: str
