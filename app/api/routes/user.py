@@ -1255,7 +1255,7 @@ async def resend_verification_link(request: Request, data: ResendLinkSchema, db:
         raise HTTPException(status_code=500, detail=str(error))
     
 @router.post("/resend-email-invitation")
-async def resend_email_verification(request: Request, data: ResendLinkSchema, db: db_dependency):
+async def resend_email_invitation(request: Request, data: ResendLinkSchema, db: db_dependency):
     """
     Endpoint to resend an email invitation link to the user's email.
 
