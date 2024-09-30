@@ -28,7 +28,9 @@ from app.utils.users_crud import (
     update_personal_details,
     update_user_photo,
     update_first_and_last_name,
-    create_user_invitation
+    create_user_invitation,
+    get_user_id_using_email,
+    delete_expired_invitations
 )
 from app.utils.company_crud import get_company_by_id
 from app.email.send_reset_password import send_reset_password
@@ -832,7 +834,6 @@ async def add_user_to_company_dashboard(
                 "message": f"Account successfully created for {new_user.email}",
                 "user_id": firebase_user.uid,
                 "email": entry.user_email,
-                "oob_code": oob_code
             })
 
         # Return the response data for all users
@@ -1253,3 +1254,92 @@ async def resend_verification_link(request: Request, data: ResendLinkSchema, db:
     except Exception as error:
         raise HTTPException(status_code=500, detail=str(error))
     
+@router.post("/resend-email-invitation")
+async def resend_email_invitation(request: Request, data: ResendLinkSchema, db: db_dependency):
+    """
+    Endpoint to resend an email invitation link to the user's email.
+
+    Returns:
+        dict: A JSON response with a success message.
+    
+    Example Response:
+        {
+            "message": "New invitation successfully sent to user_email",
+            "user_id": "user_id",
+            "email": "user_email"
+        }
+    
+    Request Body:
+        {
+            "email": "user_email"
+        }
+    """
+
+    user_email = data.email
+    if not user_email:
+        raise HTTPException(status_code=400, detail="Email is required")
+
+    try:
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            raise HTTPException(status_code=401, detail="Authorization header is missing")
+        id_token = auth_header.split(" ")[1]
+        decoded_token = auth.verify_id_token(id_token)
+        current_user_id = decoded_token.get("uid")
+
+        # check if the user's email is verified
+        if not decoded_token.get("email_verified"):
+            raise HTTPException(status_code=403, detail="Email address not verified. Please verify your email before proceeding.")
+
+        current_user = get_one_user_id(db=db, user_id=current_user_id)
+
+        if not current_user:
+            raise HTTPException(status_code=404, detail="Current user not found")
+    
+        current_user_company_id = current_user.company_id
+        current_user_first_name = current_user.first_name
+        current_user_last_name = current_user.last_name
+
+        
+        if current_user.user_type != "admin":
+            raise HTTPException(status_code=403, detail="Only admins can access this endpoint")
+
+        # retrieve user_id using email input
+
+        user_id = get_user_id_using_email(db, user_email=user_email) 
+        if user_id == None:
+            raise HTTPException(status_code=404, detail="Email not yet associated to any user")
+        
+        # create user object for create_user_invitation function
+        new_user = Users(
+            id=user_id,
+            email=user_email,
+            acc_activated=False,
+            company_id=current_user_company_id,
+        )
+
+        # create the oob_code and the expiration_time for the new_invitation
+        oob_code = secrets.token_urlsafe(32)
+        expiration_time = datetime.now(timezone.utc) + timedelta(hours=24)  # OOB code expires in 24 hours
+        
+        created_invitation = create_user_invitation(db=db, user=new_user, oob_code=oob_code, expiration_time=expiration_time)
+
+        # Send complete profile email
+        link = f"https://app.peakleadershipinstitute.com/update-invite-user?oob={oob_code}"
+        await send_complete_profile(user_email, link, current_user_first_name, current_user_last_name)
+
+        # delete expired invitations
+        delete_expired = delete_expired_invitations(db=db, user_email=user_email)
+
+        # Add success response for the current user
+        return JSONResponse(
+        content={
+            "message": f"New invitation successfully sent to {new_user.email}",
+            "user_id": user_id,
+            "email": user_email,
+        },
+        status_code=200
+        )
+
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))

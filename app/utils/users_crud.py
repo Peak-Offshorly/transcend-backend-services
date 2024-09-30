@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, DateTime
 from app.database.models import Users, Forms, Traits, ChosenTraits, Questions, Options, Answers, Practices, DevelopmentPlan, Sprints, Company, UserInvitation
 from app.schemas.models import UserCompanyDetailsSchema
+from datetime import datetime, timezone
 
 def update_user_company_details(db: Session, user_id: str, company_size: int, industry: str, role: str, role_description: str):
     db_user = db.query(Users).filter(Users.id == user_id).first()
@@ -243,4 +244,23 @@ def create_user_invitation(db: Session, user: Users, oob_code: str, expiration_t
         user_id=user.id
     )
     db.add(new_invitation)
+    db.commit()
+
+# Gets user_id based on email; returns user_id if it exists
+def get_user_id_using_email(db: Session, user_email: str):
+    db_account = db.query(Users).filter(Users.email == user_email).first()
+
+    if db_account:
+        return db_account.id
+    return None
+
+def delete_expired_invitations(db: Session, user_email: str):
+     # Query the UserInvitation table to include all expired invitations
+    invitations = db.query(UserInvitation).filter(
+        UserInvitation.email == user_email,
+        UserInvitation.expiration_time < datetime.now(timezone.utc)
+    ).all()
+
+    for invitation in invitations:
+        db.delete(invitation)
     db.commit()
