@@ -834,7 +834,6 @@ async def add_user_to_company_dashboard(
                 "message": f"Account successfully created for {new_user.email}",
                 "user_id": firebase_user.uid,
                 "email": entry.user_email,
-                "oob_code": oob_code
             })
 
         # Return the response data for all users
@@ -1265,8 +1264,9 @@ async def resend_email_verification(request: Request, data: ResendLinkSchema, db
     
     Example Response:
         {
-            "success": True,
-            "message": "Email invitation link sent to user_email"
+            "message": "New invitation successfully sent to user_email",
+            "user_id": "user_id",
+            "email": "user_email"
         }
     
     Request Body:
@@ -1337,7 +1337,6 @@ async def resend_email_verification(request: Request, data: ResendLinkSchema, db
             "message": f"New invitation successfully sent to {new_user.email}",
             "user_id": user_id,
             "email": user_email,
-            "oob_code": oob_code
         },
         status_code=200
         )
