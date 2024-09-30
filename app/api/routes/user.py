@@ -1182,7 +1182,8 @@ async def change_first_and_last_name(data: UpdateFirstAndLastNameSchema, db: Ses
     Request Body:
         {
             "first_name": "first_name",
-            "last_name": "last_name"
+            "last_name": "last_name",
+            "mobile_number": "mobile_number
         }
   """
     try:
@@ -1205,7 +1206,8 @@ async def change_first_and_last_name(data: UpdateFirstAndLastNameSchema, db: Ses
 
         first_name = data.first_name
         last_name = data.last_name
-        update_first_and_last_name(db=db, user_id=user_id, first_name=first_name, last_name=last_name)
+        mobile_number = data.mobile_number
+        update_first_and_last_name(db=db, user_id=user_id, first_name=first_name, last_name=last_name, mobile_number=mobile_number)
         
         return JSONResponse(
         content={"message":  f"Account successfully updated for {user_id}"},
