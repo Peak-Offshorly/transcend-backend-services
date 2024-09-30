@@ -220,8 +220,9 @@ async def edit_user_account(data: UpdateUserSchema, db: db_dependency, token = D
   email = data.email
   first_name = data.first_name
   last_name = data.last_name
+  mobile_number = data.mobile_number
   try:
-    update_user(db=db, user_id=user_id, email=email, first_name=first_name, last_name=last_name)
+    update_user(db=db, user_id=user_id, email=email, first_name=first_name, last_name=last_name, mobile_number=mobile_number)
 
     return JSONResponse(
       content={"message":  f"Account successfully updated for {user_id}"},
@@ -1206,8 +1207,7 @@ async def change_first_and_last_name(data: UpdateFirstAndLastNameSchema, db: Ses
 
         first_name = data.first_name
         last_name = data.last_name
-        mobile_number = data.mobile_number
-        update_first_and_last_name(db=db, user_id=user_id, first_name=first_name, last_name=last_name, mobile_number=mobile_number)
+        update_first_and_last_name(db=db, user_id=user_id, first_name=first_name, last_name=last_name)
         
         return JSONResponse(
         content={"message":  f"Account successfully updated for {user_id}"},
