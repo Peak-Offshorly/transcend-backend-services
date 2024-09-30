@@ -5,7 +5,7 @@ from app.database.models import Users, Forms, Traits, ChosenTraits, Questions, O
 from app.schemas.models import UserCompanyDetailsSchema
 from datetime import datetime, timezone
 
-def update_user_company_details(db: Session, user_id: str, company_size: int, industry: str, role: str, role_description: str):
+def update_user_company_details(db: Session, user_id: str, company_size: str, industry: str, role: str, role_description: str):
     db_user = db.query(Users).filter(Users.id == user_id).first()
     
     if db_user:
