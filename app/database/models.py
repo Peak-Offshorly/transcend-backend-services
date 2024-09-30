@@ -13,7 +13,7 @@ class Users(Base):
     first_name = Column(String, index=True)
     last_name = Column(String, index=True)
     mobile_number = Column(String, index=True)
-    company_size = Column(Integer, index=True)
+    company_size = Column(String, index=True)
     industry = Column(String, index=True)
     role = Column(String, index=True)
     role_description = Column(String, index=True)
