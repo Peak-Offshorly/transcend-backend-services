@@ -156,6 +156,47 @@ async def create_user_account(data: SignUpSchema, db: db_dependency):
             auth.delete_user(firebase_user.uid)
         raise HTTPException(status_code=400, detail=str(error))
 
+@router.post("/create-user-sso")
+async def create_user_account(request: Request, db: db_dependency):
+    try: 
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            raise HTTPException(status_code=401, detail="Authorization header is missing")
+
+        id_token = auth_header.split(" ")[1]
+        decoded_token = auth.verify_id_token(id_token)
+
+        uid = decoded_token.get("uid")
+        email= decoded_token.get("email")
+        full_name = decoded_token.get("name","")
+        name_parts = full_name.split()
+
+        # create user in database
+        new_account = Users(
+            id=uid,
+            email=email,
+            first_name=name_parts[0], 
+            last_name=name_parts[-1],     
+            mobile_number=decoded_token.get("phone_number", ""),
+            acc_activated=True,
+            user_type = 'unknown'
+        )
+
+        create_user(db=db, user=new_account)
+        verification_link = auth.generate_email_verification_link(email)
+        # send verification email
+        await send_verification_email(email, verification_link)
+
+        return JSONResponse(
+            content={
+                "message": f"Account successfully created for {email}",
+                "user_id": uid,
+            },
+            status_code=200
+        )
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
+
 @router.post("/login")
 async def login_user_account(data: LoginSchema, db: db_dependency):
   email = data.email
