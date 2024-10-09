@@ -39,7 +39,7 @@ async def get_development_progress_questions_strength_practice(db: db_dependency
   start_date =  sprint["start_date"]
   current_date = datetime.now(timezone.utc)
   delta = current_date - start_date
-  week_number = (delta.days // 7) + 1 # Add 1 to start week on week 1
+  week_number = (delta.days // 7)
 
   # # FOR DEV TESTING - increment weeks every 2 minutes
   minutes_elapsed = delta.total_seconds() // 60  # Convert the timedelta to minutes
@@ -126,7 +126,7 @@ async def get_development_progress_questions_weakness_practice(db: db_dependency
   start_date =  sprint["start_date"]
   current_date = datetime.now(timezone.utc)
   delta = current_date - start_date
-  week_number = (delta.days // 7) + 1 # Add 1 to start week on week 1
+  week_number = (delta.days // 7)
 
   # # FOR DEV TESTING - increment weeks every 2 minutes
   minutes_elapsed = delta.total_seconds() // 60  # Convert the timedelta to minutes
