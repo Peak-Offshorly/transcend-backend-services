@@ -43,7 +43,7 @@ async def get_development_progress_questions_strength_practice(db: db_dependency
 
   # # FOR DEV TESTING - increment weeks every 2 minutes
   minutes_elapsed = delta.total_seconds() // 60  # Convert the timedelta to minutes
-  week_number = int((minutes_elapsed // 2) + 1)  # Increment week every 120 minutes (2 minutes * 60 seconds)
+  week_number = int(minutes_elapsed // 2)  # Increment week every 120 minutes (2 minutes * 60 seconds)
   # # FOR DEV TESTING
   
   if week_number > 6:
@@ -130,7 +130,7 @@ async def get_development_progress_questions_weakness_practice(db: db_dependency
 
   # # FOR DEV TESTING - increment weeks every 2 minutes
   minutes_elapsed = delta.total_seconds() // 60  # Convert the timedelta to minutes
-  week_number = int((minutes_elapsed // 2) + 1)  # Increment week every 120 minutes (2 minutes * 60 seconds)
+  week_number = int(minutes_elapsed // 2)  # Increment week every 120 minutes (2 minutes * 60 seconds)
   # # FOR DEV TESTING
   
   if week_number > 6:
