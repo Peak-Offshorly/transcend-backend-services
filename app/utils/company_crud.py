@@ -70,50 +70,92 @@ def delete_company(db: Session, company_id: str):
     return False
 
 def get_strengths_by_company_id(db: Session, company_id: str):
-    company_strengths = db.query(
-        Traits.name,
-        func.count(Traits.id).label('employee_count')
-    ).join(
-        Users, Users.id == Traits.user_id
-    ).join(
-        ChosenTraits, ChosenTraits.trait_id == Traits.id
-    ).filter(
-        Users.company_id == company_id,
-        ChosenTraits.trait_type == 'STRENGTH'
-    ).group_by(
-        Traits.name
-    ).all()
+    company_traits = (
+        db.query(Traits, Users.company_id)
+        .join(Users, Users.id == Traits.user_id)
+        .filter(Users.company_id == company_id)
+        .subquery()
+    )
+
+    # Window function for ranking
+    window = func.row_number().over(
+        partition_by=company_traits.c.user_id,
+        order_by=company_traits.c.t_score.desc()
+    ).label('trait_rank')
+
+    # Subquery for ranked_traits
+    ranked_traits = (
+        db.query(
+            company_traits.c.name,
+            company_traits.c.t_score,
+            company_traits.c.user_id,
+            company_traits.c.company_id,
+            window
+        )
+        .subquery()
+    )
+
+    # Main query
+    result = (
+        db.query(
+            ranked_traits.c.name,
+            func.count(ranked_traits.c.name).label('employee_count')
+        )
+        .filter(ranked_traits.c.trait_rank <= 5)
+        .group_by(ranked_traits.c.name)
+    )
 
     return {
         "strengths": [
             {
                 "name": strength.name,
                 "employee_count": strength.employee_count,
-            } for strength in company_strengths
+            } for strength in result
         ],
     }
 
 def get_weakness_by_company_id(db: Session, company_id: str):
-    company_weakness = db.query(
-        Traits.name,
-        func.count(Traits.id).label('employee_count')
-    ).join(
-        Users, Users.id == Traits.user_id
-    ).join(
-        ChosenTraits, ChosenTraits.trait_id == Traits.id
-    ).filter(
-        Users.company_id == company_id,
-        ChosenTraits.trait_type == 'WEAKNESS'
-    ).group_by(
-        Traits.name
-    ).all()
+    company_traits = (
+        db.query(Traits, Users.company_id)
+        .join(Users, Users.id == Traits.user_id)
+        .filter(Users.company_id == company_id)
+        .subquery()
+    )
+
+    # Window function for ranking
+    window = func.row_number().over(
+        partition_by=company_traits.c.user_id,
+        order_by=company_traits.c.t_score.asc()
+    ).label('trait_rank')
+
+    # Subquery for ranked_traits
+    ranked_traits = (
+        db.query(
+            company_traits.c.name,
+            company_traits.c.t_score,
+            company_traits.c.user_id,
+            company_traits.c.company_id,
+            window
+        )
+        .subquery()
+    )
+
+    # Main query
+    result = (
+        db.query(
+            ranked_traits.c.name,
+            func.count(ranked_traits.c.name).label('employee_count')
+        )
+        .filter(ranked_traits.c.trait_rank <= 5)
+        .group_by(ranked_traits.c.name)
+    )
 
     return {
         "weakness": [
             {
                 "name": weakness.name,
                 "employee_count": weakness.employee_count,
-            } for weakness in company_weakness
+            } for weakness in result
         ],
     }
 
