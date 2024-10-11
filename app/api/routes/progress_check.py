@@ -59,7 +59,7 @@ async def get_development_progress_questions_strength_practice(db: db_dependency
   # # FOR DEV TESTING
   
   # <SPRINT_NUM>_PROGRESS_STRENGTH_WEEK_<WEEK NUMBER>
-  form_name = f"{sprint_number}_PROGRESS_STRENGTH_WEEK_{week_number+1}"
+  form_name = f"{sprint_number}_PROGRESS_STRENGTH_WEEK_{week_number}"
   questions=[]
   options=[
     "Complete",
