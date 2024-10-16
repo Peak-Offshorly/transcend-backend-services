@@ -24,3 +24,12 @@ EMAIL_FROM_NAME = os.getenv('EMAIL_FROM_NAME')
 
 #Web App URLs
 WEB_URL = os.getenv('WEB_URL')
+
+# Gmail API Constants
+SCOPES = ['https://www.googleapis.com/auth/gmail.send']
+# TOKEN_FILE = 'token.json'
+TOKEN_FILE = '/etc/secrets/token.json'
+# CREDENTIALS_FILE = 'credentials.json'
+CREDENTIALS_FILE = '/etc/secrets/credentials.json'
+TEMPLATE_FOLDER = "././app/email/templates"
+REDIRECT_URI = 'http://localhost:5173/oauth2callback'
