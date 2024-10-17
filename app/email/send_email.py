@@ -1,5 +1,5 @@
 from typing import Dict, Any
-from fastapi import BackgroundTasks
+from fastapi import BackgroundTasks, HTTPException
 from fastapi.responses import RedirectResponse
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
@@ -58,9 +58,8 @@ def send_message(service, user_id: str, message: Dict[str, Any]):
         message = service.users().messages().send(userId=user_id, body=message).execute()
         print(f"Message Id: {message['id']}")
         return message
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        raise Exception
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
 
 # Renders the email template (using Jinja2, which you'll need to install).
 def render_template(template_name: str, context: Dict[str, Any]) -> str:
@@ -81,10 +80,6 @@ def send_email_background(background_tasks: BackgroundTasks, subject: str, email
 async def send_email_async(subject: str, email_to: str, body: Dict[str, Any], template_name: str, reply_to: str, purpose: str = None):
     service = get_gmail_service()
     sender = "coach@peakleadershipinstitute.com" 
-
-    if not service:
-        # Redirect to start OAuth flow
-        return RedirectResponse(url="/start_oauth")
     
     # Render the email body using the template
     message_text = render_template(template_name, body)
@@ -95,9 +90,8 @@ async def send_email_async(subject: str, email_to: str, body: Dict[str, Any], te
     # Send the email
     try:
         send_message(service, "me", email_message)
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        raise Exception
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
 
 
 def setup_oauth_flow():
