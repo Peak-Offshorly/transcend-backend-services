@@ -43,7 +43,7 @@ def create_message(sender: str, to: str, subject: str, message_text: str, reply_
     if purpose in ["reset_password", "complete_profile", "verify_account"]:
         sender_name = "Transcend Team"
     else:
-        sender_name = "Transcend AI" #CHANGE THIS TO ENV VALUE ONCE WORKING
+        sender_name = EMAIL_FROM_NAME
     
     # Format the 'from' field with the appropriate name and email
     message['from'] = f"{sender_name} <{sender}>"
@@ -79,7 +79,10 @@ def send_email_background(background_tasks: BackgroundTasks, subject: str, email
 
 async def send_email_async(subject: str, email_to: str, body: Dict[str, Any], template_name: str, reply_to: str, purpose: str = None):
     service = get_gmail_service()
-    sender = "coach@peakleadershipinstitute.com" 
+
+    if service == None:
+        raise HTTPException(status_code=400, detail=str("Token file not found"))
+    sender = EMAIL_FROM 
     
     # Render the email body using the template
     message_text = render_template(template_name, body)
