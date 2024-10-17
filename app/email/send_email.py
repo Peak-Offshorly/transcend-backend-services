@@ -1,11 +1,9 @@
 from typing import Dict, Any
 from fastapi import BackgroundTasks
 from fastapi.responses import RedirectResponse
-from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
-from pydantic import EmailStr
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
-from google_auth_oauthlib.flow import Flow, InstalledAppFlow
+from google_auth_oauthlib.flow import Flow
 from email.mime.text import MIMEText
 import base64
 from googleapiclient.discovery import build
@@ -62,7 +60,7 @@ def send_message(service, user_id: str, message: Dict[str, Any]):
         return message
     except Exception as e:
         print(f"An error occurred: {e}")
-        return None
+        raise Exception
 
 # Renders the email template (using Jinja2, which you'll need to install).
 def render_template(template_name: str, context: Dict[str, Any]) -> str:
@@ -99,7 +97,7 @@ async def send_email_async(subject: str, email_to: str, body: Dict[str, Any], te
         send_message(service, "me", email_message)
     except Exception as e:
         print(f"An error occurred: {e}")
-        return None
+        raise Exception
 
 
 def setup_oauth_flow():
