@@ -8,6 +8,7 @@ from email.mime.text import MIMEText
 import base64
 from googleapiclient.discovery import build
 import os
+import json
 from jinja2 import Environment, FileSystemLoader
 from app.const import(
     EMAIL_FROM,
@@ -26,8 +27,15 @@ from app.const import(
 # Handles OAuth 2.0 flow and returns a Gmail service object.
 def get_gmail_service():
     creds = None
-    if os.path.exists(TOKEN_FILE):
-        creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+    if os.environ.get('RENDER'):
+        # Read the token file content directly
+        with open(TOKEN_FILE, 'r') as token_file:
+            token_data = json.load(token_file)
+            creds = Credentials.from_authorized_user_info(token_data, SCOPES)
+    else:
+        # Local development flow
+        if os.path.exists(TOKEN_FILE):
+            creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
