@@ -30,7 +30,7 @@ async def user_weekly_email(db: Session):
             week_number = ((today - start_date).days // 7) + 1
 
             # Calculate the end date of the current week
-            current_week_end_date = start_date + timedelta(days=(week_number * 7) - 1)
+            current_week_end_date = start_date + timedelta(days=(week_number * 7))
 
             if week_number > 0 and week_number <= 12 and today == current_week_end_date:
                 user = get_one_user_id(user_id=plan.user_id, db=db)
