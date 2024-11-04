@@ -45,7 +45,7 @@ async def user_weekly_email(db: Session):
                 sprint_first_second = "first" if current_sprint["sprint_number"] == 1 else "second"
                 
                 # Prep email body and send email to user
-                subject = f"Transcend - Development Plan Progress Check for Week {week_number}"
+                subject = f"Elevate - Development Plan Progress Check for Week {week_number}"
                 body = {
                     "user_name": user.first_name,
                     "progress_check_link": f"{WEB_URL}/progress-check",
