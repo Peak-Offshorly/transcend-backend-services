@@ -46,7 +46,7 @@ def create_message(sender: str, to: str, subject: str, message_text: str, reply_
     message['to'] = to
 
     if purpose in ["reset_password", "complete_profile", "verify_account"]:
-        sender_name = "Transcend Team"
+        sender_name = "Elevate Team"
     else:
         sender_name = EMAIL_FROM_NAME
     

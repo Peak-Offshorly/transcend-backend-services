@@ -17,7 +17,7 @@ conf = ConnectionConfig(
     MAIL_FROM=EMAIL_FROM,
     MAIL_PORT=EMAIL_PORT,
     MAIL_SERVER=EMAIL_SERVER,
-    MAIL_FROM_NAME="Peak-Transcend",
+    MAIL_FROM_NAME="Elevate",
     MAIL_SSL_TLS=False,
     USE_CREDENTIALS=True,
     MAIL_STARTTLS=True,
@@ -26,7 +26,7 @@ conf = ConnectionConfig(
 
 
 async def send_verification_email(email_to: str, verification_link: str):
-    subject = "Please verify your email address for Transcend"  
+    subject = "Please verify your email address for Elevate"  
     body = {"verification_link": verification_link}  
 
 
