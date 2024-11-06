@@ -48,7 +48,7 @@ def create_message(sender: str, to: str, subject: str, message_text: str, reply_
     if purpose in ["reset_password", "complete_profile", "verify_account"]:
         sender_name = "Elevate Team"
     else:
-        sender_name = EMAIL_FROM_NAME
+        sender_name = "Elevate AI"
     
     # Format the 'from' field with the appropriate name and email
     message['from'] = f"{sender_name} <{sender}>"
