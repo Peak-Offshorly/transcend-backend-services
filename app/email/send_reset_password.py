@@ -16,7 +16,7 @@ conf = ConnectionConfig(
     MAIL_FROM=EMAIL_FROM,
     MAIL_PORT=EMAIL_PORT,
     MAIL_SERVER=EMAIL_SERVER,
-    MAIL_FROM_NAME="Peak-Transcend",
+    MAIL_FROM_NAME="Elevate",
     MAIL_SSL_TLS=False,
     USE_CREDENTIALS=True,
     MAIL_STARTTLS=True,
@@ -25,7 +25,7 @@ conf = ConnectionConfig(
 
 async def send_reset_password(email_to: str, link: str):
 
-    subject = "Reset your password for Transcend" 
+    subject = "Reset your password for Elevate" 
     body = {"reset_link": link}
 
 
