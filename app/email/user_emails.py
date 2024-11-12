@@ -27,7 +27,7 @@ async def user_weekly_email(db: Session):
         try:
             # Get current week number
             start_date = plan.start_date.date()
-            week_number = ((today - start_date).days // 7) + 1
+            week_number = (((today - start_date).days - 1) // 7) + 1
 
             # Calculate the end date of the current week
             current_week_end_date = start_date + timedelta(days=(week_number * 7))
