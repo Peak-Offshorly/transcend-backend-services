@@ -173,6 +173,9 @@ def get_significant_strengths_weakness(db: Session, company_id: str):
         ChosenTraits.end_date > date.today()
     ).group_by(
         Traits.name
+    ).order_by(
+        func.count(Traits.id).desc(),
+        Traits.name.asc()
     ).all()
 
     significant_weakness = db.query(
@@ -188,6 +191,9 @@ def get_significant_strengths_weakness(db: Session, company_id: str):
         ChosenTraits.end_date > date.today()
     ).group_by(
         Traits.name
+    ).order_by(
+        func.count(Traits.id).desc(),
+        Traits.name.asc()
     ).all()
 
     return {
