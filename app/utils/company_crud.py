@@ -70,6 +70,7 @@ def delete_company(db: Session, company_id: str):
     return False
 
 def get_strengths_by_company_id(db: Session, company_id: str):
+    # All traits under the same company id
     company_traits = (
         db.query(Traits, Users.company_id)
         .join(Users, Users.id == Traits.user_id)
@@ -95,26 +96,34 @@ def get_strengths_by_company_id(db: Session, company_id: str):
         .subquery()
     )
 
-    # Main query
+    # Get total number of unique employees
+    total_employees = db.query(func.count(func.distinct(company_traits.c.user_id))).scalar()
+
+    # Main query with percentage calculation
     result = (
         db.query(
             ranked_traits.c.name,
-            func.count(ranked_traits.c.name).label('employee_count')
+            (func.count(ranked_traits.c.name) * 100.0 / total_employees).label('employee_percentage')
         )
         .filter(ranked_traits.c.trait_rank <= 5)
         .group_by(ranked_traits.c.name)
+        .order_by(
+            (func.count(ranked_traits.c.name) * 100.0 / total_employees).desc(),
+            ranked_traits.c.name.asc()
+        )
     )
 
     return {
         "strengths": [
             {
                 "name": strength.name,
-                "employee_count": strength.employee_count,
+                "employee_percentage": int(strength.employee_percentage),
             } for strength in result
         ],
     }
 
 def get_weakness_by_company_id(db: Session, company_id: str):
+    # All traits under the same company id
     company_traits = (
         db.query(Traits, Users.company_id)
         .join(Users, Users.id == Traits.user_id)
@@ -140,21 +149,28 @@ def get_weakness_by_company_id(db: Session, company_id: str):
         .subquery()
     )
 
-    # Main query
+    # Get total number of unique employees
+    total_employees = db.query(func.count(func.distinct(company_traits.c.user_id))).scalar()
+
+    # Main query with percentage calculation
     result = (
         db.query(
             ranked_traits.c.name,
-            func.count(ranked_traits.c.name).label('employee_count')
+            (func.count(ranked_traits.c.name) * 100.0 / total_employees).label('employee_percentage')
         )
         .filter(ranked_traits.c.trait_rank <= 5)
         .group_by(ranked_traits.c.name)
+        .order_by(
+            (func.count(ranked_traits.c.name) * 100.0 / total_employees).desc(),
+            ranked_traits.c.name.asc()
+        )
     )
 
     return {
         "weakness": [
             {
                 "name": weakness.name,
-                "employee_count": weakness.employee_count,
+                "employee_percentage": int(weakness.employee_percentage),
             } for weakness in result
         ],
     }
