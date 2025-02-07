@@ -7,6 +7,7 @@ from typing import Annotated
 from app.schemas.models import ChosenTraitsSchema, FormAnswerSchema, PracticeSchema, ChosenPracticesSchema
 from app.database.connection import get_db
 from app.firebase.utils import verify_token
+from app.utils.users_crud import get_one_user_id
 from app.utils.dates_crud import compute_second_sprint_dates
 from app.utils.answers_crud import answers_save_one, are_matching_answers
 from app.utils.pending_actions_crud import pending_actions_clear_all
@@ -56,16 +57,48 @@ router = APIRouter(prefix="/traits", tags=["traits"])
 # Get Traits (Strengths and Weaknesses with the Scores)
 @router.get("/all-strengths-weaknesses")
 async def get_strengths_weaknesses(user_id: str, db: db_dependency, token = Depends(verify_token)):
-  if token != user_id:
+    query_user = get_one_user_id(db=db, user_id=user_id)
+    token_user = get_one_user_id(db=db, user_id=token)
+
+    # Check if requested user exists
+    if not query_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Requested user not found"
+        )
+
+    # Check if token user exists
+    if not token_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials"
+        )
+
+    # Users can always access their own data
+    if token == user_id:
+        try:
+            return traits_get_top_bottom_five(db=db, user_id=user_id)
+        except Exception as error:
+            raise HTTPException(status_code=400, detail=str(error))
+
+    # Admin can only access data of users in their company
+    if token_user.user_type == 'admin':
+        if query_user.company_id == token_user.company_id:
+            try:
+                return traits_get_top_bottom_five(db=db, user_id=user_id)
+            except Exception as error:
+                raise HTTPException(status_code=400, detail=str(error))
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin can only access data of users in their company"
+            )
+
+    # Non-admin users trying to access other users' data
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
-        detail="You are not authorized to perform this action."
+        detail="You can only access your own data"
     )
-  
-  try:
-    return traits_get_top_bottom_five(db=db, user_id=user_id)
-  except Exception as error:
-    raise HTTPException(status_code=400, detail=str(error))
   
 # Post Save Chosen Strength and Weakness
 @router.post("/save-strength-weakness")
