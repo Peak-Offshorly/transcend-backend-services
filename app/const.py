@@ -33,3 +33,6 @@ TOKEN_FILE = os.environ.get('TOKEN_FILE', '/etc/secrets/token')
 CREDENTIALS_FILE = os.environ.get('CREDENTIALS_FILE', '/etc/secrets/credentials')
 TEMPLATE_FOLDER = "././app/email/templates"
 REDIRECT_URI = 'http://localhost:5173/oauth2callback'
+
+# Fireflies API Key
+FIREFLIES_API_KEY = os.getenv('FIREFLIES_API_KEY')
