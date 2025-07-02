@@ -135,9 +135,10 @@ async def get_questions(survey_token: str, db: db_dependency):
     weakness = chosen_traits["chosen_weakness"]["name"]
     
     # Questions and options
-    q1 = f"Over the past 12 weeks, has {user.first_name} become a more (or less) effective leader?"
-    q2 = f"Over the past 12 weeks, has {user.first_name} become more (or less) effective in the area of {strength}?"
-    q3 = f"Over the past 12 weeks has {user.first_name} become more (or less) effective in the area of {weakness}?"
+    # UPDATE integration of week 4 cycle Changed from 12 weeks to 4 weeks
+    q1 = f"Over the past 4 weeks, has {user.first_name} become a more (or less) effective leader?"
+    q2 = f"Over the past 4 weeks, has {user.first_name} become more (or less) effective in the area of {strength}?"
+    q3 = f"Over the past 4 weeks has {user.first_name} become more (or less) effective in the area of {weakness}?"
     q4 = f"What is {user.first_name} doing that is particularly effective?"
     q5 = f"What could {user.first_name} do to be even more effective?"
     integer_options = [-3, -2, -1, 0, 1, 2, 3]
@@ -244,9 +245,10 @@ async def get_colleague_feedback_summary(user_id: str, db: db_dependency, token 
     chosen_traits = chosen_traits_get(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
     strength = chosen_traits["chosen_strength"]["name"]
     weakness = chosen_traits["chosen_weakness"]["name"]
-    q1 = f"Over the past 12 weeks, has {user.first_name} become a more (or less) effective leader?"
-    q2 = f"Over the past 12 weeks, has {user.first_name} become more (or less) effective in the area of {strength}?"
-    q3 = f"Over the past 12 weeks has {user.first_name} become more (or less) effective in the area of {weakness}?"
+    # UPDATED integration of week 4 cycle: Changed from 12 weeks to 4 weeks
+    q1 = f"Over the past 4 weeks, has {user.first_name} become a more (or less) effective leader?"
+    q2 = f"Over the past 4 weeks, has {user.first_name} become more (or less) effective in the area of {strength}?"
+    q3 = f"Over the past 4 weeks has {user.first_name} become more (or less) effective in the area of {weakness}?"
     q4 = f"What is {user.first_name} doing that is particularly effective?"
     q5 = f"What could {user.first_name} do to be even more effective?"
 

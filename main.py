@@ -23,7 +23,7 @@ async def check_user_activity():
 async def send_emails_job():
     db = next(get_db())
     await user_weekly_email(db=db)
-    await user_colleague_week_5_9_emails(db=db)
+    await user_colleague_week_5_9_emails(db=db) # DISABLED: No longer sending week 5 and 9 emails in 4-week cycle
     await user_colleague_week_12_emails(db=db)
 
 scheduler = AsyncIOScheduler()
