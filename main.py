@@ -23,14 +23,16 @@ async def check_user_activity():
 async def send_emails_job():
     db = next(get_db())
     await user_weekly_email(db=db)
-    await user_colleague_week_5_9_emails(db=db)
+    await user_colleague_week_5_9_emails(db=db) # DISABLED: No longer sending week 5 and 9 emails in 4-week cycle
     await user_colleague_week_12_emails(db=db)
 
 scheduler = AsyncIOScheduler()
 # Run check_user_activity every 3 weeks
 scheduler.add_job(check_user_activity, "interval", weeks=3)
 # Run the send_emails job to run daily
-scheduler.add_job(send_emails_job, "cron", hour=0, minute=0, timezone=timezone.utc)
+scheduler.add_job(send_emails_job, "cron", hour=0, minute=0, timezone=timezone.utc) # fOR PRODUCTION: Run at midnight UTC daily
+# FOR DEV TESTING: Run the send_emails job every 2 minutes (aligned with week progression)
+# scheduler.add_job(send_emails_job, "cron", minute="*/2", timezone=timezone.utc) # FOR TESTING
 
 scheduler.start()
 print("Started CRON jobs")

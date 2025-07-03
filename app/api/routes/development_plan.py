@@ -85,14 +85,15 @@ async def get_gantt_chart(db: db_dependency, user_id: str, token = Depends(verif
         "start_date": colleague_message_dates["week_1"][0],
         "end_date": colleague_message_dates["week_1"][1]
       },
-      "colleague_message_2": {
-        "start_date": colleague_message_dates["week_5"][0],
-        "end_date": colleague_message_dates["week_5"][1]
-      },
-      "colleague_message_3": {
-        "start_date": colleague_message_dates["week_9"][0],
-        "end_date": colleague_message_dates["week_9"][1]
-      },
+      # UPDATE for 4 weeks cycle: Comment this out for now, as we are not sending colleague messages in week 5 and week 9 due to the new 4 weeks cycle
+      # "colleague_message_2": {
+      #   "start_date": colleague_message_dates["week_5"][0],
+      #   "end_date": colleague_message_dates["week_5"][1]
+      # },
+      # "colleague_message_3": {
+      #   "start_date": colleague_message_dates["week_9"][0],
+      #   "end_date": colleague_message_dates["week_9"][1]
+      # },
       "colleague_message_4": {
         "start_date": colleague_message_dates["week_12"][0],
         "end_date": colleague_message_dates["week_12"][1]
@@ -187,9 +188,9 @@ async def get_current_week(user_id: str, db: db_dependency, token = Depends(veri
     # minutes_elapsed = delta.total_seconds() // 60  # Convert the timedelta to minutes
     # week_number = int(minutes_elapsed // 2)  # Increment week every 120 minutes (2 minutes * 60 seconds)
     # # FOR DEV TESTING
-
-    if week_number > 12:
-      week_number = 12
+     # UPDATE 4 Weeks integration: 4 weeks cycle   
+    if week_number > 4:
+      week_number = 4
 
     return{
       "week_number": week_number

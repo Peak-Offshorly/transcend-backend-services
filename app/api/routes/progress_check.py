@@ -45,17 +45,17 @@ async def get_development_progress_questions_strength_practice(db: db_dependency
   # minutes_elapsed = delta.total_seconds() // 60  # Convert the timedelta to minutes
   # week_number = int(minutes_elapsed // 2)  # Increment week every 120 minutes (2 minutes * 60 seconds)
   # # FOR DEV TESTING
-  
-  if week_number > 6:
-      week_number = 6  # Assuming the range is up to 6 weeks
+  # UPDATE 4 Weeks integration: 4 weeks cycle
+  if week_number > 2:
+      week_number = 2  # Assuming the range is up to 6 weeks
   
   # # FOR DEV TESTING
   # elif week_number < 0:
   #     week_number += 30240
-  #     if week_number > 6:
+  #     if week_number > 2:
   #       week_number -= 6
-  #       if week_number > 6:
-  #         week_number = 6
+  #       if week_number > 2:
+  #         week_number = 2
   # # FOR DEV TESTING
   
   # <SPRINT_NUM>_PROGRESS_STRENGTH_WEEK_<WEEK NUMBER>
@@ -102,7 +102,7 @@ async def get_development_progress_questions_strength_practice(db: db_dependency
     raise HTTPException(status_code=400, detail=str(error))
 
 # Get Written Development Actions as Questions - Weakness
-# Progress check is done per week for each 6 week sprint
+# Progress check is done per week for each 2 week sprint
 @router.post("/questions-weakness-practice")
 async def get_development_progress_questions_weakness_practice(db: db_dependency, data: DataFormSchema, token = Depends(verify_token)):
   user_id = data.user_id
@@ -132,17 +132,17 @@ async def get_development_progress_questions_weakness_practice(db: db_dependency
   # minutes_elapsed = delta.total_seconds() // 60  # Convert the timedelta to minutes
   # week_number = int(minutes_elapsed // 2)  # Increment week every 120 minutes (2 minutes * 60 seconds)
   # # FOR DEV TESTING
-  
-  if week_number > 6:
-      week_number = 6  # Assuming the range is up to 6 weeks
+  # UPDATE 4 Weeks integration: 4 weeks cycle
+  if week_number > 2:
+      week_number = 2  # Assuming the range is up to 6 weeks
 
   # # FOR DEV TESTING
   # elif week_number < 0:
   #     week_number += 30240
-  #     if week_number > 6:
-  #       week_number -= 6
-  #       if week_number > 6:
-  #         week_number = 6
+  #     if week_number > 2:
+  #       week_number -= 2
+  #       if week_number > 2:
+  #         week_number = 2
   # # FOR DEV TESTING
   
   # <SPRINT_NUM>_PROGRESS_WEAKNESS_WEEK_<WEEK NUMBER>
@@ -227,7 +227,8 @@ async def get_development_progress_answers(db: db_dependency, trait_type: str, s
     )
 
   try:
-    if week_number > 6:
+    # UPDATE 4 Weeks integration: 4 weeks cycle
+    if week_number > 2:
       return { "message": "Week number too big." }
   
     # <SPRINT_NUM>_PROGRESS_WEAKNESS_WEEK_<WEEK NUMBER>

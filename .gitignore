@@ -156,6 +156,12 @@ cython_debug/
 transcend-service-account-key.json
 transcend-service-account-key-PROD.json
 
+# GMAIL API 
+token.json
+
+# CREDENTIALS
+credentials.json
+
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore

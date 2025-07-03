@@ -6,11 +6,11 @@ from app.database.models import ChosenTraits, PersonalPracticeCategory, Sprints,
 
 async def add_dates(chosen_traits_data, recommended_mind_body_category_data, chosen_trait_practices, dev_plan, db: Session):
     # Add dates for chosen_traits(strength/weakness) and mind body area
-    # Both span 12 weeks 
+    # Both span 4 weeks 
 
     # Get the current date and end date which is 12 weeks from the start date
     start_date = datetime.now(tz=timezone.utc)
-    end_date = start_date + timedelta(weeks=12)
+    end_date = start_date + timedelta(weeks=4)  # UPDATE 4 Weeks integration: 4 weeks cycle
 
     # Add dates to chosen_traits(strength/weakness), mind body area and dev plan
     chosen_strength = db.query(ChosenTraits).filter(
@@ -45,7 +45,7 @@ async def add_dates(chosen_traits_data, recommended_mind_body_category_data, cho
     current_dev_plan.end_date = end_date
 
     # Add start_date and start_to_mid_date for Sprint 1
-    start_to_mid_date = start_date + timedelta(weeks=6)
+    start_to_mid_date = start_date + timedelta(weeks=2) # UPDATE 4 Weeks integration: 2 weeks cycle
     sprint1 = db.query(Sprints).filter(
         Sprints.id == chosen_trait_practices["chosen_strength_practice"][0].sprint_id,
         Sprints.development_plan_id == dev_plan["dev_plan_id"]
@@ -69,7 +69,10 @@ async def compute_colleague_message_dates(start_date: datetime, end_date: dateti
     # Initialize a list to store start and end dates for each week
     weekly_dates = []
 
-    # Iterate over the 12-week period
+    #  We keep this as 12-week iteration for backward compatibility
+    # Even though the new system only uses 4 weeks (weeks 1 and 12),
+    # changing this would break existing database records and email scheduling
+    # that still reference week_5 and week_9 dates in the UserColleagues table
     for week_number in range(1, 13):
         # Calculate the start date for the current week
         week_start_date = start_date + timedelta(weeks=week_number - 1)
@@ -83,11 +86,15 @@ async def compute_colleague_message_dates(start_date: datetime, end_date: dateti
 
         # Append the start and end dates to the list
         weekly_dates.append((week_start_date, week_end_date))
-
+   
+    # NOTE: In the new 4-week system:
+    # - week_1 = colleague message (used)
+    # - week_5 & week_9 = populated but disabled (not used)  
+    # - week_12 = colleague survey (used, represents week 4 in new system)
     return {
-        "week_1": weekly_dates[0],
-        "week_5": weekly_dates[4],
-        "week_9": weekly_dates[8],
-        "week_12": weekly_dates[11],
+        "week_1": weekly_dates[0], # Used: Initial colleague message
+        "week_5": weekly_dates[4],  #  Disabled in 4-week system
+        "week_9": weekly_dates[8], #  Disabled in 4-week system
+        "week_12": weekly_dates[11], # Used: Final colleague survey (= week 4)
     }
 

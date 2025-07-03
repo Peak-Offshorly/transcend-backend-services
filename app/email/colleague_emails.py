@@ -13,6 +13,7 @@ from app.const import WEB_URL
 
 async def user_colleague_week_5_9_emails(db: Session):
     print('---STARTED SEND WEEKS 5 AND 9 COLLEAGUE EMAILS FUNCTION---')
+    return  # DISABLED: No longer sending week 5 and 9 emails in 4-week cycle
     today = datetime.now(timezone.utc).date()
     
     user_colleagues = db.query(UserColleagues).filter(
@@ -65,12 +66,15 @@ async def user_colleague_week_5_9_emails(db: Session):
     print('---FINISHED SEND WEEKS 5 AND 9 COLLEAGUE EMAILS FUNCTION---')
 
 async def user_colleague_week_12_emails(db: Session):
-    print('---STARTED SEND WEEK 12 COLLEAGUE EMAILS FUNCTION---')
+    # UPDATE for integration of week 4 cycle: Changed from 12 weeks to 4 weeks
+    print('---STARTED SEND WEEK 4 COLLEAGUE EMAILS FUNCTION---')
     today = datetime.now(timezone.utc).date()
     
     user_colleagues = db.query(UserColleagues).filter(
         (cast(UserColleagues.week_12_date, Date) == today)
+        # UserColleagues.user_id == "4AA4e4d4HafWrNyuFmfB9LEx6aC2"  # Just your user ID for testing purposes
     ).all()
+    print(f'Found {len(user_colleagues)} colleagues to email')  # ← ADD THIS DEBUG LINE
 
     for colleague in user_colleagues:
         try:
