@@ -72,7 +72,9 @@ async def user_colleague_week_12_emails(db: Session):
     
     user_colleagues = db.query(UserColleagues).filter(
         (cast(UserColleagues.week_12_date, Date) == today)
+        # UserColleagues.user_id == "4AA4e4d4HafWrNyuFmfB9LEx6aC2"  # Just your user ID for testing purposes
     ).all()
+    print(f'Found {len(user_colleagues)} colleagues to email')  # ← ADD THIS DEBUG LINE
 
     for colleague in user_colleagues:
         try:
