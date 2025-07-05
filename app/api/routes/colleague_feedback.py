@@ -24,6 +24,8 @@ from app.utils.user_colleagues_crud import (
   user_colleagues_get_dates
 )
 from app.email.colleague_emails import user_colleague_week_12_emails_trigger
+from app.email.test_emails import send_all_test_emails
+
 
 db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/colleague-feedback", tags=["colleague-feedback"])
@@ -111,7 +113,7 @@ async def send_initial_emails(db: db_dependency, background_tasks: BackgroundTas
         background_tasks=background_tasks, 
         body=body, 
         email_to=colleague.email, 
-        subject=f"Elevate - Colleague Invite for {user.first_name}'s Development Plan",
+        subject=f"Leadership Development Plan - Would Love Your Thoughts",
         template_name="initial-colleague-email.html",
         reply_to=user.email
       )
@@ -303,3 +305,146 @@ async def send_colleague_survey(db: db_dependency, data: DataFormSchema, backgro
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error)) 
 #----FOR UAT OF JEREMY SETUP
+
+
+
+@router.post("/test-all-emails")
+async def test_all_emails(
+    db: db_dependency, 
+    background_tasks: BackgroundTasks, 
+    data: DataFormSchema, 
+    colleague_email: str,
+    token = Depends(verify_token)
+):
+    user_id = data.user_id
+    
+    if token != user_id:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not authorized to perform this action."
+        )
+    
+    try:
+        result = await send_all_test_emails(
+            db=db,
+            test_user_id=user_id,
+            test_colleague_email=colleague_email,
+            background_tasks=background_tasks
+        )
+        return result
+        
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
+    
+# EXACT EMAIL COPY (CURRENTLY NOT USED)
+@router.post("/preview-initial-email")
+async def preview_initial_email(db: db_dependency, data: DataFormSchema, token = Depends(verify_token)):
+  """
+  Preview the initial colleague email without sending it.
+  Returns the rendered HTML content that would be sent to colleagues.
+  """
+  user_id = data.user_id
+
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
+
+  try:
+    # Get current dev plan
+    dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
+    dev_plan_id=dev_plan["dev_plan_id"]
+    current_sprint = await sprint_get_current(user_id=user_id, db=db, dev_plan_id=dev_plan_id)
+    dev_plan_details = await get_review_details(user_id=user_id, sprint_number=current_sprint["sprint_number"], db=db)
+
+    user = get_one_user_id(db=db, user_id=user_id)
+    user_email_href = f"mailto:{user.email}"
+    
+    # Use placeholder email for preview
+    colleague_email = "colleague@example.com".split("@")
+    
+    # Build the same body structure as the actual send email endpoint
+    body = { 
+      "colleague_email": colleague_email[0], 
+      "user_name": user.first_name,
+      "user_email_href": user_email_href,
+      "strength": dev_plan_details["chosen_strength"]["name"],
+      "weakness": dev_plan_details["chosen_weakness"]["name"],
+      "strength_practice": dev_plan_details["strength_practice"][0].name,
+      "weakness_practice": dev_plan_details["weakness_practice"][0].name,
+      "strength_practice_dev_actions": dev_plan_details["strength_practice_dev_actions"],
+      "weakness_practice_dev_actions": dev_plan_details["weakness_practice_dev_actions"],
+      "recommended_category": dev_plan_details["mind_body_practice"].name,
+      "chosen_personal_practices": dev_plan_details["mind_body_chosen_recommendations"],
+      "sprint_number": current_sprint["sprint_number"]
+    }
+
+    # Import the render_template function from send_email.py
+    from app.email.send_email import render_template
+    
+    # Render the email template with the same data
+    rendered_html = render_template("initial-colleague-email.html", body)
+    
+    # Return the rendered HTML and email subject
+    return {
+      "html_content": rendered_html,
+      "subject": f"Elevate - Colleague Invite for {user.first_name}'s Development Plan",
+      "message": "Email preview generated successfully"
+    }
+      
+  except Exception as error:
+    raise HTTPException(status_code=400, detail=str(error))
+  
+
+@router.post("/preview-initial-email-text")
+async def preview_initial_email_text(db: db_dependency, data: DataFormSchema, token = Depends(verify_token)):
+  """
+  Preview the initial colleague email as structured text content.
+  Returns the text content that would be sent to colleagues.
+  """
+  user_id = data.user_id
+
+  if token != user_id:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to perform this action."
+    )
+
+  try:
+    # Get current dev plan
+    dev_plan = await dev_plan_create_get_one(user_id=user_id, db=db)
+    dev_plan_id=dev_plan["dev_plan_id"]
+    current_sprint = await sprint_get_current(user_id=user_id, db=db, dev_plan_id=dev_plan_id)
+    dev_plan_details = await get_review_details(user_id=user_id, sprint_number=current_sprint["sprint_number"], db=db)
+
+    user = get_one_user_id(db=db, user_id=user_id)
+    
+    # Extract text content for preview
+    strength_actions = []
+    if dev_plan_details["strength_practice_dev_actions"]:
+      for action in dev_plan_details["strength_practice_dev_actions"]:
+        strength_actions.append(action.answer)
+    
+    weakness_actions = []
+    if dev_plan_details["weakness_practice_dev_actions"]:
+      for action in dev_plan_details["weakness_practice_dev_actions"]:
+        weakness_actions.append(action.answer)
+    
+    # Return structured text data
+    return {
+      "subject": f"Leadership Development Plan - Would Love Your Thoughts",
+      "user_name": user.first_name,
+      "greeting": f"Hello,\n\nI'm engaging in a leadership development process and would love your input and support around the leadership development plan below.\n\nBest, {user.first_name}",
+      "strength": dev_plan_details["chosen_strength"]["name"],
+      "strength_practice": dev_plan_details["strength_practice"][0].name,
+      "strength_actions": strength_actions,
+      "weakness": dev_plan_details["chosen_weakness"]["name"],
+      "weakness_practice": dev_plan_details["weakness_practice"][0].name,
+      "weakness_actions": weakness_actions,
+      "footer": "Peak Leadership Institute",
+      "message": "Email text preview generated successfully"
+    }
+      
+  except Exception as error:
+    raise HTTPException(status_code=400, detail=str(error))

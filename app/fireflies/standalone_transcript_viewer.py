@@ -171,6 +171,8 @@ class TranscriptManager:
                     gist
                     short_summary
                     short_overview
+                    bullet_gist
+                    outline
                 }}
             }}
         }}
@@ -220,10 +222,14 @@ def sanitize_filename(filename: str) -> str:
     Returns:
         A sanitized filename safe for use on most filesystems
     """
-    # Remove or replace invalid characters
-    filename = re.sub(r'[<>:"/\\|?*]', '_', filename)
+    # Remove or replace invalid characters (more comprehensive)
+    filename = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', filename)
+    # Remove extra spaces and replace with single spaces
+    filename = re.sub(r'\s+', ' ', filename)
     # Remove leading/trailing spaces and dots
     filename = filename.strip(' .')
+    # Remove consecutive underscores
+    filename = re.sub(r'_+', '_', filename)
     # Limit length to 200 characters
     if len(filename) > 200:
         filename = filename[:200]
@@ -245,153 +251,234 @@ def save_transcript_to_file(content: Dict[str, Any], transcript_id: str) -> str:
         The filename where the transcript was saved
     """
     if not content:
+        print("❌ No content to save")
         return ""
     
-    # Generate filename from title
-    title = content.get('title', 'Untitled Meeting')
-    date = content.get('date', 0)
-    date_str = format_timestamp(date).split(' ')[0]  # Get just the date part
-    
-    # Create filename: "YYYY-MM-DD - Meeting Title.txt"
-    filename = f"{date_str} - {title}.txt"
-    filename = sanitize_filename(filename)
-    
-    # Create transcripts directory if it doesn't exist
-    transcripts_dir = "transcripts"
-    if not os.path.exists(transcripts_dir):
-        os.makedirs(transcripts_dir)
-    
-    filepath = os.path.join(transcripts_dir, filename)
-    
-    # Generate file content
-    file_content = []
-    
-    # Header
-    file_content.append("=" * 80)
-    file_content.append(f"TRANSCRIPT: {content.get('title', 'Untitled')}")
-    file_content.append("=" * 80)
-    file_content.append("")
-    
-    # Meeting details
-    file_content.append("MEETING DETAILS:")
-    file_content.append(f"Date: {format_timestamp(content.get('date', 0))}")
-    file_content.append(f"Duration: {format_duration(content.get('duration', 0))}")
-    file_content.append(f"Participants: {', '.join(content.get('participants', []))}")
-    file_content.append(f"Transcript ID: {transcript_id}")
-    file_content.append("")
-    
-    # Summary section
-    summary = content.get('summary', {})
-    if summary:
-        file_content.append("-" * 60)
-        file_content.append("SUMMARY")
-        file_content.append("-" * 60)
-        file_content.append("")
-        
-        if summary.get('overview'):
-            file_content.append("OVERVIEW:")
-            file_content.append(summary['overview'])
-            file_content.append("")
-        
-        if summary.get('action_items'):
-            action_items = summary['action_items']
-            file_content.append("ACTION ITEMS:")
-            
-            # Handle both string and list formats
-            if isinstance(action_items, str):
-                # If it's a string, split by common delimiters or show as single item
-                if '\n' in action_items:
-                    items = [item.strip() for item in action_items.split('\n') if item.strip()]
-                elif ';' in action_items:
-                    items = [item.strip() for item in action_items.split(';') if item.strip()]
-                elif '.' in action_items and len(action_items) > 50:  # Likely multiple sentences
-                    items = [item.strip() + '.' for item in action_items.split('.') if item.strip()]
-                else:
-                    items = [action_items]  # Single action item
-            else:
-                items = action_items  # Already a list
-            
-            for i, item in enumerate(items, 1):
-                file_content.append(f"{i}. {item}")
-            file_content.append("")
-        
-        if summary.get('keywords'):
-            file_content.append(f"KEYWORDS: {', '.join(summary['keywords'])}")
-            file_content.append("")
-        
-        if summary.get('bullet_gist'):
-            bullet_gist = summary['bullet_gist']
-            file_content.append("KEY POINTS:")
-            
-            # Handle both string and list formats
-            if isinstance(bullet_gist, str):
-                # If it's a string, split by common delimiters or show as single item
-                if '\n' in bullet_gist:
-                    items = [item.strip() for item in bullet_gist.split('\n') if item.strip()]
-                elif ';' in bullet_gist:
-                    items = [item.strip() for item in bullet_gist.split(';') if item.strip()]
-                elif '.' in bullet_gist and len(bullet_gist) > 50:  # Likely multiple sentences
-                    items = [item.strip() + '.' for item in bullet_gist.split('.') if item.strip()]
-                else:
-                    items = [bullet_gist]  # Single item
-            else:
-                items = bullet_gist  # Already a list
-            
-            for i, point in enumerate(items, 1):
-                file_content.append(f"{i}. {point}")
-            file_content.append("")
-        
-        if summary.get('outline'):
-            file_content.append("OUTLINE:")
-            for i, item in enumerate(summary['outline'], 1):
-                file_content.append(f"{i}. {item}")
-            file_content.append("")
-    
-    # Transcript content
-    sentences = content.get('sentences', [])
-    if sentences:
-        file_content.append("-" * 60)
-        file_content.append("TRANSCRIPT CONTENT")
-        file_content.append("-" * 60)
-        file_content.append("")
-        
-        current_speaker = None
-        for sentence in sentences:
-            speaker = sentence.get('speaker_name', 'Unknown')
-            text = sentence.get('text', '')
-            start_time = sentence.get('start_time', 0)
-            
-            # Add speaker name only when it changes
-            if speaker != current_speaker:
-                if current_speaker is not None:  # Add blank line between speakers
-                    file_content.append("")
-                file_content.append(f"{speaker} [{format_time_seconds(start_time)}]:")
-                current_speaker = speaker
-            
-            file_content.append(f"  {text}")
-        
-        file_content.append("")
-        file_content.append(f"Total sentences: {len(sentences)}")
-    
-    # Footer
-    file_content.append("")
-    file_content.append("=" * 80)
-    file_content.append(f"Transcript exported on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    file_content.append("Generated by Fireflies Transcript Viewer")
-    file_content.append("=" * 80)
-    
-    # Write to file
     try:
-        with open(filepath, 'w', encoding='utf-8') as f:
-            f.write('\n'.join(file_content))
-        return filepath
+        # Generate filename from title
+        title = content.get('title', 'Untitled Meeting')
+        date = content.get('date', 0)
+        
+        # Handle date formatting more robustly
+        if date and date != 0:
+            try:
+                date_str = format_timestamp(date).split(' ')[0]  # Get just the date part
+            except:
+                date_str = datetime.now().strftime("%Y-%m-%d")
+        else:
+            date_str = datetime.now().strftime("%Y-%m-%d")
+        
+        # Create filename: "YYYY-MM-DD - Meeting Title.txt"
+        filename = f"{date_str} - {title}.txt"
+        filename = sanitize_filename(filename)
+        
+        # Create transcripts directory if it doesn't exist
+        transcripts_dir = "transcripts"
+        try:
+            if not os.path.exists(transcripts_dir):
+                os.makedirs(transcripts_dir)
+                print(f"📁 Created directory: {transcripts_dir}")
+        except OSError as e:
+            print(f"❌ Error creating directory {transcripts_dir}: {str(e)}")
+            # Try to save in current directory instead
+            transcripts_dir = "."
+            filename = f"transcript_{date_str}_{sanitize_filename(title)}.txt"
+        
+        filepath = os.path.join(transcripts_dir, filename)
+        
+        # Generate file content
+        file_content = []
+        
+        # Header
+        file_content.append("=" * 80)
+        file_content.append(f"TRANSCRIPT: {content.get('title', 'Untitled')}")
+        file_content.append("=" * 80)
+        file_content.append("")
+        
+        # Meeting details
+        file_content.append("MEETING DETAILS:")
+        file_content.append(f"Date: {format_timestamp(content.get('date', 0))}")
+        file_content.append(f"Duration: {format_duration(content.get('duration', 0))}")
+        
+        # Handle participants safely
+        participants = content.get('participants', [])
+        if participants:
+            file_content.append(f"Participants: {', '.join(participants)}")
+        else:
+            file_content.append("Participants: Not specified")
+        
+        file_content.append(f"Transcript ID: {transcript_id}")
+        file_content.append("")
+        
+        # Summary section
+        summary = content.get('summary', {})
+        if summary:
+            file_content.append("-" * 60)
+            file_content.append("SUMMARY")
+            file_content.append("-" * 60)
+            file_content.append("")
+            
+            if summary.get('overview'):
+                file_content.append("OVERVIEW:")
+                file_content.append(summary['overview'])
+                file_content.append("")
+            
+            if summary.get('action_items'):
+                action_items = summary['action_items']
+                file_content.append("ACTION ITEMS:")
+                
+                # Handle both string and list formats
+                if isinstance(action_items, str):
+                    # If it's a string, split by common delimiters or show as single item
+                    if '\n' in action_items:
+                        items = [item.strip() for item in action_items.split('\n') if item.strip()]
+                    elif ';' in action_items:
+                        items = [item.strip() for item in action_items.split(';') if item.strip()]
+                    elif '.' in action_items and len(action_items) > 50:  # Likely multiple sentences
+                        items = [item.strip() + '.' for item in action_items.split('.') if item.strip()]
+                    else:
+                        items = [action_items]  # Single action item
+                elif isinstance(action_items, list):
+                    items = action_items
+                else:
+                    items = [str(action_items)]
+                
+                for i, item in enumerate(items, 1):
+                    file_content.append(f"{i}. {item}")
+                file_content.append("")
+            
+            if summary.get('keywords'):
+                keywords = summary['keywords']
+                if isinstance(keywords, list):
+                    file_content.append(f"KEYWORDS: {', '.join(keywords)}")
+                else:
+                    file_content.append(f"KEYWORDS: {keywords}")
+                file_content.append("")
+            
+            # Handle bullet_gist safely
+            if summary.get('bullet_gist'):
+                bullet_gist = summary['bullet_gist']
+                file_content.append("KEY POINTS:")
+                
+                # Handle both string and list formats
+                if isinstance(bullet_gist, str):
+                    if '\n' in bullet_gist:
+                        items = [item.strip() for item in bullet_gist.split('\n') if item.strip()]
+                    elif ';' in bullet_gist:
+                        items = [item.strip() for item in bullet_gist.split(';') if item.strip()]
+                    elif '.' in bullet_gist and len(bullet_gist) > 50:  # Likely multiple sentences
+                        items = [item.strip() + '.' for item in bullet_gist.split('.') if item.strip()]
+                    else:
+                        items = [bullet_gist]  # Single item
+                elif isinstance(bullet_gist, list):
+                    items = bullet_gist
+                else:
+                    items = [str(bullet_gist)]
+                
+                for i, point in enumerate(items, 1):
+                    file_content.append(f"{i}. {point}")
+                file_content.append("")
+            
+            # Handle gist safely
+            if summary.get('gist'):
+                file_content.append("GIST:")
+                file_content.append(summary['gist'])
+                file_content.append("")
+            
+            # Handle outline safely
+            if summary.get('outline'):
+                outline = summary['outline']
+                file_content.append("OUTLINE:")
+                if isinstance(outline, list):
+                    for i, item in enumerate(outline, 1):
+                        file_content.append(f"{i}. {item}")
+                else:
+                    file_content.append(str(outline))
+                file_content.append("")
+        
+        # Transcript content
+        sentences = content.get('sentences', [])
+        if sentences:
+            file_content.append("-" * 60)
+            file_content.append("TRANSCRIPT CONTENT")
+            file_content.append("-" * 60)
+            file_content.append("")
+            
+            current_speaker = None
+            for sentence in sentences:
+                speaker = sentence.get('speaker_name', 'Unknown')
+                text = sentence.get('text', '')
+                start_time = sentence.get('start_time', 0)
+                
+                # Add speaker name only when it changes
+                if speaker != current_speaker:
+                    if current_speaker is not None:  # Add blank line between speakers
+                        file_content.append("")
+                    file_content.append(f"{speaker} [{format_time_seconds(start_time)}]:")
+                    current_speaker = speaker
+                
+                file_content.append(f"  {text}")
+            
+            file_content.append("")
+            file_content.append(f"Total sentences: {len(sentences)}")
+        else:
+            file_content.append("No transcript content available.")
+        
+        # Footer
+        file_content.append("")
+        file_content.append("=" * 80)
+        file_content.append(f"Transcript exported on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        file_content.append("Generated by Fireflies Transcript Viewer")
+        file_content.append("=" * 80)
+        
+        # Write to file with better error handling
+        try:
+            with open(filepath, 'w', encoding='utf-8') as f:
+                f.write('\n'.join(file_content))
+            print(f"✅ Successfully saved transcript to: {filepath}")
+            return filepath
+        except PermissionError:
+            print(f"❌ Permission denied writing to: {filepath}")
+            # Try alternative filename
+            alt_filename = f"transcript_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+            alt_filepath = os.path.join(".", alt_filename)
+            try:
+                with open(alt_filepath, 'w', encoding='utf-8') as f:
+                    f.write('\n'.join(file_content))
+                print(f"✅ Saved to alternative location: {alt_filepath}")
+                return alt_filepath
+            except Exception as e:
+                print(f"❌ Failed to save to alternative location: {str(e)}")
+                return ""
+        except UnicodeEncodeError as e:
+            print(f"❌ Unicode encoding error: {str(e)}")
+            # Try saving with different encoding
+            try:
+                with open(filepath, 'w', encoding='utf-8', errors='ignore') as f:
+                    f.write('\n'.join(file_content))
+                print(f"✅ Saved with unicode errors ignored: {filepath}")
+                return filepath
+            except Exception as e2:
+                print(f"❌ Failed even with unicode error handling: {str(e2)}")
+                return ""
+        except OSError as e:
+            print(f"❌ OS error writing file: {str(e)}")
+            return ""
+        except Exception as e:
+            print(f"❌ Unexpected error writing file: {str(e)}")
+            return ""
+    
     except Exception as e:
-        print(f"❌ Error saving file: {str(e)}")
+        print(f"❌ Error in save_transcript_to_file: {str(e)}")
+        import traceback
+        print(f"❌ Traceback: {traceback.format_exc()}")
         return ""
 
 
 def format_duration(duration_seconds: float) -> str:
     """Format duration from seconds to human-readable format"""
+    if not duration_seconds:
+        return "0m 0s"
     minutes = int(duration_seconds // 60)
     seconds = int(duration_seconds % 60)
     return f"{minutes}m {seconds}s"
@@ -399,6 +486,8 @@ def format_duration(duration_seconds: float) -> str:
 
 def format_timestamp(timestamp_ms: int) -> str:
     """Format timestamp from milliseconds to readable date"""
+    if not timestamp_ms or timestamp_ms == 0:
+        return "Unknown date"
     try:
         dt = datetime.fromtimestamp(timestamp_ms / 1000)
         return dt.strftime("%Y-%m-%d %H:%M:%S")
@@ -408,6 +497,8 @@ def format_timestamp(timestamp_ms: int) -> str:
 
 def format_time_seconds(seconds: float) -> str:
     """Format time in seconds to MM:SS format"""
+    if not seconds:
+        return "00:00"
     minutes = int(seconds // 60)
     remaining_seconds = int(seconds % 60)
     return f"{minutes:02d}:{remaining_seconds:02d}"
@@ -452,7 +543,11 @@ def print_transcript_content(content: Dict[str, Any], transcript_id: str):
     # Basic information
     print(f"📅 Date: {format_timestamp(content.get('date', 0))}")
     print(f"⏱️  Duration: {format_duration(content.get('duration', 0))}")
-    print(f"👥 Participants: {', '.join(content.get('participants', []))}")
+    participants = content.get('participants', [])
+    if participants:
+        print(f"👥 Participants: {', '.join(participants)}")
+    else:
+        print("👥 Participants: Not specified")
     
     # Summary section
     summary = content.get('summary', {})
@@ -478,15 +573,21 @@ def print_transcript_content(content: Dict[str, Any], transcript_id: str):
                     items = [item.strip() + '.' for item in action_items.split('.') if item.strip()]
                 else:
                     items = [action_items]  # Single action item
+            elif isinstance(action_items, list):
+                items = action_items
             else:
-                items = action_items  # Already a list
+                items = [str(action_items)]
             
             for i, item in enumerate(items, 1):
                 print(f"   {i}. {item}")
             print()
         
         if summary.get('keywords'):
-            print(f"🔍 Keywords: {', '.join(summary['keywords'])}\n")
+            keywords = summary['keywords']
+            if isinstance(keywords, list):
+                print(f"🔍 Keywords: {', '.join(keywords)}\n")
+            else:
+                print(f"🔍 Keywords: {keywords}\n")
         
         if summary.get('bullet_gist'):
             bullet_gist = summary['bullet_gist']
@@ -494,7 +595,6 @@ def print_transcript_content(content: Dict[str, Any], transcript_id: str):
             
             # Handle both string and list formats
             if isinstance(bullet_gist, str):
-                # If it's a string, split by common delimiters or show as single item
                 if '\n' in bullet_gist:
                     items = [item.strip() for item in bullet_gist.split('\n') if item.strip()]
                 elif ';' in bullet_gist:
@@ -503,8 +603,10 @@ def print_transcript_content(content: Dict[str, Any], transcript_id: str):
                     items = [item.strip() + '.' for item in bullet_gist.split('.') if item.strip()]
                 else:
                     items = [bullet_gist]  # Single item
+            elif isinstance(bullet_gist, list):
+                items = bullet_gist
             else:
-                items = bullet_gist  # Already a list
+                items = [str(bullet_gist)]
             
             for i, point in enumerate(items, 1):
                 print(f"   {i}. {point}")
@@ -538,7 +640,11 @@ def print_transcript_content(content: Dict[str, Any], transcript_id: str):
     filepath = save_transcript_to_file(content, transcript_id)
     if filepath:
         print(f"✅ Transcript saved to: {filepath}")
-        print(f"📁 File size: {os.path.getsize(filepath)} bytes")
+        try:
+            file_size = os.path.getsize(filepath)
+            print(f"📁 File size: {file_size} bytes")
+        except:
+            print("📁 File created successfully")
     else:
         print("❌ Failed to save transcript to file")
 
@@ -584,7 +690,7 @@ Examples:
             transcripts = manager.get_transcripts(args.limit)
             print_transcript_list(transcripts)
             
-            if transcripts:
+            if transcripts: 
                 print("\n💡 Tip: Use --id TRANSCRIPT_ID to view full transcript content")
                 print("💡 Tip: Use --search 'query' to search transcripts")
     
@@ -594,6 +700,7 @@ Examples:
         print("1. Check that your FIREFLIES_API_KEY is set in your .env file")
         print("2. Verify your API key has the correct permissions")
         print("3. Ensure the transcript ID is correct (if using --id)")
+        print("4. Check write permissions in the current directory")
         sys.exit(1)
 
 

@@ -80,7 +80,7 @@ async def user_colleague_week_12_emails(db: Session):
         try:
             user = get_one_user_id(db=db, user_id=colleague.user_id)
             
-            subject = f"Elevate - {user.first_name}'s Development Plan Colleague Survey"
+            subject = f"Your input on {user.first_name}’s leadership growth"
             colleague_email = colleague.email.split("@")
 
             # Get current dev plan
@@ -92,7 +92,7 @@ async def user_colleague_week_12_emails(db: Session):
             body = {
                 "colleague_email": colleague_email[0],
                 "user_name": user.first_name,
-                "survey_href": f"{WEB_URL}/survey/colleagues?token={colleague.survey_token}",
+                "survey_href": f"https://app.peakleadershipinstitute.com/survey/colleagues?token={colleague.survey_token}",
                 "strength": dev_plan_details["chosen_strength"]["name"],
                 "weakness": dev_plan_details["chosen_weakness"]["name"],
                 "strength_practice": dev_plan_details["strength_practice"][0].name,
@@ -130,7 +130,7 @@ async def user_colleague_week_12_emails_trigger(db: Session, user_id: str, backg
         try:
             user = get_one_user_id(db=db, user_id=colleague.user_id)
             
-            subject = f"Elevate - {user.first_name}'s Development Plan Colleague Survey"
+            subject = f"Your input on {user.first_name}’s leadership growth"
             colleague_email = colleague.email.split("@")
 
             # Get current dev plan
@@ -142,7 +142,7 @@ async def user_colleague_week_12_emails_trigger(db: Session, user_id: str, backg
             body = {
                 "colleague_email": colleague_email[0],
                 "user_name": user.first_name,
-                "survey_href": f"{WEB_URL}/survey/colleagues?token={colleague.survey_token}",
+                "survey_href": f"https://app.peakleadershipinstitute.com/survey/colleagues?token={colleague.survey_token}",
                 "strength": dev_plan_details["chosen_strength"]["name"],
                 "weakness": dev_plan_details["chosen_weakness"]["name"],
                 "strength_practice": dev_plan_details["strength_practice"][0].name,
