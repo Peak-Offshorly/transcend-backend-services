@@ -37,6 +37,8 @@ db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/company", tags=["company"])
 bucket = storage.bucket()
 
+# TODO: you need to change the logic of sending verification email
+# Where the user role will send a verification email that redirect to 
 @router.post("/create-company")
 async def create_company_endpoint(
     request: Request,
@@ -136,7 +138,7 @@ async def create_company_endpoint(
                 try:
                     firebase_user = auth.create_user(
                         email=entry.user_email,
-                        email_verified=False,
+                        email_verified=True,
                         disabled=False
                     )
                     

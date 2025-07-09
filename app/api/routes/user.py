@@ -366,7 +366,9 @@ async def check_if_active_user(db: db_dependency):
     )
   except Exception as error:
     raise HTTPException(status_code=400, detail=str(error))
-  
+
+# TODO: you need to change the logic of sending verification email
+# Where the user role will send a verification email that redirect to root (no change) just put it here
 @router.post("/set-user-role")
 async def set_user_role(request: Request, db: db_dependency):
     """
@@ -837,7 +839,7 @@ async def add_user_to_company_dashboard(
             try:
                 firebase_user = auth.create_user(
                     email=user_email,
-                    email_verified=False,
+                    email_verified=True,
                     disabled=False
                 )
 
