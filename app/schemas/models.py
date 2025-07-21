@@ -175,7 +175,8 @@ class CompanyDataSchema(BaseModel):
     id: Optional[str] = None
     name: str
     company_photo_url: Optional[str] = None
-    
+    company_size: Optional[str] = None
+    industry: Optional[str] = None
 
     class Config:
         orm_mode = True
@@ -216,4 +217,7 @@ class UpdateFirstAndLastNameSchema(BaseModel):
     last_name: Optional[str] = None
 
 class ResendLinkSchema(BaseModel):
+    email: str
+
+class EmailRequestSchema(BaseModel):
     email: str

@@ -9,7 +9,7 @@ from app.firebase.session import firebase, auth
 import firebase_admin
 from firebase_admin import auth, credentials, storage
 from app.database.models import Users, UserInvitation
-from app.schemas.models import SignUpSchema, UpdateUserSchema, LoginSchema, UserCompanyDetailsSchema,CustomTokenRequestSchema, AddUserToCompanySchema, AddUserToCompanyDashboardSchema, PasswordChangeRequest, UpdatePersonalDetailsSchema, ResetPasswordRequest, UpdateFirstAndLastNameSchema, ResendLinkSchema
+from app.schemas.models import SignUpSchema, UpdateUserSchema, LoginSchema, UserCompanyDetailsSchema,CustomTokenRequestSchema, AddUserToCompanySchema, AddUserToCompanyDashboardSchema, PasswordChangeRequest, UpdatePersonalDetailsSchema, ResetPasswordRequest, UpdateFirstAndLastNameSchema, ResendLinkSchema, EmailRequestSchema
 from app.database.connection import get_db
 from app.firebase.utils import verify_token
 from app.utils.users_crud import (
@@ -1431,5 +1431,56 @@ async def resend_email_invitation(request: Request, data: ResendLinkSchema, db: 
         status_code=200
         )
 
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
+
+@router.post("/get-user-details")
+async def get_user_details(data: EmailRequestSchema, db: db_dependency):
+    """
+    Retrieves user details including company_size, industry, company_id, email, and user_type.
+
+    Args:
+        data (EmailRequestSchema): The request data containing the user's email.
+        db (Session): The database session for performing the operation.
+
+    Returns:
+        dict: A JSON response with the user's details.
+
+    Example Response:
+        {
+            "email": "user@example.com",
+            "company_size": "11-50",
+            "industry": "Technology",
+            "company_id": "be7d9689-3117-5819-9ffe-fa2b9ca205fb",
+            "user_type": "admin"
+        }
+
+    Request Body:
+        {
+            "email": "user@example.com"
+        }
+    """
+    try:
+        user_email = data.email
+        
+        if not user_email:
+            raise HTTPException(status_code=400, detail="Email is required")
+        
+        # Get user by email
+        user = get_one_user(db=db, email=user_email)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        return JSONResponse(
+            content={
+                "email": user.email,
+                "company_size": user.company_size,
+                "industry": user.industry,
+                "company_id": user.company_id,
+                "user_type": user.user_type
+            },
+            status_code=200
+        )
+        
     except Exception as error:
         raise HTTPException(status_code=400, detail=str(error))
