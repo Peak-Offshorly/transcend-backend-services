@@ -22,63 +22,53 @@ async def send_all_test_emails(db: Session, test_user_id: str, test_colleague_em
         print(f"📧 Colleague test email: {test_colleague_email}")
         print("=" * 50)
         
-        # # 1. COMPLETE PROFILE EMAIL
-        # print("1️⃣ Sending: Complete Profile Email")
-        # await send_complete_profile(
-        #     email_to=test_colleague_email,
-        #     link=f"{WEB_URL}/complete-profile?code=TEST123",
-        #     firstname="Test",
-        #     lastname="Admin"
-        # )
+        # 1. COMPLETE PROFILE EMAIL
+        print("1️⃣ Sending: Complete Profile Email")
+        await send_complete_profile(
+            email_to=test_colleague_email,
+            link=f"{WEB_URL}/complete-profile?code=TEST123",
+            firstname="Test",
+            lastname="Admin"
+        )
         
         # 2. INITIAL COLLEAGUE INVITE EMAIL (with mock data)
-        # print("2️⃣ Sending: Initial Colleague Invite Email")
-        # colleague_email_split = test_colleague_email.split("@")
-        # colleague_body = {
-        #     "colleague_email": colleague_email_split[0],
-        #     "user_name": user.first_name,
-        #     "user_email_href": f"mailto:{user.email}",
-        #     "strength": "Communication",  # Mock data
-        #     "weakness": "Time Management",  # Mock data
-        #     "strength_practice": "Active Listening Practice",  # Mock data
-        #     "weakness_practice": "Priority Setting Exercises",  # Mock data
-        #     "strength_practice_dev_actions": [
-        #         {"answer": "Practice daily check-ins with team"},
-        #         {"answer": "Ask clarifying questions before responding"},
-        #         {"answer": "Review and prioritize tasks each morning"},
-        #         {"answer": "Practice daily check-ins with team"},
-        #         {"answer": "Ask clarifying questions before responding"},
-        #         {"answer": "Review and prioritize tasks each morning"},
-        #         {"answer": "Practice daily check-ins with team"},
-        #         {"answer": "Ask clarifying questions before responding"},
-        #         {"answer": "Review and prioritize tasks each morning"},
-        #         {"answer": "Review and prioritize tasks each morning"}
-        #     ],
-        #     "weakness_practice_dev_actions": [
-        #         {"answer": "Use time-blocking for important tasks"},
-        #         {"answer": "Review and prioritize tasks each morning"},
-        #         {"answer": "Review and prioritize tasks each morning"},
-        #         {"answer": "Review and prioritize tasks each morning"},
-        #         {"answer": "Review and prioritize tasks each morning"},
-        #         {"answer": "Review and prioritize tasks each morning"}
+        print("2️⃣ Sending: Initial Colleague Invite Email")
+        colleague_email_split = test_colleague_email.split("@")
+        colleague_body = {
+            "colleague_email": colleague_email_split[0],
+            "user_name": user.first_name,
+            "user_email_href": f"mailto:{user.email}",
+            "strength": "Communication",  # Mock data
+            "weakness": "Time Management",  # Mock data
+            "strength_practice": "Active Listening Practice",  # Mock data
+            "weakness_practice": "Priority Setting Exercises",  # Mock data
+            "strength_practice_dev_actions": [
+                {"answer": "Practice daily check-ins with team"},
+                {"answer": "Ask clarifying questions before responding"},
+     
+            ],
+            "weakness_practice_dev_actions": [
+                {"answer": "Use time-blocking for important tasks"},
+                {"answer": "Review and prioritize tasks each morning"},
+               
 
-        #     ],
-        #     "recommended_category": "Mindfulness",  # Mock data
-        #     "chosen_personal_practices": [
-        #         {"name": "Daily Meditation"},
-        #         {"name": "Breathing Exercises"}
-        #     ],
-        #     "sprint_number": 1
-        # }
+            ],
+            "recommended_category": "Mindfulness",  # Mock data
+            "chosen_personal_practices": [
+                {"name": "Daily Meditation"},
+                {"name": "Breathing Exercises"}
+            ],
+            "sprint_number": 1
+        }
         
-        # send_email_background(
-        #     background_tasks=background_tasks,
-        #     body=colleague_body,
-        #     email_to=test_colleague_email,
-        #     subject="Leadership Development Plan - Would Love Your Thoughts",
-        #     template_name="initial-colleague-email.html",
-        #     reply_to=user.email
-        # )
+        send_email_background(
+            background_tasks=background_tasks,
+            body=colleague_body,
+            email_to=test_colleague_email,
+            subject="Leadership Development Plan - Would Love Your Thoughts",
+            template_name="initial-colleague-email.html",
+            reply_to=user.email
+        )
         
         # # 3. COLLEAGUE SURVEY EMAIL (Week 4/12)
         # print("3️⃣ Sending: Colleague Survey Email (Week 4)")
@@ -115,7 +105,7 @@ async def send_all_test_emails(db: Session, test_user_id: str, test_colleague_em
         #     purpose="colleague_survey_test"
         # )
         
-        # # 4. USER WEEKLY PROGRESS CHECK EMAILS (Week 1, 2, 3)
+        # 4. USER WEEKLY PROGRESS CHECK EMAILS (Week 1, 2, 3)
         for week in [1, 2, 3]:
             print(f"4️⃣ Sending: User Weekly Progress Check - Week {week}")
             

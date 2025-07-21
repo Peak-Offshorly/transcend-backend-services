@@ -1297,6 +1297,53 @@ async def resend_verification_link(request: Request, data: ResendLinkSchema, db:
     except Exception as error:
         raise HTTPException(status_code=500, detail=str(error))
     
+@router.post("/check-user-company")
+async def check_user_company(request: Request, db: db_dependency):
+    """
+    Checks if a user has a company based on their email.
+
+    Returns:
+        dict: A JSON response indicating if the user has a company.
+    
+    Example Response:
+        {
+            "has_company": true,
+            "company_id": "be7d9689-3117-5819-9ffe-fa2b9ca205fb",
+            "user_id": "user_id_here"
+        }
+    
+    Request Body:
+        {
+            "email": "user_email@example.com"
+        }
+    """
+    try:
+        body = await request.json()
+        user_email = body.get("email")
+        
+        if not user_email:
+            raise HTTPException(status_code=400, detail="Email is required")
+        
+        # Get user by email
+        user = get_one_user(db=db, email=user_email)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Check if user has a company
+        has_company = user.company_id is not None
+        
+        return JSONResponse(
+            content={
+                "has_company": has_company,
+                "company_id": user.company_id,
+                "user_id": user.id
+            },
+            status_code=200
+        )
+        
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
+
 @router.post("/resend-email-invitation")
 async def resend_email_invitation(request: Request, data: ResendLinkSchema, db: db_dependency):
     """
