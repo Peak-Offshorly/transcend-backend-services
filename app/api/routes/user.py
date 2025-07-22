@@ -1301,7 +1301,7 @@ async def resend_verification_link(request: Request, data: ResendLinkSchema, db:
 
         verification_link = auth.generate_email_verification_link(user_email)
         await send_verification_email(user_email, verification_link)
-        return {"success": True, "message": f"Verification link sent to {user_email}", "verification_link": verification_link}
+        return {"success": True, "message": f"Verification link sent to {user_email}"}
     except auth.UserNotFoundError:
         raise HTTPException(status_code=404, detail="User with this email does not exist")
     except Exception as error:
