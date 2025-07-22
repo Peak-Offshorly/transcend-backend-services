@@ -125,6 +125,8 @@ async def create_company_endpoint(
         # assign the current user to the company as an admin
         current_user.company_id = created_company.id
         current_user.user_type = "admin"
+        current_user.company_size = data.company_size
+        current_user.industry = data.industry
 
         # update the current user's company and role in the database
         db.commit()
@@ -146,7 +148,9 @@ async def create_company_endpoint(
                         id=firebase_user.uid,
                         email=entry.user_email,
                         user_type=entry.user_role,
-                        company_id=created_company.id  
+                        company_id=created_company.id,
+                        company_size=data.company_size,
+                        industry=data.industry
                     )
 
                     db.add(new_user)
