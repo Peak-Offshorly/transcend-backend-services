@@ -813,6 +813,8 @@ async def add_user_to_company_dashboard(
         current_user_company_id = current_user.company_id
         current_user_first_name = current_user.first_name
         current_user_last_name = current_user.last_name
+        current_user_company_size = current_user.company_size
+        current_user_industry = current_user.industry
 
         
         if current_user.user_type != "admin":
@@ -820,6 +822,9 @@ async def add_user_to_company_dashboard(
 
         if not current_user_company_id:
             raise HTTPException(status_code=400, detail="Current user's company ID not found")
+        
+        if not current_user_company_size or not current_user_industry:
+            raise HTTPException(status_code=400, detail="Admin user must complete company profile (company size and industry) before adding users")
         
         current_user_company = get_company_by_id(db=db, company_id=current_user_company_id)
 
@@ -853,7 +858,10 @@ async def add_user_to_company_dashboard(
                 acc_activated=False,
                 company_id=current_user_company_id,
                 user_type=user_role,
+                company_size=current_user_company_size,
+                industry=current_user_industry,
             )
+            print(f"Creating user in dashboard: {new_user.email} with role {user_role} and company_size of {new_user.company_size} and industry {new_user.industry}")
 
             created_user = create_user_in_dashboard(db=db, user=new_user)
             if user_role == "admin":
@@ -877,6 +885,8 @@ async def add_user_to_company_dashboard(
                 "message": f"Account successfully created for {new_user.email}",
                 "user_id": firebase_user.uid,
                 "email": entry.user_email,
+                "company_size": current_user_company_size,
+                "industry": current_user_industry
             })
 
         # Return the response data for all users
@@ -1291,7 +1301,7 @@ async def resend_verification_link(request: Request, data: ResendLinkSchema, db:
 
         verification_link = auth.generate_email_verification_link(user_email)
         await send_verification_email(user_email, verification_link)
-        return {"success": True, "message": f"Verification link sent to {user_email}"}
+        return {"success": True, "message": f"Verification link sent to {user_email}", "verification_link": verification_link}
     except auth.UserNotFoundError:
         raise HTTPException(status_code=404, detail="User with this email does not exist")
     except Exception as error:

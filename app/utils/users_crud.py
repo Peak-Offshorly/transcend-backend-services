@@ -175,7 +175,9 @@ def create_user_in_dashboard(db: Session, user: Users):
         email = user.email,
         acc_activated = user.acc_activated,
         company_id = user.company_id,
-        user_type = user.user_type
+        user_type = user.user_type,
+        company_size = user.company_size,
+        industry = user.industry
 
     )
 
