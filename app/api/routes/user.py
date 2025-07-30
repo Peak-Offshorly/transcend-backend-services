@@ -45,6 +45,7 @@ from slowapi.util import get_remote_address
 from uuid import uuid4
 import os
 import secrets
+from app.fireflies.helpers import get_transcripts_list, get_transcript_content, chunk_transcript_by_tokens, evaluate_chunk_leadership
 
 db_dependency = Annotated[Session, Depends(get_db)]
 limiter = Limiter(key_func=get_remote_address)
@@ -1492,5 +1493,183 @@ async def get_user_details(data: EmailRequestSchema, db: db_dependency):
             status_code=200
         )
         
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
+
+
+@router.get("/recent-transcripts")
+async def get_recent_transcripts(request: Request, db: db_dependency):
+    """
+    Get the most recent Fireflies transcript, chunk it, and provide AI leadership evaluation
+    
+    This endpoint demonstrates the full pipeline:
+    1. Gets recent transcripts list
+    2. Takes the first transcript with sentences
+    3. Fetches full transcript content
+    4. Chunks it by tokens for AI evaluation
+    5. Uses GPT-4o mini to evaluate leadership behaviors in each chunk
+    
+    Args:
+        request: Request object containing the user token
+        db: Database session dependency
+        
+    Returns:
+        Chunked transcript data with AI leadership evaluations
+        
+    Example Response:
+        {
+            "transcript_id": "01JYMZHCVG2MH8BW...",
+            "transcript_title": "Weekly Team Meeting",
+            "transcript_metadata": {
+                "date": 1641234567890,
+                "duration": 3600,
+                "participants": ["John", "Sarah"]
+            },
+            "total_chunks": 3,
+            "chunks": [
+                {
+                    "chunk_id": 1,
+                    "content": "John [00:15]: Welcome everyone...",
+                    "token_count": 3420,
+                    "speakers": ["John", "Sarah"],
+                    "time_range": {"start_seconds": 15, "end_seconds": 425},
+                    "sentence_count": 45,
+                    "has_overlap": false
+                }
+            ],
+            "ai_evaluations": [
+                {
+                    "chunk_id": 1,
+                    "leadership_assessment": {
+                        "strengths": ["Clear communication", "Active listening"],
+                        "areas_for_improvement": ["Decision-making speed"],
+                        "specific_action": "Schedule weekly 1:1s with team",
+                        "overall_score": 7.5
+                    }
+                }
+            ]
+        }
+    """
+    try:
+        # Auth part - get the current user
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            raise HTTPException(status_code=401, detail="Authorization header is missing")
+        
+        id_token = auth_header.split(" ")[1]
+        decoded_token = auth.verify_id_token(id_token)
+        current_user_id = decoded_token.get("uid")
+        
+        # Get the current user from the database
+        current_user = get_one_user_id(db=db, user_id=current_user_id)
+        if not current_user:
+            raise HTTPException(status_code=400, detail="Current user not found")
+        
+        # Get transcript list
+        transcripts = get_transcripts_list()
+
+        
+        if not transcripts:
+            return JSONResponse(
+                content={
+                    "message": "No transcripts found",
+                    "transcripts": [],
+                    "total_chunks": 0,
+                    "chunks": []
+                },
+                status_code=200
+            )
+        
+        # Try to find a transcript with actual sentences
+        transcript_content = None
+        transcript_id_used = None
+        
+        for transcript in transcripts[:5]:  # Try up to 5 transcripts
+            transcript_id = transcript['id']
+            print(f"Trying transcript ID: {transcript_id}")
+            
+            content = get_transcript_content(transcript_id)
+            sentences = content.get('sentences')
+            
+            if sentences and len(sentences) > 0:
+                print(f"✅ Found transcript with {len(sentences)} sentences")
+                transcript_content = content
+                transcript_id_used = transcript_id
+                break  # Exit loop if we found a valid transcript
+            else:
+                print(f"❌ Transcript {transcript_id} has no sentences (duration: {transcript.get('duration', 0)}s)")
+        
+        if not transcript_content or not transcript_content.get('sentences'):
+            return JSONResponse(
+                content={
+                    "message": "No transcripts found with sentence data",
+                    "debug_info": {
+                        "transcripts_checked": len(transcripts[:5]),
+                        "first_transcript_duration": transcripts[0].get('duration'),
+                        "note": "Transcripts may still be processing or were too short to transcribe"
+                    },
+                    "total_chunks": 0,
+                    "chunks": []
+                },
+                status_code=200
+            )
+        
+        # Chunk the transcript
+        chunks = chunk_transcript_by_tokens(transcript_content)
+        transcript_id_used = transcript_id_used or transcripts[0]['id']
+        
+        # Add AI evaluation for each chunk
+        ai_evaluations = []
+        user_role = getattr(current_user, 'role', 'Team Member') 
+        company_context = getattr(current_user, 'industry', 'General Business')
+        
+        # Get user's name for personalized feedback, fallback to 'Laurent' for testing
+        first_name = getattr(current_user, 'first_name', '') or ''
+        last_name = getattr(current_user, 'last_name', '') or ''
+        user_name = f"{first_name} {last_name}".strip() or "Laurent"
+        
+        for chunk in chunks:
+            try:
+                evaluation = evaluate_chunk_leadership(
+                    chunk_content=chunk['content'],
+                    user_role=user_role,
+                    company_context=company_context,
+                    user_name="Laurent"  # Use Laurent for testing --> change to user_name in production
+                )
+                ai_evaluations.append({
+                    "chunk_id": chunk['chunk_id'],
+                    "leadership_assessment": evaluation
+                })
+            except Exception as e:
+                print(f"⚠️ Failed to evaluate chunk {chunk['chunk_id']}: {str(e)}")
+                ai_evaluations.append({
+                    "chunk_id": chunk['chunk_id'],
+                    "leadership_assessment": {
+                        "error": f"Evaluation failed: {str(e)}",
+                        "strengths": [],
+                        "areas_for_improvement": [],
+                        "specific_action": "Unable to provide recommendation",
+                        "overall_score": 0
+                    }
+                })
+        
+        return JSONResponse(
+            content={
+                "transcript_id": transcript_id_used,
+                "transcript_title": transcript_content.get('title', 'Untitled'),
+                "transcript_metadata": {
+                    "date": transcript_content.get('date'),
+                    "duration": transcript_content.get('duration'),
+                    "participants": transcript_content.get('participants', [])
+                },
+                "total_chunks": len(chunks),
+                "chunks": chunks,
+                "ai_evaluations": ai_evaluations
+            },
+            status_code=200
+        )
+        
+    except HTTPException as http_error:
+        raise http_error
     except Exception as error:
         raise HTTPException(status_code=400, detail=str(error))

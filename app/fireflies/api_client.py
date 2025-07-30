@@ -1,15 +1,22 @@
+"""
+Fireflies API Client - Clean GraphQL client for Fireflies.ai API
+"""
+
+import os
 import requests
 from typing import Dict, Any, Optional
-from app.const import FIREFLIES_API_KEY
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
-class FirefliesAPI:
+class FirefliesAPIClient:
     """
-    Base Fireflies API client for making GraphQL requests
+    Clean Fireflies API client for making GraphQL requests
     """
     
     def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key or FIREFLIES_API_KEY
+        self.api_key = api_key or os.getenv('FIREFLIES_API_KEY')
         self.base_url = "https://api.fireflies.ai/graphql"
         
         if not self.api_key:
@@ -17,7 +24,7 @@ class FirefliesAPI:
     
     def _make_request(self, query: str, variables: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
-        Make a GraphQL request to the Fireflies API (using official docs format)
+        Make a GraphQL request to the Fireflies API
         
         Args:
             query: GraphQL query string
@@ -35,11 +42,7 @@ class FirefliesAPI:
             'Authorization': f'Bearer {self.api_key}'
         }
         
-        data = {
-            'query': query
-        }
-        
-        # Add variables if provided
+        data = {'query': query}
         if variables:
             data['variables'] = variables
         
@@ -60,13 +63,12 @@ class FirefliesAPI:
     
     def test_connection(self) -> bool:
         """
-        Test if the API connection and key are working (using docs example)
+        Test if the API connection and key are working
         
         Returns:
             bool: True if connection successful, False otherwise
         """
         try:
-            # Use the exact query from Fireflies docs
             query = "{ users { name user_id } }"
             result = self._make_request(query)
             return "data" in result and "users" in result["data"]

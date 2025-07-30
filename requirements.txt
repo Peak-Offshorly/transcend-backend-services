@@ -87,3 +87,4 @@ urllib3==1.26.18
 uvicorn==0.29.0
 slowapi==0.1.9
 python-multipart==0.0.9
+tiktoken==0.5.2
