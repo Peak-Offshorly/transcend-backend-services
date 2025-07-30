@@ -11,18 +11,25 @@ class DevelopmentActionsPrompts:
       
       Your task is to provide 3 detailed personal development actions that are feasible, measurable, and time-bound in order to guide the employee in leveraging and improving their {type}. Provide exactly 3 personalized actions for the chosen {type} that can be done within a span of 2 weeks on an individual level or a team level, depending on the chosen practice.
 
-      Provide your answer in a JSON format with "actions" as the key. It should contain a list of 3 actions as values. Each action in the list should be an object that contains the name and details.
-      
-      The name pertains to the name or title of the action. 
-      The details contain the thorough details or information for the action as instructed below. The details for each action, which should be AT MOST 20 words and must ALWAYS include the following:
-      - Address the chosen {type} and the respective chosen practice that the employee wants to focus on
-      - Should be primarily focused on the employee's personal development, but it can include the team if necessary
-      - Be as thorough and specific in terms of what the employee should do
-      - Include a clear frequency or schedule (e.g., daily, every other day, weekly, at the start or end of the week)
-      - Provide a step-by-step improvement strategy that is comprehensive and insightful
-      - Be practical and reasonable given the employee's role, the company's context, and the time frame
-      - Be measurable in terms of progress and impact on the employee's leadership skills
-      - Be time-bound within a span of 2 weeks
+      **IMPORTANT**: Each action must be explicitly customized to include and reflect the following in the action's **details**:
+      - Industry: **{industry}**
+      - Role: **{employee_role}**
+      - Role Responsibilities: **{role_description}**
+      - Company Size: **{company_size} employees**
+
+      You MUST reference **at least 3 of these 4 elements directly within the text of each action**.
+
+      Provide your answer in a JSON format with `"actions"` as the key. It should contain a list of 3 actions as values. Each action in the list should be an object that contains:
+      - `"name"`: A clear, concise title for the action
+      - `"details"`: Specific instructions for the action (max 20 words) with the industry, role, responsibilities, or company size clearly in the instruction, including all of the following:
+
+      The `"details"` must:
+      - Address the chosen {type} and the specific chosen practice
+      - Be focused primarily on the employee's personal development, though it can include team interactions if appropriate
+      - Include a specific frequency or schedule (e.g., daily, weekly, twice in 2 weeks)
+      - Offer a clear, step-by-step or structured approach
+      - Be practical, measurable, realistic, and time-bound (within 2 weeks)
+      - Reflect the likely scope and scale of influence the employee has in their role and company
 
       Also use the following pieces of retrieved context to help GUIDE your answer. Your answer is not constrained to these pieces and you may use knowledge beyond the retrieved context, but take a deep breath and thoroughly make sure the details you generate are factual and reasonable.
       Context: {context}
@@ -63,20 +70,27 @@ class DevelopmentActionsPrompts:
       The employee will give you their personal and company details, their answers to a leadership questionnaire, their {type} as a leader, and the practice they want to focus on for their chosen {type}. They will also provide the actions you have previously given them that they do not want.
       
       Your task is to regenerate and provide 3 new detailed personal development actions that are feasible, measurable, and time-bound in order to guide the employee in leveraging and improving their {type}. Provide exactly 3 new personalized actions for the chosen {type} that can be done within a span of 2 weeks on an individual level or a team level, depending on the chosen practice.
-
-      Provide your new answer in a JSON format with "actions" as the key. It should contain a list of 3 actions as values. Each new action in the list should be an object that contains the name and details.
       
-      The name pertains to the name or title of the action. 
-      The details contain the thorough details or information for the action as instructed below. The details for each action, which should be AT MOST 20 words and must ALWAYS include the following:
-      - Address the chosen {type} and the respective chosen practice that the employee wants to focus on
-      - Should be primarily focused on the employee's personal development, but it can include the team if necessary
-      - Be as thorough and specific in terms of what the employee should do
-      - Include a clear frequency or schedule (e.g., daily, every other day, weekly, at the start or end of the week)
-      - Provide a step-by-step improvement strategy that is comprehensive and insightful
-      - Be practical and reasonable given the employee's role, the company's context, and the time frame
-      - Be measurable in terms of progress and impact on the employee's leadership skills
-      - Be time-bound within a span of 2 weeks
+      **IMPORTANT**: Each action must be explicitly customized to include and reflect the following in the action's **details**:
+      - Industry: **{industry}**
+      - Role: **{employee_role}**
+      - Role Responsibilities: **{role_description}**
+      - Company Size: **{company_size} employees**
 
+      You MUST reference **at least 3 of these 4 elements directly within the text of each action**.
+
+      Provide your answer in a JSON format with `"actions"` as the key. It should contain a list of 3 actions as values. Each action in the list should be an object that contains:
+      - `"name"`: A clear, concise title for the action
+      - `"details"`: Specific instructions for the action (max 20 words) with the industry, role, responsibilities, or company size clearly in the instruction, including all of the following:
+
+      The `"details"` must:
+      - Address the chosen {type} and the specific chosen practice
+      - Be focused primarily on the employee's personal development, though it can include team interactions if appropriate
+      - Include a specific frequency or schedule (e.g., daily, weekly, twice in 2 weeks)
+      - Offer a clear, step-by-step or structured approach
+      - Be practical, measurable, realistic, and time-bound (within 2 weeks)
+      - Reflect the likely scope and scale of influence the employee has in their role and company
+      
       Also use the following pieces of retrieved context to help GUIDE your new answer. Your answer is not constrained to these pieces and you may use knowledge beyond the retrieved context, but take a deep breath and thoroughly make sure the details you generate are factual and reasonable.
       Context: {context}
 
