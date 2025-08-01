@@ -36,3 +36,7 @@ REDIRECT_URI = 'http://localhost:5173/oauth2callback'
 
 # Fireflies API Key
 FIREFLIES_API_KEY = os.getenv('FIREFLIES_API_KEY')
+
+# AI Evaluation Configuration
+AI_EVALUATION_CONCURRENCY_LIMIT = int(os.getenv('AI_EVALUATION_CONCURRENCY_LIMIT', '5'))
+AI_EVALUATION_TIMEOUT_SECONDS = int(os.getenv('AI_EVALUATION_TIMEOUT_SECONDS', '30'))

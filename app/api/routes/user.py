@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFi
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
-from typing import Annotated
+from typing import Annotated, Dict, Any
 from app.firebase.session import firebase, auth
 import firebase_admin
 from firebase_admin import auth, credentials, storage
@@ -45,7 +45,8 @@ from slowapi.util import get_remote_address
 from uuid import uuid4
 import os
 import secrets
-from app.fireflies.helpers import get_transcripts_list, get_transcript_content, chunk_transcript_by_tokens, evaluate_chunk_leadership
+from app.fireflies.helpers import get_transcripts_list, get_transcript_content, chunk_transcript_by_tokens, evaluate_chunk_leadership, evaluate_chunks_concurrently, count_transcript_sentences, summarize_evaluated_chunks
+from app.const import AI_EVALUATION_CONCURRENCY_LIMIT, AI_EVALUATION_TIMEOUT_SECONDS
 
 db_dependency = Annotated[Session, Depends(get_db)]
 limiter = Limiter(key_func=get_remote_address)
@@ -1552,124 +1553,240 @@ async def get_recent_transcripts(request: Request, db: db_dependency):
     """
     try:
         # Auth part - get the current user
-        auth_header = request.headers.get("Authorization")
-        if not auth_header:
-            raise HTTPException(status_code=401, detail="Authorization header is missing")
+        # auth_header = request.headers.get("Authorization")
+        # if not auth_header:
+        #     raise HTTPException(status_code=401, detail="Authorization header is missing")
         
-        id_token = auth_header.split(" ")[1]
-        decoded_token = auth.verify_id_token(id_token)
-        current_user_id = decoded_token.get("uid")
+        # id_token = auth_header.split(" ")[1]
+        # decoded_token = auth.verify_id_token(id_token)
+        # current_user_id = decoded_token.get("uid")
         
-        # Get the current user from the database
-        current_user = get_one_user_id(db=db, user_id=current_user_id)
-        if not current_user:
-            raise HTTPException(status_code=400, detail="Current user not found")
+        # # Get the current user from the database
+        # current_user = get_one_user_id(db=db, user_id=current_user_id)
+        # if not current_user:
+        #     raise HTTPException(status_code=400, detail="Current user not found")
         
-        # Get transcript list
-        transcripts = get_transcripts_list()
+        # # Get transcript list
+        # transcripts = get_transcripts_list()
 
         
-        if not transcripts:
-            return JSONResponse(
-                content={
-                    "message": "No transcripts found",
-                    "transcripts": [],
-                    "total_chunks": 0,
-                    "chunks": []
-                },
-                status_code=200
-            )
+        # if not transcripts:
+        #     return JSONResponse(
+        #         content={
+        #             "message": "No transcripts found",
+        #             "transcripts": [],
+        #             "total_chunks": 0,
+        #             "chunks": []
+        #         },
+        #         status_code=200
+        #     )
         
-        # Try to find a transcript with actual sentences
-        transcript_content = None
-        transcript_id_used = None
+        # # Try to find a transcript with actual sentences
+        # transcript_content = None
+        # transcript_id_used = None
         
-        for transcript in transcripts[:5]:  # Try up to 5 transcripts
-            transcript_id = transcript['id']
-            print(f"Trying transcript ID: {transcript_id}")
+        # for transcript in transcripts[:5]:  # Try up to 5 transcripts
+        #     transcript_id = transcript['id']
+        #     print(f"Trying transcript ID: {transcript_id}")
             
-            content = get_transcript_content(transcript_id)
-            sentences = content.get('sentences')
+        #     content = get_transcript_content(transcript_id)
+        #     sentences = content.get('sentences')
             
-            if sentences and len(sentences) > 0:
-                print(f"✅ Found transcript with {len(sentences)} sentences")
-                transcript_content = content
-                transcript_id_used = transcript_id
-                break  # Exit loop if we found a valid transcript
-            else:
-                print(f"❌ Transcript {transcript_id} has no sentences (duration: {transcript.get('duration', 0)}s)")
+        #     if sentences and len(sentences) > 0:
+        #         print(f"✅ Found transcript with {len(sentences)} sentences")
+        #         transcript_content = content
+        #         transcript_id_used = transcript_id
+        #         break  # Exit loop if we found a valid transcript
+        #     else:
+        #         print(f"❌ Transcript {transcript_id} has no sentences (duration: {transcript.get('duration', 0)}s)")
         
-        if not transcript_content or not transcript_content.get('sentences'):
-            return JSONResponse(
-                content={
-                    "message": "No transcripts found with sentence data",
-                    "debug_info": {
-                        "transcripts_checked": len(transcripts[:5]),
-                        "first_transcript_duration": transcripts[0].get('duration'),
-                        "note": "Transcripts may still be processing or were too short to transcribe"
-                    },
-                    "total_chunks": 0,
-                    "chunks": []
-                },
-                status_code=200
-            )
+        # if not transcript_content or not transcript_content.get('sentences'):
+        #     return JSONResponse(
+        #         content={
+        #             "message": "No transcripts found with sentence data",
+        #             "debug_info": {
+        #                 "transcripts_checked": len(transcripts[:5]),
+        #                 "first_transcript_duration": transcripts[0].get('duration'),
+        #                 "note": "Transcripts may still be processing or were too short to transcribe"
+        #             },
+        #             "total_chunks": 0,
+        #             "chunks": []
+        #         },
+        #         status_code=200
+        #     )
+
+        
+
+        # Load local transcript file since Fireflies API is not working
+        def load_local_transcript(file_path: str) -> Dict[str, Any]:
+            """
+            Load and parse local transcript file into Fireflies-compatible format
+            
+            Args:
+                file_path: Path to the transcript text file
+                
+            Returns:
+                Dict in Fireflies transcript format with sentences array
+            """
+            import re
+            from pathlib import Path
+            
+            try:
+                # Read the transcript file
+                transcript_path = Path(file_path)
+                if not transcript_path.exists():
+                    raise FileNotFoundError(f"Transcript file not found: {file_path}")
+                
+                with open(transcript_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                
+                # Parse transcript content into sentences
+                sentences = []
+                sentence_id = 0
+                
+                # Split by lines and process each line
+                lines = content.strip().split('\n')
+                current_speaker = None
+                current_time = 0
+                
+                for line in lines:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    
+                    # Check if line contains speaker and timestamp: "Speaker [MM:SS]:"
+                    speaker_match = re.match(r'^(.+?)\s*\[(\d{2}):(\d{2})\]:\s*(.*)$', line)
+                    
+                    if speaker_match:
+                        speaker_name = speaker_match.group(1).strip()
+                        minutes = int(speaker_match.group(2))
+                        seconds = int(speaker_match.group(3))
+                        text = speaker_match.group(4).strip()
+                        
+                        current_speaker = speaker_name
+                        current_time = minutes * 60 + seconds
+                        
+                        # Add sentence if there's text
+                        if text:
+                            sentences.append({
+                                "speaker_name": current_speaker,
+                                "speaker_id": f"speaker_{len(set(s.get('speaker_name', '') for s in sentences))}",
+                                "text": text,
+                                "start_time": current_time,
+                                "end_time": current_time + 5  # Estimate 5 seconds per sentence
+                            })
+                            sentence_id += 1
+                    else:
+                        # This is continuation text from previous speaker
+                        if current_speaker and line:
+                            sentences.append({
+                                "speaker_name": current_speaker,
+                                "speaker_id": f"speaker_{current_speaker.lower().replace(' ', '_')}",
+                                "text": line,
+                                "start_time": current_time,
+                                "end_time": current_time + 5
+                            })
+                            sentence_id += 1
+                            current_time += 5  # Increment time for continuation
+                
+                # Create transcript object in Fireflies format
+                transcript_data = {
+                    "id": "local_transcript_tkrg_planning",
+                    "title": "TKRG Planning Meeting - Local File",
+                    "date": 1719792000000,  # 2024-07-01 timestamp
+                    "duration": sentences[-1]["end_time"] if sentences else 0,
+                    "participants": list(set(s["speaker_name"] for s in sentences)),
+                    "sentences": sentences,
+                    "summary": {
+                        "overview": "TKRG Planning meeting transcript loaded from local file",
+                        "action_items": [],
+                        "keywords": ["planning", "meeting", "TKRG"],
+                        "bullet_gist": [],
+                        "gist": "Planning meeting discussion",
+                        "outline": []
+                    }
+                }
+                
+                print(f"✅ Loaded local transcript with {len(sentences)} sentences")
+                print(f"   Participants: {', '.join(transcript_data['participants'])}")
+                print(f"   Duration: {transcript_data['duration']} seconds")
+                
+                return transcript_data
+                
+            except Exception as e:
+                print(f"❌ Error loading local transcript: {str(e)}")
+                raise
+        
+        # Load the local transcript file
+        transcript_file_path = "app/fireflies/transcripts/2025-07-01 - TKRG Planning.txt"
+        transcript_content = load_local_transcript(transcript_file_path)
         
         # Chunk the transcript
         chunks = chunk_transcript_by_tokens(transcript_content)
-        transcript_id_used = transcript_id_used or transcripts[0]['id']
         
-        # Add AI evaluation for each chunk
-        ai_evaluations = []
-        user_role = getattr(current_user, 'role', 'Team Member') 
-        company_context = getattr(current_user, 'industry', 'General Business')
+        # Prepare user context for AI evaluation (using default values since auth is commented out)
+        user_role = "Team Member"  # getattr(current_user, 'role', 'Team Member') 
+        company_context = "General Business"  # getattr(current_user, 'industry', 'General Business')
         
-        # Get user's name for personalized feedback, fallback to 'Laurent' for testing
-        first_name = getattr(current_user, 'first_name', '') or ''
-        last_name = getattr(current_user, 'last_name', '') or ''
-        user_name = f"{first_name} {last_name}".strip() or "Laurent"
+        # Get user's name for personalized feedback (using default since auth is commented out)
+        user_name = "France"  # Default test user name
         
-        for chunk in chunks:
-            try:
-                evaluation = evaluate_chunk_leadership(
-                    chunk_content=chunk['content'],
-                    user_role=user_role,
-                    company_context=company_context,
-                    user_name="Laurent"  # Use Laurent for testing --> change to user_name in production
-                )
-                ai_evaluations.append({
-                    "chunk_id": chunk['chunk_id'],
-                    "leadership_assessment": evaluation
-                })
-            except Exception as e:
-                print(f"⚠️ Failed to evaluate chunk {chunk['chunk_id']}: {str(e)}")
-                ai_evaluations.append({
-                    "chunk_id": chunk['chunk_id'],
-                    "leadership_assessment": {
-                        "error": f"Evaluation failed: {str(e)}",
-                        "strengths": [],
-                        "areas_for_improvement": [],
-                        "specific_action": "Unable to provide recommendation",
-                        "overall_score": 0
-                    }
-                })
+        # Use concurrent evaluation with comprehensive usage tracking
+        evaluation_result = await evaluate_chunks_concurrently(
+            chunks=chunks,
+            user_role=user_role,
+            company_context=company_context,
+            user_name=user_name,
+            concurrency_limit=AI_EVALUATION_CONCURRENCY_LIMIT,
+            timeout_seconds=AI_EVALUATION_TIMEOUT_SECONDS
+        )
+        
+        # Summarize the evaluated chunks
+        transcript_metadata = {
+            "title": transcript_content.get("title", "Untitled Meeting"),
+            "duration": transcript_content.get("duration", 0),
+            "participants": transcript_content.get("participants", [])
+        }
+        
+        summary_result = summarize_evaluated_chunks(
+            evaluated_chunks_data=evaluation_result,
+            user_name=user_name,
+            user_role=user_role,
+            company_context=company_context,
+            transcript_metadata=transcript_metadata
+        )
         
         return JSONResponse(
             content={
-                "transcript_id": transcript_id_used,
-                "transcript_title": transcript_content.get('title', 'Untitled'),
-                "transcript_metadata": {
-                    "date": transcript_content.get('date'),
-                    "duration": transcript_content.get('duration'),
-                    "participants": transcript_content.get('participants', [])
-                },
-                "total_chunks": len(chunks),
-                "chunks": chunks,
-                "ai_evaluations": ai_evaluations
+                "chunked_evaluations": evaluation_result["ai_evaluations"],
+                "usage_analytics": evaluation_result["usage_analytics"],
+                "overall_summary": summary_result["overall_leadership_assessment"]
             },
             status_code=200
         )
         
     except HTTPException as http_error:
         raise http_error
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
+    
+
+
+@router.get("/testing-fireflies")
+async def testing_fireflies():
+    try: 
+        print("Testing Fireflies API...")
+        transcripts = get_transcript_content("01JZ10YZZKHEEH9WCE9A3RJTSE")
+        if not transcripts:
+            print("No transcripts found")
+            return JSONResponse(
+                content={"message": "No transcripts found"},
+                status_code=200
+            )
+        print(f"Found {len(transcripts)} transcripts")
+        return JSONResponse(
+            content={"transcripts": transcripts},
+            status_code=200
+        )
     except Exception as error:
         raise HTTPException(status_code=400, detail=str(error))
