@@ -461,7 +461,9 @@ async def evaluate_chunk_leadership_async(
     chunk_content: str,
     user_role: str = "Team Member",
     company_context: str = "General Business",
-    user_name: str = ""
+    user_name: str = "",
+    db: Session = None,
+    user_id: str = None
 ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     """
     Async version of evaluate_chunk_leadership for concurrent processing with token usage tracking
@@ -471,10 +473,34 @@ async def evaluate_chunk_leadership_async(
         user_role: The user's role in the organization
         company_context: Company/industry context for relevant advice
         user_name: The user's name for personalized feedback (default: "Laurent")
+        db: Database session for fetching user traits (optional)
+        user_id: User ID for fetching chosen traits (optional)
 
     Returns:
         Tuple of (evaluation_result, token_usage_info)
     """
+    # Initialize chosen traits variables
+    strength_name = None
+    weakness_name = None
+
+    # Get user's chosen traits if database access is available
+    if db and user_id:
+        try:
+            # Get user's current development plan
+            current_dev_plan = await dev_plan_get_current(db=db, user_id=user_id)
+            if current_dev_plan:
+                dev_plan_id = str(current_dev_plan["dev_plan_id"])
+
+                # Get user's chosen traits (strength and weakness)
+                chosen_traits = chosen_traits_get(
+                    db=db, user_id=user_id, dev_plan_id=dev_plan_id)
+                if chosen_traits:
+                    strength_name = chosen_traits["chosen_strength"]["name"]
+                    weakness_name = chosen_traits["chosen_weakness"]["name"]
+        except Exception as e:
+            # If traits fetching fails, continue without them
+            print(f"Warning: Could not fetch user traits: {str(e)}")
+    
     # Use GPT-4o mini for cost efficiency
     llm = ChatOpenAI(
         model="gpt-4.1-nano",
@@ -484,63 +510,114 @@ async def evaluate_chunk_leadership_async(
 
     prompt_template = PromptTemplate(
         template="""
-        You are an expert leadership coach analyzing a specific portion of {user_name}'s meeting performance. Your role is to provide evidence-based feedback on their actual contributions and dialogue.
+        You are an expert leadership coach specializing in real-time communication analysis. Your role is to provide specific, actionable feedback on {user_name}'s actual dialogue and leadership behavior during this meeting segment.
 
-        **IMPORTANT: First, check if {user_name} speaks or participates in this transcript chunk.**
+        **Leadership Context:**
+        - Name: {user_name}
+        - Role: {user_role}
+        - Company: {company_context}
+        {development_focus_context}
 
-        Consider {user_name}'s role: {user_role}
-        Company context: {company_context}
-       
-
-        Transcript content:
+        **Meeting Transcript Segment:**
         {chunk_content}
 
-        **If {user_name} does NOT appear in the transcript:**
-        Evaluate whether their silence was strategic or a missed opportunity based on the meeting content and their leadership role.
+        **ANALYSIS INSTRUCTIONS:**
 
-        **If {user_name} DOES appear in the transcript:**
-        Focus on specific dialogue analysis:
-        - What specific words, phrases, or approaches did they use?
-        - Which parts of their dialogue were effective for their leadership goals?
-        - Where could they have used different language or techniques?
-        - What leadership best practices did they demonstrate or miss?
+        1. **First, determine {user_name}'s participation level in this segment**
+        
+        2. **Focus on leadership communication, NOT task management**
+        - Analyze HOW they communicated, not WHAT tasks were discussed
+        - Ignore action items like "finish report," "send to Bill," etc.
+        - Focus on influence, persuasion, team dynamics, decision-making style
 
-        Provide your assessment in JSON format:
+        3. **Provide evidence-based coaching tied to their development goals**
 
-        **If {user_name} did not speak:**
-        - "participation_status": "silent"
-        - "silence_analysis": Brief explanation of the meeting content they remained silent during 
-        - "silence_assessment": "strategic" or "missed_opportunity" with specific reasoning
-        - "coaching_feedback": What you could have contributed based on the discussion topic
+        **OUTPUT FORMAT (JSON):**
 
+        **If {user_name} was SILENT in this segment:**
+        {{
+            "participation_status": "silent",
+            "segment_context": "Brief description of what was being discussed during their silence",
+            "silence_evaluation": {{
+                "assessment": "strategic_listening" | "missed_leadership_opportunity" | "appropriate_restraint",
+                "reasoning": "Specific explanation based on meeting content and their role"
+            }},
+            "development_insights": {{
+                "strength_application": "How their {strength_name} could have been leveraged in this moment",
+                "growth_opportunity": "Specific way their {weakness_name} manifested or could be addressed",
+                "recommended_intervention": "Exact words or approach they could have used"
+            }},
+            "coaching_feedback": "Direct, specific guidance on when and how to engage in similar future scenarios"
+        }}
 
-        **If {user_name} did speak:**
-        - "participation_status": "active"
-        - "effective_dialogue": Array of specific quotes or approaches you used well, with explanation of why they worked
-        - "dialogue_improvements": Array of specific moments where you could have used different language, including what you said vs. what you could have said
-        - "leadership_techniques_applied": Which leadership best practices you demonstrated in your actual words
-        - "leadership_techniques_missed": Which techniques you could have applied in specific moments
-        - "coaching_feedback": Direct feedback on your communication patterns in this segment
+        **If {user_name} was ACTIVE in this segment:**
+        {{
+            "participation_status": "active",
+            "dialogue_analysis": {{
+                "effective_moments": [
+                    {{
+                        "quote": "Exact words they said",
+                        "leadership_technique": "Specific technique demonstrated (e.g., 'active listening,' 'stakeholder alignment,' 'decisive communication')",
+                        "why_effective": "How this advanced their leadership goals"
+                    }}
+                ],
+                "improvement_opportunities": [
+                    {{
+                        "what_they_said": "Exact quote",
+                        "missed_technique": "Leadership technique they could have applied",
+                        "alternative_approach": "Specific words/phrases they could have used instead",
+                        "potential_impact": "How this change would have improved the outcome"
+                    }}
+                ]
+            }},
+            "development_progress": {{
+                "strength_demonstration": "Specific examples of how they leveraged their {strength_name} in their actual words",
+                "growth_area_progress": "Evidence of improvement or continued challenge with {weakness_name}",
+                "development_recommendation": "Specific communication techniques to practice for next meeting"
+            }},
+            "communication_patterns": {{
+                "positive_patterns": "Recurring effective communication behaviors observed",
+                "limiting_patterns": "Communication habits that may be hindering their leadership effectiveness"
+            }},
+            "coaching_feedback": "Specific, actionable advice for improving their communication approach in similar future situations"
+        }}
 
-
-        Ground all feedback in actual quotes and specific moments from the transcript. Focus on the language and dialogue choices rather than general leadership advice.
+        **COACHING STANDARDS:**
+        - Ground ALL feedback in actual transcript evidence
+        - Focus on communication style, influence techniques, and team dynamics
+        - Tie insights directly to their stated development goals ({strength_name} and {weakness_name})
+        - Provide specific alternative phrasings when suggesting improvements
+        - Avoid generic leadership advice - make it specific to their actual behavior
+        - Remember: Leadership development is about HOW they communicate, not WHAT tasks they manage
         """,
-        input_variables=["chunk_content", "user_role", "company_context", "user_name"]
+        input_variables=["chunk_content", "user_role", "company_context", "user_name", "development_focus_context", "strength_name", "weakness_name"]
     )
     try:
         # Create chain without JsonOutputParser to access raw response
         chain = prompt_template | llm
 
-        # Create development focus context (empty for individual chunk evaluation)
+        # Create development focus context if traits are available
         development_focus_context = ""
-        
+        if strength_name and weakness_name:
+            development_focus_context = f"""
+
+                {user_name}'s Current Development Focus:
+                - Strength to leverage: {strength_name}
+                - Area to improve: {weakness_name}
+
+                Please provide specific feedback on how {user_name} demonstrated progress or opportunities in these areas during this segment.
+            """
+
+       
         # Use ainvoke for async execution and get raw response
         raw_response = await chain.ainvoke({
             "chunk_content": chunk_content,
             "user_role": user_role,
             "development_focus_context": development_focus_context,
             "company_context": company_context,
-            "user_name": user_name
+            "user_name": user_name,
+            "strength_name": strength_name,
+            "weakness_name": weakness_name
         })
 
         # Extract token usage from response metadata
@@ -621,7 +698,9 @@ async def evaluate_chunks_concurrently(
     company_context: str = "General Business",
     user_name: str = "Laurent",
     concurrency_limit: int = 5,
-    timeout_seconds: int = 30
+    timeout_seconds: int = 30,
+    db: Session = None,
+    user_id: str = None
 ) -> Dict[str, Any]:
     """
     Evaluate multiple transcript chunks concurrently with comprehensive usage tracking
@@ -633,6 +712,8 @@ async def evaluate_chunks_concurrently(
         user_name: The user's name for personalized feedback
         concurrency_limit: Maximum number of concurrent evaluations (default: 5)
         timeout_seconds: Timeout for each evaluation task (default: 30)
+        db: Database session for fetching user traits (optional)
+        user_id: User ID for fetching chosen traits (optional)
 
     Returns:
         Dict containing AI evaluations and comprehensive usage analytics
@@ -684,7 +765,9 @@ async def evaluate_chunks_concurrently(
                         chunk_content=chunk['content'],
                         user_role=user_role,
                         company_context=company_context,
-                        user_name=user_name
+                        user_name=user_name,
+                        db=db,
+                        user_id=user_id
                     ),
                     timeout=timeout_seconds
                 )

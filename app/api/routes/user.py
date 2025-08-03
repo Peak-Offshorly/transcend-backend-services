@@ -1740,7 +1740,9 @@ async def get_recent_transcripts(request: Request, db: db_dependency):
             company_context=company_context,
             user_name=user_name,
             concurrency_limit=AI_EVALUATION_CONCURRENCY_LIMIT,
-            timeout_seconds=AI_EVALUATION_TIMEOUT_SECONDS
+            timeout_seconds=AI_EVALUATION_TIMEOUT_SECONDS,
+            db=db,
+            user_id=None  # Currently hardcoded - should be replaced with actual user_id when auth is implemented
         )
         
         # Summarize the evaluated chunks
