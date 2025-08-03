@@ -45,8 +45,10 @@ from slowapi.util import get_remote_address
 from uuid import uuid4
 import os
 import secrets
-from app.fireflies.helpers import get_transcripts_list, get_transcript_content, chunk_transcript_by_tokens, evaluate_chunk_leadership, evaluate_chunks_concurrently, count_transcript_sentences, summarize_evaluated_chunks
+from app.fireflies.helpers import get_transcripts_list, get_transcript_content, chunk_transcript_by_tokens, evaluate_chunks_concurrently, count_transcript_sentences, summarize_evaluated_chunks
 from app.const import AI_EVALUATION_CONCURRENCY_LIMIT, AI_EVALUATION_TIMEOUT_SECONDS
+from app.utils.dev_plan_crud import dev_plan_get_current
+from app.utils.traits_crud import chosen_traits_get
 
 db_dependency = Annotated[Session, Depends(get_db)]
 limiter = Limiter(key_func=get_remote_address)
@@ -1553,18 +1555,18 @@ async def get_recent_transcripts(request: Request, db: db_dependency):
     """
     try:
         # Auth part - get the current user
-        # auth_header = request.headers.get("Authorization")
-        # if not auth_header:
-        #     raise HTTPException(status_code=401, detail="Authorization header is missing")
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            raise HTTPException(status_code=401, detail="Authorization header is missing")
         
-        # id_token = auth_header.split(" ")[1]
-        # decoded_token = auth.verify_id_token(id_token)
-        # current_user_id = decoded_token.get("uid")
+        id_token = auth_header.split(" ")[1]
+        decoded_token = auth.verify_id_token(id_token)
+        current_user_id = decoded_token.get("uid")
         
-        # # Get the current user from the database
-        # current_user = get_one_user_id(db=db, user_id=current_user_id)
-        # if not current_user:
-        #     raise HTTPException(status_code=400, detail="Current user not found")
+        # Get the current user from the database
+        current_user = get_one_user_id(db=db, user_id=current_user_id)
+        if not current_user:
+            raise HTTPException(status_code=400, detail="Current user not found")
         
         # # Get transcript list
         # transcripts = get_transcripts_list()
@@ -1729,7 +1731,7 @@ async def get_recent_transcripts(request: Request, db: db_dependency):
         company_context = "General Business"  # getattr(current_user, 'industry', 'General Business')
         
         # Get user's name for personalized feedback (using default since auth is commented out)
-        user_name = "France"  # Default test user name
+        user_name = "Laurent"  # Default test user name
         
         # Use concurrent evaluation with comprehensive usage tracking
         evaluation_result = await evaluate_chunks_concurrently(
@@ -1748,12 +1750,14 @@ async def get_recent_transcripts(request: Request, db: db_dependency):
             "participants": transcript_content.get("participants", [])
         }
         
-        summary_result = summarize_evaluated_chunks(
+        summary_result = await summarize_evaluated_chunks(
             evaluated_chunks_data=evaluation_result,
             user_name=user_name,
             user_role=user_role,
             company_context=company_context,
-            transcript_metadata=transcript_metadata
+            transcript_metadata=transcript_metadata,
+            db=db,
+            user_id=current_user_id  # Auth is commented out - when enabled, use current_user_id from token
         )
         
         return JSONResponse(
@@ -1772,21 +1776,75 @@ async def get_recent_transcripts(request: Request, db: db_dependency):
     
 
 
+
+# async def testing_fireflies():
+#     try: 
+#         print("Testing Fireflies API...")
+#         transcripts = get_transcript_content("01JZ10YZZKHEEH9WCE9A3RJTSE")
+#         if not transcripts:
+#             print("No transcripts found")
+#             return JSONResponse(
+#                 content={"message": "No transcripts found"},
+#                 status_code=200
+#             )
+#         print(f"Found {len(transcripts)} transcripts")
+#         return JSONResponse(
+#             content={"transcripts": transcripts},
+#             status_code=200
+#         )
+#     except Exception as error:
+#         raise HTTPException(status_code=400, detail=str(error))
 @router.get("/testing-fireflies")
-async def testing_fireflies():
-    try: 
-        print("Testing Fireflies API...")
-        transcripts = get_transcript_content("01JZ10YZZKHEEH9WCE9A3RJTSE")
-        if not transcripts:
-            print("No transcripts found")
-            return JSONResponse(
-                content={"message": "No transcripts found"},
-                status_code=200
-            )
-        print(f"Found {len(transcripts)} transcripts")
-        return JSONResponse(
-            content={"transcripts": transcripts},
-            status_code=200
-        )
-    except Exception as error:
-        raise HTTPException(status_code=400, detail=str(error))
+async def get_user_leadership_context(db: db_dependency, token = Depends(verify_token)) -> Dict[str, Any]:
+    """
+    Get user's leadership profile context including strengths, weaknesses, and development guidance
+    
+    Args:
+        db: Database session (injected)
+        token: User authentication token (injected)
+        
+    Returns:
+        Dict containing user's leadership context or None if no profile found
+        
+    Example:
+        {
+            "chosen_strength": "coaching",
+            "chosen_weakness": "listening", 
+            "development_guidance": "Focus on leveraging coaching skills while actively improving listening...",
+            "has_profile": True
+        }
+    """
+    try:
+        user_id = token
+        # Get user's current development plan
+        current_dev_plan = await dev_plan_get_current(db=db, user_id=user_id)
+        if not current_dev_plan:
+            return {"has_profile": False, "message": "No active development plan found"}
+        
+        dev_plan_id = str(current_dev_plan["dev_plan_id"])
+        
+        # Get user's chosen traits (strength and weakness)
+        chosen_traits = chosen_traits_get(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
+        if not chosen_traits:
+            return {"has_profile": False, "message": "No chosen traits found"}
+        
+        strength_name = chosen_traits["chosen_strength"]["name"]
+        weakness_name = chosen_traits["chosen_weakness"]["name"]
+
+        
+        
+        return {
+            "has_profile": True,
+            "chosen_strength": strength_name,
+            "chosen_weakness": weakness_name,
+            # "development_plan_id": dev_plan_id,
+            # "current_dev_plan": current_dev_plan,
+            # "chosen_traits": chosen_traits,
+        }
+        
+    except Exception as e:
+        return {
+            "has_profile": False, 
+            "message": f"Error retrieving leadership context: {str(e)}"
+        }
+    

@@ -11,6 +11,9 @@ from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import JsonOutputParser
 from langchain.prompts import PromptTemplate
 from app.ai.const import OPENAI_API_KEY
+from sqlalchemy.orm import Session
+from app.utils.dev_plan_crud import dev_plan_get_current
+from app.utils.traits_crud import chosen_traits_get
 
 
 # Model pricing configurations (USD per 1M tokens)
@@ -352,106 +355,106 @@ def count_transcript_sentences(transcript_data: Dict[str, Any]) -> int:
     return len(sentences)
 
 
-def evaluate_chunk_leadership(
-    chunk_content: str,
-    user_role: str = "Team Member",
-    company_context: str = "General Business",
-    user_name: str = "Laurent"
-) -> Dict[str, Any]:
-    """
-    Evaluate a transcript chunk for leadership behaviors using GPT-4o mini
+# def evaluate_chunk_leadership(
+#     chunk_content: str,
+#     user_role: str = "Team Member",
+#     company_context: str = "General Business",
+#     user_name: str = "Laurent"
+# ) -> Dict[str, Any]:
+#     """
+#     Evaluate a transcript chunk for leadership behaviors using GPT-4o mini
 
-    Args:
-        chunk_content: The transcript content to evaluate
-        user_role: The user's role in the organization
-        company_context: Company/industry context for relevant advice
-        user_name: The user's name for personalized feedback (default: "Laurent")
+#     Args:
+#         chunk_content: The transcript content to evaluate
+#         user_role: The user's role in the organization
+#         company_context: Company/industry context for relevant advice
+#         user_name: The user's name for personalized feedback (default: "Laurent")
 
-    Returns:
-        Dict containing leadership assessment and coaching advice
+#     Returns:
+#         Dict containing leadership assessment and coaching advice
 
-    Example:
-        {
-            "strengths": ["Laurent showed clear communication", "Active listening"],
-            "areas_for_improvement": ["Laurent could improve decision-making speed"],
-            "specific_action": "Laurent should schedule 1:1s with team members weekly",
-            "overall_score": 7.5
-        }
-    """
-    # Use GPT-4o mini for cost efficiency
-    llm = ChatOpenAI(
-        model="gpt-4o-mini",
-        openai_api_key=OPENAI_API_KEY,
-        temperature=0.3
-    )
+#     Example:
+#         {
+#             "strengths": ["Laurent showed clear communication", "Active listening"],
+#             "areas_for_improvement": ["Laurent could improve decision-making speed"],
+#             "specific_action": "Laurent should schedule 1:1s with team members weekly",
+#             "overall_score": 7.5
+#         }
+#     """
+#     # Use GPT-4o mini for cost efficiency
+#     llm = ChatOpenAI(
+#         model="gpt-4o-mini",
+#         openai_api_key=OPENAI_API_KEY,
+#         temperature=0.3
+#     )
 
-    prompt_template = PromptTemplate(
-        template="""
-        You are an expert leadership coach analyzing {user_name}'s meeting performance. 
+#     prompt_template = PromptTemplate(
+#         template="""
+#         You are an expert leadership coach analyzing {user_name}'s meeting performance. 
 
-        **IMPORTANT: First, check if {user_name} speaks or participates in this transcript chunk.**
+#         **IMPORTANT: First, check if {user_name} speaks or participates in this transcript chunk.**
 
-        If {user_name} does NOT appear in the transcript:
-        - Clearly state that {user_name} did not speak during this portion of the meeting
-        - Analyze whether this silence was appropriate or problematic based on:
-        * The meeting content and context
-        * {user_name}'s role and expected participation level
-        * Whether this was a moment requiring their input, decision-making, or leadership
-        * The flow of conversation and natural speaking opportunities
+#         If {user_name} does NOT appear in the transcript:
+#         - Clearly state that {user_name} did not speak during this portion of the meeting
+#         - Analyze whether this silence was appropriate or problematic based on:
+#         * The meeting content and context
+#         * {user_name}'s role and expected participation level
+#         * Whether this was a moment requiring their input, decision-making, or leadership
+#         * The flow of conversation and natural speaking opportunities
 
-        If {user_name} DOES appear in the transcript:
-        - Evaluate their leadership behaviors and provide specific improvement advice
-        - Focus on: communication style, decision-making, team engagement, and meeting facilitation
+#         If {user_name} DOES appear in the transcript:
+#         - Evaluate their leadership behaviors and provide specific improvement advice
+#         - Focus on: communication style, decision-making, team engagement, and meeting facilitation
 
-        Consider {user_name}'s role: {user_role}
-        Company context: {company_context}
+#         Consider {user_name}'s role: {user_role}
+#         Company context: {company_context}
 
-        Transcript content:
-        {chunk_content}
+#         Transcript content:
+#         {chunk_content}
 
-        Provide your assessment in JSON format with:
+#         Provide your assessment in JSON format with:
 
-        **If {user_name} did not speak:**
-        - "participation_status": "silent"
-        - "silence_analysis": Brief explanation of why {user_name} didn't participate in this segment
-        - "silence_assessment": "appropriate" or "missed_opportunity" with reasoning
-        - "recommended_action": One specific suggestion for how {user_name} could have engaged (if silence was problematic) or affirmation of good judgment (if silence was appropriate)
-        - "overall_score": Numeric score from 1-10 for {user_name}'s participation decision in this interaction
+#         **If {user_name} did not speak:**
+#         - "participation_status": "silent"
+#         - "silence_analysis": Brief explanation of why {user_name} didn't participate in this segment
+#         - "silence_assessment": "appropriate" or "missed_opportunity" with reasoning
+#         - "recommended_action": One specific suggestion for how {user_name} could have engaged (if silence was problematic) or affirmation of good judgment (if silence was appropriate)
+#         - "overall_score": Numeric score from 1-10 for {user_name}'s participation decision in this interaction
 
-        **If {user_name} did speak:**
-        - "participation_status": "active"
-        - "strengths": Array of 2-3 observed leadership strengths with brief explanations (reference {user_name} by name)
-        - "areas_for_improvement": Array of 2-3 specific areas for {user_name} to develop with context
-        - "specific_action": One concrete, actionable next step {user_name} can take (address them directly by name)
-        - "overall_score": Numeric score from 1-10 for {user_name}'s overall leadership effectiveness in this interaction
+#         **If {user_name} did speak:**
+#         - "participation_status": "active"
+#         - "strengths": Array of 2-3 observed leadership strengths with brief explanations (reference {user_name} by name)
+#         - "areas_for_improvement": Array of 2-3 specific areas for {user_name} to develop with context
+#         - "specific_action": One concrete, actionable next step {user_name} can take (address them directly by name)
+#         - "overall_score": Numeric score from 1-10 for {user_name}'s overall leadership effectiveness in this interaction
 
-        Keep feedback constructive, specific, and actionable. Address {user_name} directly in your recommendations. Base your assessment only on observable behaviors and participation patterns in the transcript. Remember that strategic silence can be as important as active participation in leadership.
-        """,
-        input_variables=["chunk_content", "user_role",
-                         "company_context", "user_name"]
-    )
+#         Keep feedback constructive, specific, and actionable. Address {user_name} directly in your recommendations. Base your assessment only on observable behaviors and participation patterns in the transcript. Remember that strategic silence can be as important as active participation in leadership.
+#         """,
+#         input_variables=["chunk_content", "user_role",
+#                          "company_context", "user_name"]
+#     )
 
-    try:
-        chain = prompt_template | llm | JsonOutputParser()
+#     try:
+#         chain = prompt_template | llm | JsonOutputParser()
 
-        response = chain.invoke({
-            "chunk_content": chunk_content,
-            "user_role": user_role,
-            "company_context": company_context,
-            "user_name": user_name
-        })
+#         response = chain.invoke({
+#             "chunk_content": chunk_content,
+#             "user_role": user_role,
+#             "company_context": company_context,
+#             "user_name": user_name
+#         })
 
-        return response
+#         return response
 
-    except Exception as e:
-        # Return error response if AI evaluation fails
-        return {
-            "error": f"AI evaluation failed: {str(e)}",
-            "strengths": [],
-            "areas_for_improvement": [],
-            "specific_action": "Unable to provide recommendation due to evaluation error",
-            "overall_score": 0
-        }
+#     except Exception as e:
+#         # Return error response if AI evaluation fails
+#         return {
+#             "error": f"AI evaluation failed: {str(e)}",
+#             "strengths": [],
+#             "areas_for_improvement": [],
+#             "specific_action": "Unable to provide recommendation due to evaluation error",
+#             "overall_score": 0
+        # }
 
 
 async def evaluate_chunk_leadership_async(
@@ -481,58 +484,61 @@ async def evaluate_chunk_leadership_async(
 
     prompt_template = PromptTemplate(
         template="""
-        You are an expert leadership coach analyzing {user_name}'s meeting performance. 
+        You are an expert leadership coach analyzing a specific portion of {user_name}'s meeting performance. Your role is to provide evidence-based feedback on their actual contributions and dialogue.
 
         **IMPORTANT: First, check if {user_name} speaks or participates in this transcript chunk.**
 
-        If {user_name} does NOT appear in the transcript:
-        - Clearly state that {user_name} did not speak during this portion of the meeting
-        - Analyze whether this silence was appropriate or problematic based on:
-        * The meeting content and context
-        * {user_name}'s role and expected participation level
-        * Whether this was a moment requiring their input, decision-making, or leadership
-        * The flow of conversation and natural speaking opportunities
-
-        If {user_name} DOES appear in the transcript:
-        - Evaluate their leadership behaviors and provide specific improvement advice
-        - Focus on: communication style, decision-making, team engagement, and meeting facilitation
-
         Consider {user_name}'s role: {user_role}
         Company context: {company_context}
+       
 
         Transcript content:
         {chunk_content}
 
-        Provide your assessment in JSON format with:
+        **If {user_name} does NOT appear in the transcript:**
+        Evaluate whether their silence was strategic or a missed opportunity based on the meeting content and their leadership role.
+
+        **If {user_name} DOES appear in the transcript:**
+        Focus on specific dialogue analysis:
+        - What specific words, phrases, or approaches did they use?
+        - Which parts of their dialogue were effective for their leadership goals?
+        - Where could they have used different language or techniques?
+        - What leadership best practices did they demonstrate or miss?
+
+        Provide your assessment in JSON format:
 
         **If {user_name} did not speak:**
         - "participation_status": "silent"
-        - "silence_analysis": Brief explanation of why {user_name} didn't participate in this segment
-        - "silence_assessment": "appropriate" or "missed_opportunity" with reasoning
-        - "recommended_action": One specific suggestion for how {user_name} could have engaged (if silence was problematic) or affirmation of good judgment (if silence was appropriate)
-        - "overall_score": Numeric score from 1-10 for {user_name}'s participation decision in this interaction
+        - "silence_analysis": Brief explanation of the meeting content they remained silent during 
+        - "silence_assessment": "strategic" or "missed_opportunity" with specific reasoning
+        - "coaching_feedback": What you could have contributed based on the discussion topic
+
 
         **If {user_name} did speak:**
         - "participation_status": "active"
-        - "strengths": Array of 2-3 observed leadership strengths with brief explanations (reference {user_name} by name)
-        - "areas_for_improvement": Array of 2-3 specific areas for {user_name} to develop with context
-        - "specific_action": One concrete, actionable next step {user_name} can take (address them directly by name)
-        - "overall_score": Numeric score from 1-10 for {user_name}'s overall leadership effectiveness in this interaction
+        - "effective_dialogue": Array of specific quotes or approaches you used well, with explanation of why they worked
+        - "dialogue_improvements": Array of specific moments where you could have used different language, including what you said vs. what you could have said
+        - "leadership_techniques_applied": Which leadership best practices you demonstrated in your actual words
+        - "leadership_techniques_missed": Which techniques you could have applied in specific moments
+        - "coaching_feedback": Direct feedback on your communication patterns in this segment
 
-        Keep feedback constructive, specific, and actionable. Address {user_name} directly in your recommendations. Base your assessment only on observable behaviors and participation patterns in the transcript. Remember that strategic silence can be as important as active participation in leadership.
+
+        Ground all feedback in actual quotes and specific moments from the transcript. Focus on the language and dialogue choices rather than general leadership advice.
         """,
-        input_variables=["chunk_content", "user_role",
-                         "company_context", "user_name"]
+        input_variables=["chunk_content", "user_role", "company_context", "user_name"]
     )
-
     try:
         # Create chain without JsonOutputParser to access raw response
         chain = prompt_template | llm
 
+        # Create development focus context (empty for individual chunk evaluation)
+        development_focus_context = ""
+        
         # Use ainvoke for async execution and get raw response
         raw_response = await chain.ainvoke({
             "chunk_content": chunk_content,
             "user_role": user_role,
+            "development_focus_context": development_focus_context,
             "company_context": company_context,
             "user_name": user_name
         })
@@ -843,12 +849,14 @@ async def evaluate_chunks_concurrently(
     }
 
 
-def summarize_evaluated_chunks(
+async def summarize_evaluated_chunks(
     evaluated_chunks_data: Dict[str, Any],
     user_name: str = "Laurent",
     user_role: str = "Team Member",
     company_context: str = "General Business",
-    transcript_metadata: Dict[str, Any] = None
+    transcript_metadata: Dict[str, Any] = None,
+    db: Session = None,
+    user_id: str = None
 ) -> Dict[str, Any]:
     """
     Summarize evaluated transcript chunks into an overall leadership assessment
@@ -869,6 +877,28 @@ def summarize_evaluated_chunks(
             "usage_analytics": {...}
         }
     """
+    # Initialize chosen traits variables
+    strength_name = None
+    weakness_name = None
+
+    # Get user's chosen traits if database access is available
+    if db and user_id:
+        try:
+            # Get user's current development plan
+            current_dev_plan = await dev_plan_get_current(db=db, user_id=user_id)
+            if current_dev_plan:
+                dev_plan_id = str(current_dev_plan["dev_plan_id"])
+
+                # Get user's chosen traits (strength and weakness)
+                chosen_traits = chosen_traits_get(
+                    db=db, user_id=user_id, dev_plan_id=dev_plan_id)
+                if chosen_traits:
+                    strength_name = chosen_traits["chosen_strength"]["name"]
+                    weakness_name = chosen_traits["chosen_weakness"]["name"]
+        except Exception as e:
+            # If traits fetching fails, continue without them
+            print(f"Warning: Could not fetch user traits: {str(e)}")
+
     # Extract AI evaluations from the input data
     ai_evaluations = evaluated_chunks_data.get('ai_evaluations', [])
 
@@ -946,6 +976,18 @@ Meeting Context:
 - Participants: {len(participants)} people
         """
 
+    # Add development focus context if traits are available
+    development_focus_context = ""
+    if strength_name and weakness_name:
+        development_focus_context = f"""
+
+{user_name}'s Current Development Focus:
+- Strength to leverage: {strength_name}
+- Area to improve: {weakness_name}
+
+Please provide specific feedback on how {user_name} demonstrated progress or opportunities in these areas during the meeting.
+        """
+
     # Use the current model for summarization
     llm = ChatOpenAI(
         model=CURRENT_MODEL,
@@ -955,12 +997,13 @@ Meeting Context:
 
     prompt_template = PromptTemplate(
         template="""
-        You are an expert leadership coach providing a comprehensive assessment of {user_name}'s overall meeting performance.
+        You are {user_name}'s personal leadership coach providing specific feedback on their actual contributions during this meeting.
 
         {user_name} is a {user_role} in a {company_context} context.
         {metadata_context}
+        {development_focus_context}
 
-        I have analyzed {user_name}'s participation across multiple segments of a meeting. Here's the segment-by-segment data:
+        I have analyzed your participation across multiple segments of the meeting. Here's the segment-by-segment data:
 
         PARTICIPATION SUMMARY:
         {chunks_context}
@@ -974,24 +1017,33 @@ Meeting Context:
         SPECIFIC ACTIONS RECOMMENDED:
         {actions_context}
 
-        Based on this comprehensive data, provide a direct leadership assessment for {user_name}. Since this is a chatbot response to their request for meeting evaluation, skip greetings and get straight to the assessment.
+        Provide specific coaching feedback on their actual meeting performance, speaking directly to them as their coach. Focus on what they said and how they said it.
 
-        Start immediately with your key observations about their participation pattern, then cover:
-        - Leadership strengths demonstrated (if any)
-        - Primary areas for development  
-        - Specific, actionable recommendations
-        - What to focus on in the next meeting
+        Structure your response as:
 
-        Keep your tone as an expert leadership coach - supportive but direct, insightful, and focused on growth. Address {user_name} directly but avoid introductory phrases like "Hi {user_name}" or "thank you for." Write it as a concise, flowing assessment that gets to the point quickly while still being comprehensive and actionable.
+        **What You Did Well:**
+        - Quote specific phrases or approaches you used that were effective
+        - Explain why these particular words/approaches worked well for your leadership goals
+        - Connect your actual dialogue to leadership best practices you demonstrated
+
+        **Missed Opportunities in Your Dialogue:**
+        - Identify specific moments where you could have used more effective language
+        - Quote what you actually said, then suggest how you could have phrased it differently
+        - Point to leadership techniques you could have applied in those specific exchanges
+
+        **Your Language Patterns:**
+        - Highlight recurring phrases or communication patterns that serve you well
+        - Note any blind spots in your communication style based on the actual transcript
+
+        Write as their personal coach speaking directly to them. Use "you" throughout and ground all feedback in their actual words and contributions.
         """,
-        input_variables=["user_name", "user_role", "company_context", "metadata_context",
-                         "chunks_context", "strengths_context", "improvements_context", "actions_context"]
+        input_variables=["user_name", "user_role", "company_context", "metadata_context", "development_focus_context",
+                        "chunks_context", "strengths_context", "improvements_context", "actions_context"]
     )
 
     try:
         # Create chain and invoke
         chain = prompt_template | llm
-
 
         # Get the response
         raw_response = chain.invoke({
@@ -999,12 +1051,12 @@ Meeting Context:
             "user_role": user_role,
             "company_context": company_context,
             "metadata_context": metadata_context,
+            "development_focus_context": development_focus_context,
             "chunks_context": chunks_context,
             "strengths_context": strengths_context,
             "improvements_context": improvements_context,
             "actions_context": actions_context
         })
-
 
         # Get the plain text response (no JSON parsing needed)
         summary_text = raw_response.content.strip()
