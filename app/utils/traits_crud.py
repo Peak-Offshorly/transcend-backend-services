@@ -112,7 +112,7 @@ def chosen_traits_get(db: Session, user_id: str, dev_plan_id: str):
         ChosenTraits.development_plan_id == dev_plan_id
         ).first()
     
-    if (user_strength or user_weakness) is None:
+    if user_strength is None or user_weakness is None:
         return None
     
     return {

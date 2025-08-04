@@ -512,6 +512,8 @@ async def evaluate_chunk_leadership_async(
         template="""
         You are an expert leadership coach specializing in real-time communication analysis. Your role is to provide specific, actionable feedback on {user_name}'s actual dialogue and leadership behavior during this meeting segment.
 
+        **IMPORTANT HARD RULE: First, check if {user_name} speaks or participates in this transcript chunk.**
+  
         **Leadership Context:**
         - Name: {user_name}
         - Role: {user_role}
@@ -522,75 +524,62 @@ async def evaluate_chunk_leadership_async(
         {chunk_content}
 
         **ANALYSIS INSTRUCTIONS:**
+        1. Determine if {user_name} spoke in this segment (active) or remained silent
+        2. Focus on leadership communication, NOT task management
+        3. Provide evidence-based coaching tied to their development goals
 
-        1. **First, determine {user_name}'s participation level in this segment**
-        
-        2. **Focus on leadership communication, NOT task management**
-        - Analyze HOW they communicated, not WHAT tasks were discussed
-        - Ignore action items like "finish report," "send to Bill," etc.
-        - Focus on influence, persuasion, team dynamics, decision-making style
-
-        3. **Provide evidence-based coaching tied to their development goals**
-
-        **OUTPUT FORMAT (JSON):**
-
-        **If {user_name} was SILENT in this segment:**
+        **OUTPUT FORMAT (JSON - SAME STRUCTURE FOR BOTH ACTIVE AND SILENT):**
         {{
-            "participation_status": "silent",
-            "segment_context": "Brief description of what was being discussed during their silence",
-            "silence_evaluation": {{
-                "assessment": "strategic_listening" | "missed_leadership_opportunity" | "appropriate_restraint",
-                "reasoning": "Specific explanation based on meeting content and their role"
-            }},
-            "development_insights": {{
-                "strength_application": "How their {strength_name} could have been leveraged in this moment",
-                "growth_opportunity": "Specific way their {weakness_name} manifested or could be addressed",
-                "recommended_intervention": "Exact words or approach they could have used"
-            }},
-            "coaching_feedback": "Direct, specific guidance on when and how to engage in similar future scenarios"
-        }}
-
-        **If {user_name} was ACTIVE in this segment:**
-        {{
-            "participation_status": "active",
+            "participation_status": "active" | "silent",
+            "segment_context": "Brief description of what was discussed in this segment",
             "dialogue_analysis": {{
                 "effective_moments": [
                     {{
-                        "quote": "Exact words they said",
-                        "leadership_technique": "Specific technique demonstrated (e.g., 'active listening,' 'stakeholder alignment,' 'decisive communication')",
-                        "why_effective": "How this advanced their leadership goals"
+                        "quote": "Exact words they said (or '' if silent)",
+                        "leadership_technique": "Technique used or strategic silence benefit",
+                        "why_effective": "How this advanced/could advance their leadership goals"
                     }}
                 ],
                 "improvement_opportunities": [
                     {{
-                        "what_they_said": "Exact quote",
+                        "what_they_said": "Exact quote or 'remained silent during [context]'",
                         "missed_technique": "Leadership technique they could have applied",
-                        "alternative_approach": "Specific words/phrases they could have used instead",
-                        "potential_impact": "How this change would have improved the outcome"
+                        "alternative_approach": "Specific words/phrases they could have used",
+                        "potential_impact": "How this would have improved outcomes"
                     }}
                 ]
             }},
             "development_progress": {{
-                "strength_demonstration": "Specific examples of how they leveraged their {strength_name} in their actual words",
-                "growth_area_progress": "Evidence of improvement or continued challenge with {weakness_name}",
-                "development_recommendation": "Specific communication techniques to practice for next meeting"
+                "strength_demonstration": "How they leveraged/could have leveraged their {strength_name}",
+                "growth_area_progress": "Evidence of progress or missed opportunity with {weakness_name}",
+                "development_recommendation": "Specific technique to practice for next meeting"
             }},
             "communication_patterns": {{
-                "positive_patterns": "Recurring effective communication behaviors observed",
-                "limiting_patterns": "Communication habits that may be hindering their leadership effectiveness"
+                "positive_patterns": "Effective behaviors observed or strategic silence benefits",
+                "limiting_patterns": "Habits hindering effectiveness or silence limitations"
             }},
-            "coaching_feedback": "Specific, actionable advice for improving their communication approach in similar future situations"
+            "coaching_feedback": "Specific, actionable advice for similar future situations"
         }}
 
+        **For SILENT participation:**
+        - Leave "quote" fields empty but fill in other fields
+        - In "what_they_said", use: "remained silent during [brief context]"
+        - Focus on strategic value of silence vs missed opportunities
+        - Provide specific interventions they could have made
+
+        **For ACTIVE participation:**
+        - Include actual quotes in dialogue analysis
+        - Focus on communication techniques used
+        - Provide alternative phrasings for improvements
+
         **COACHING STANDARDS:**
-        - Ground ALL feedback in actual transcript evidence
-        - Focus on communication style, influence techniques, and team dynamics
-        - Tie insights directly to their stated development goals ({strength_name} and {weakness_name})
-        - Provide specific alternative phrasings when suggesting improvements
-        - Avoid generic leadership advice - make it specific to their actual behavior
-        - Remember: Leadership development is about HOW they communicate, not WHAT tasks they manage
+        - Ground ALL feedback in transcript evidence
+        - Tie insights to their development goals ({strength_name} and {weakness_name})
+        - Provide specific alternative phrasings
+        - Focus on significant leadership moments, not routine interactions
         """,
-        input_variables=["chunk_content", "user_role", "company_context", "user_name", "development_focus_context", "strength_name", "weakness_name"]
+        input_variables=["chunk_content", "user_role", "company_context", "user_name", 
+                        "development_focus_context", "strength_name", "weakness_name"]
     )
     try:
         # Create chain without JsonOutputParser to access raw response
@@ -696,7 +685,7 @@ async def evaluate_chunks_concurrently(
     chunks: List[Dict[str, Any]],
     user_role: str = "Team Member",
     company_context: str = "General Business",
-    user_name: str = "Laurent",
+    user_name: str = "France",
     concurrency_limit: int = 5,
     timeout_seconds: int = 30,
     db: Session = None,
@@ -934,7 +923,7 @@ async def evaluate_chunks_concurrently(
 
 async def summarize_evaluated_chunks(
     evaluated_chunks_data: Dict[str, Any],
-    user_name: str = "Laurent",
+    user_name: str = "France",
     user_role: str = "Team Member",
     company_context: str = "General Business",
     transcript_metadata: Dict[str, Any] = None,
@@ -996,10 +985,11 @@ async def summarize_evaluated_chunks(
     # Prepare the summary content from all evaluated chunks
     chunks_summary = []
     participation_count = 0
-    total_scores = []
-    all_strengths = []
-    all_improvements = []
-    all_actions = []
+    all_effective_moments = []
+    all_improvement_opportunities = []
+    all_development_recommendations = []
+    all_coaching_feedback = []
+    segment_contexts = []
 
     for eval_data in ai_evaluations:
         chunk_id = eval_data.get('chunk_id', 'Unknown')
@@ -1010,41 +1000,113 @@ async def summarize_evaluated_chunks(
             continue
 
         # Collect data for summary
-        participation_status = assessment.get(
-            'participation_status', 'unknown')
+        participation_status = assessment.get('participation_status', 'unknown')
+        segment_context = assessment.get('segment_context', '')
+        
         if participation_status == 'active':
             participation_count += 1
 
-        score = assessment.get('overall_score', 0)
-        if score > 0:
-            total_scores.append(score)
+        # Extract dialogue analysis
+        dialogue_analysis = assessment.get('dialogue_analysis', {})
+        effective_moments = dialogue_analysis.get('effective_moments', [])
+        improvement_opportunities = dialogue_analysis.get('improvement_opportunities', [])
 
-        # Collect qualitative feedback
-        strengths = assessment.get('strengths', [])
-        improvements = assessment.get('areas_for_improvement', [])
-        action = assessment.get('specific_action', '')
+        # Collect effective moments with context
+        for moment in effective_moments:
+            if isinstance(moment, dict):
+                quote = moment.get('quote', '')
+                technique = moment.get('leadership_technique', '')
+                why_effective = moment.get('why_effective', '')
+                if quote or technique:
+                    all_effective_moments.append({
+                        'chunk_id': chunk_id,
+                        'quote': quote,
+                        'technique': technique,
+                        'why_effective': why_effective
+                    })
 
-        if isinstance(strengths, list):
-            all_strengths.extend(strengths)
-        if isinstance(improvements, list):
-            all_improvements.extend(improvements)
-        if action:
-            all_actions.append(action)
+        # Collect improvement opportunities
+        for opportunity in improvement_opportunities:
+            if isinstance(opportunity, dict):
+                what_said = opportunity.get('what_they_said', '')
+                missed_technique = opportunity.get('missed_technique', '')
+                alternative = opportunity.get('alternative_approach', '')
+                impact = opportunity.get('potential_impact', '')
+                if what_said or missed_technique:
+                    all_improvement_opportunities.append({
+                        'chunk_id': chunk_id,
+                        'what_said': what_said,
+                        'missed_technique': missed_technique,
+                        'alternative': alternative,
+                        'impact': impact
+                    })
+
+        # Extract development progress
+        dev_progress = assessment.get('development_progress', {})
+        dev_recommendation = dev_progress.get('development_recommendation', '')
+        if dev_recommendation:
+            all_development_recommendations.append({
+                'chunk_id': chunk_id,
+                'recommendation': dev_recommendation
+            })
+
+        # Extract coaching feedback
+        coaching_feedback = assessment.get('coaching_feedback', '')
+        if coaching_feedback:
+            all_coaching_feedback.append({
+                'chunk_id': chunk_id,
+                'feedback': coaching_feedback
+            })
+
+        # Store segment context
+        if segment_context:
+            segment_contexts.append(f"Chunk {chunk_id}: {segment_context}")
 
         # Create chunk summary for context
         chunk_summary = f"Chunk {chunk_id}: {participation_status}"
-        if participation_status == 'active':
-            chunk_summary += f" (Score: {score}/10)"
+        if segment_context:
+            chunk_summary += f" - {segment_context[:100]}..."
         chunks_summary.append(chunk_summary)
 
     # Create the prompt content
     chunks_context = "\n".join(chunks_summary)
-    # Limit for token efficiency
-    strengths_context = "\n".join(
-        f"- {strength}" for strength in all_strengths[:10])
-    improvements_context = "\n".join(
-        f"- {improvement}" for improvement in all_improvements[:10])
-    actions_context = "\n".join(f"- {action}" for action in all_actions[:5])
+    
+    # Format effective moments context
+    effective_moments_context = ""
+    if all_effective_moments:
+        moments_text = []
+        for moment in all_effective_moments[:8]:  # Limit for token efficiency
+            if moment['quote']:
+                moments_text.append(f"- \"{moment['quote']}\" (Technique: {moment['technique']}, Impact: {moment['why_effective']})")
+            else:
+                moments_text.append(f"- {moment['technique']}: {moment['why_effective']}")
+        effective_moments_context = "\n".join(moments_text)
+    
+    # Format improvement opportunities context
+    improvements_context = ""
+    if all_improvement_opportunities:
+        improvements_text = []
+        for opportunity in all_improvement_opportunities[:8]:  # Limit for token efficiency
+            what_said = opportunity['what_said'] if opportunity['what_said'] else "Silent moment"
+            alternative = opportunity['alternative'] if opportunity['alternative'] else "No specific alternative provided"
+            improvements_text.append(f"- Instead of: '{what_said}', could have: '{alternative}' (Technique: {opportunity['missed_technique']})")
+        improvements_context = "\n".join(improvements_text)
+    
+    # Format development recommendations context
+    development_context = ""
+    if all_development_recommendations:
+        dev_text = []
+        for dev in all_development_recommendations[:5]:  # Limit for token efficiency
+            dev_text.append(f"- Chunk {dev['chunk_id']}: {dev['recommendation']}")
+        development_context = "\n".join(dev_text)
+    
+    # Format coaching feedback context
+    coaching_context = ""
+    if all_coaching_feedback:
+        coaching_text = []
+        for feedback in all_coaching_feedback[:5]:  # Limit for token efficiency  
+            coaching_text.append(f"- Chunk {feedback['chunk_id']}: {feedback['feedback']}")
+        coaching_context = "\n".join(coaching_text)
 
     # Add transcript metadata context if available
     metadata_context = ""
@@ -1064,11 +1126,11 @@ Meeting Context:
     if strength_name and weakness_name:
         development_focus_context = f"""
 
-{user_name}'s Current Development Focus:
-- Strength to leverage: {strength_name}
-- Area to improve: {weakness_name}
+        {user_name}'s Current Development Focus:
+        - Strength to leverage: {strength_name}
+        - Area to improve: {weakness_name}
 
-Please provide specific feedback on how {user_name} demonstrated progress or opportunities in these areas during the meeting.
+        Please provide specific feedback on how {user_name} demonstrated progress or opportunities in these areas during the meeting.
         """
 
     # Use the current model for summarization
@@ -1081,6 +1143,7 @@ Please provide specific feedback on how {user_name} demonstrated progress or opp
     prompt_template = PromptTemplate(
         template="""
         You are {user_name}'s personal leadership coach providing specific feedback on their actual contributions during this meeting.
+        **IMPORTANT HARD RULE: First, check if {user_name} speaks or participates in this transcript chunk. IF *NOT* THEN THEIR PARTICIPATION IS SILENT. THIS IS A HARD RULE AND MUST FOLLOW EVERY TIME.**
 
         {user_name} is a {user_role} in a {company_context} context.
         {metadata_context}
@@ -1091,14 +1154,17 @@ Please provide specific feedback on how {user_name} demonstrated progress or opp
         PARTICIPATION SUMMARY:
         {chunks_context}
 
-        OBSERVED STRENGTHS ACROSS SEGMENTS:
-        {strengths_context}
+        EFFECTIVE LEADERSHIP MOMENTS OBSERVED:
+        {effective_moments_context}
 
-        AREAS FOR IMPROVEMENT IDENTIFIED:
+        MISSED OPPORTUNITIES FOR IMPROVEMENT:
         {improvements_context}
 
-        SPECIFIC ACTIONS RECOMMENDED:
-        {actions_context}
+        DEVELOPMENT RECOMMENDATIONS FROM ANALYSIS:
+        {development_context}
+
+        SPECIFIC COACHING INSIGHTS:
+        {coaching_context}
 
         Provide specific coaching feedback on their actual meeting performance, speaking directly to them as their coach. Focus on what they said and how they said it.
 
@@ -1121,7 +1187,7 @@ Please provide specific feedback on how {user_name} demonstrated progress or opp
         Write as their personal coach speaking directly to them. Use "you" throughout and ground all feedback in their actual words and contributions.
         """,
         input_variables=["user_name", "user_role", "company_context", "metadata_context", "development_focus_context",
-                        "chunks_context", "strengths_context", "improvements_context", "actions_context"]
+                        "chunks_context", "effective_moments_context", "improvements_context", "development_context", "coaching_context"]
     )
 
     try:
@@ -1136,9 +1202,10 @@ Please provide specific feedback on how {user_name} demonstrated progress or opp
             "metadata_context": metadata_context,
             "development_focus_context": development_focus_context,
             "chunks_context": chunks_context,
-            "strengths_context": strengths_context,
+            "effective_moments_context": effective_moments_context,
             "improvements_context": improvements_context,
-            "actions_context": actions_context
+            "development_context": development_context,
+            "coaching_context": coaching_context
         })
 
         # Get the plain text response (no JSON parsing needed)
@@ -1149,7 +1216,6 @@ Please provide specific feedback on how {user_name} demonstrated progress or opp
             "model_used": CURRENT_MODEL,
             "chunks_summarized": len(ai_evaluations),
             "active_participation_segments": participation_count,
-            "average_chunk_score": sum(total_scores) / len(total_scores) if total_scores else 0
         }
 
         return {

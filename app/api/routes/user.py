@@ -1510,7 +1510,7 @@ async def get_recent_transcripts(request: Request, db: db_dependency):
     2. Takes the first transcript with sentences
     3. Fetches full transcript content
     4. Chunks it by tokens for AI evaluation
-    5. Uses GPT-4o mini to evaluate leadership behaviors in each chunk
+    5. Uses GPT-4.1-nano to evaluate leadership behaviors in each chunk
     
     Args:
         request: Request object containing the user token
@@ -1568,160 +1568,160 @@ async def get_recent_transcripts(request: Request, db: db_dependency):
         if not current_user:
             raise HTTPException(status_code=400, detail="Current user not found")
         
-        # # Get transcript list
-        # transcripts = get_transcripts_list()
+        # Get transcript list
+        transcripts = get_transcripts_list()
 
         
-        # if not transcripts:
-        #     return JSONResponse(
-        #         content={
-        #             "message": "No transcripts found",
-        #             "transcripts": [],
-        #             "total_chunks": 0,
-        #             "chunks": []
-        #         },
-        #         status_code=200
-        #     )
+        if not transcripts:
+            return JSONResponse(
+                content={
+                    "message": "No transcripts found",
+                    "transcripts": [],
+                    "total_chunks": 0,
+                    "chunks": []
+                },
+                status_code=200
+            )
         
-        # # Try to find a transcript with actual sentences
-        # transcript_content = None
-        # transcript_id_used = None
+        # Try to find a transcript with actual sentences
+        transcript_content = None
+        transcript_id_used = None
         
-        # for transcript in transcripts[:5]:  # Try up to 5 transcripts
-        #     transcript_id = transcript['id']
-        #     print(f"Trying transcript ID: {transcript_id}")
+        for transcript in transcripts[:10]:  # Try up to 10 transcripts
+            transcript_id = transcript['id']
+            print(f"Trying transcript ID: {transcript_id}")
             
-        #     content = get_transcript_content(transcript_id)
-        #     sentences = content.get('sentences')
+            content = get_transcript_content(transcript_id)
+            sentences = content.get('sentences')
             
-        #     if sentences and len(sentences) > 0:
-        #         print(f"✅ Found transcript with {len(sentences)} sentences")
-        #         transcript_content = content
-        #         transcript_id_used = transcript_id
-        #         break  # Exit loop if we found a valid transcript
-        #     else:
-        #         print(f"❌ Transcript {transcript_id} has no sentences (duration: {transcript.get('duration', 0)}s)")
+            if sentences and len(sentences) > 0:
+                print(f"✅ Found transcript with {len(sentences)} sentences")
+                transcript_content = content
+                transcript_id_used = transcript_id
+                # break  # Exit loop if we found a valid transcript
+            else:
+                print(f"❌ Transcript {transcript_id} has no sentences (duration: {transcript.get('duration', 0)}s)")
         
-        # if not transcript_content or not transcript_content.get('sentences'):
-        #     return JSONResponse(
-        #         content={
-        #             "message": "No transcripts found with sentence data",
-        #             "debug_info": {
-        #                 "transcripts_checked": len(transcripts[:5]),
-        #                 "first_transcript_duration": transcripts[0].get('duration'),
-        #                 "note": "Transcripts may still be processing or were too short to transcribe"
-        #             },
-        #             "total_chunks": 0,
-        #             "chunks": []
-        #         },
-        #         status_code=200
-        #     )
+        if not transcript_content or not transcript_content.get('sentences'):
+            return JSONResponse(
+                content={
+                    "message": "No transcripts found with sentence data",
+                    "debug_info": {
+                        "transcripts_checked": len(transcripts[:5]),
+                        "first_transcript_duration": transcripts[0].get('duration'),
+                        "note": "Transcripts may still be processing or were too short to transcribe"
+                    },
+                    "total_chunks": 0,
+                    "chunks": []
+                },
+                status_code=200
+            )
 
         
 
-        # Load local transcript file since Fireflies API is not working
-        def load_local_transcript(file_path: str) -> Dict[str, Any]:
-            """
-            Load and parse local transcript file into Fireflies-compatible format
+        # # Load local transcript file since Fireflies API is not working
+        # def load_local_transcript(file_path: str) -> Dict[str, Any]:
+        #     """
+        #     Load and parse local transcript file into Fireflies-compatible format
             
-            Args:
-                file_path: Path to the transcript text file
+        #     Args:
+        #         file_path: Path to the transcript text file
                 
-            Returns:
-                Dict in Fireflies transcript format with sentences array
-            """
-            import re
-            from pathlib import Path
+        #     Returns:
+        #         Dict in Fireflies transcript format with sentences array
+        #     """
+        #     import re
+        #     from pathlib import Path
             
-            try:
-                # Read the transcript file
-                transcript_path = Path(file_path)
-                if not transcript_path.exists():
-                    raise FileNotFoundError(f"Transcript file not found: {file_path}")
+        #     try:
+        #         # Read the transcript file
+        #         transcript_path = Path(file_path)
+        #         if not transcript_path.exists():
+        #             raise FileNotFoundError(f"Transcript file not found: {file_path}")
                 
-                with open(transcript_path, 'r', encoding='utf-8') as f:
-                    content = f.read()
+        #         with open(transcript_path, 'r', encoding='utf-8') as f:
+        #             content = f.read()
                 
-                # Parse transcript content into sentences
-                sentences = []
-                sentence_id = 0
+        #         # Parse transcript content into sentences
+        #         sentences = []
+        #         sentence_id = 0
                 
-                # Split by lines and process each line
-                lines = content.strip().split('\n')
-                current_speaker = None
-                current_time = 0
+        #         # Split by lines and process each line
+        #         lines = content.strip().split('\n')
+        #         current_speaker = None
+        #         current_time = 0
                 
-                for line in lines:
-                    line = line.strip()
-                    if not line:
-                        continue
+        #         for line in lines:
+        #             line = line.strip()
+        #             if not line:
+        #                 continue
                     
-                    # Check if line contains speaker and timestamp: "Speaker [MM:SS]:"
-                    speaker_match = re.match(r'^(.+?)\s*\[(\d{2}):(\d{2})\]:\s*(.*)$', line)
+        #             # Check if line contains speaker and timestamp: "Speaker [MM:SS]:"
+        #             speaker_match = re.match(r'^(.+?)\s*\[(\d{2}):(\d{2})\]:\s*(.*)$', line)
                     
-                    if speaker_match:
-                        speaker_name = speaker_match.group(1).strip()
-                        minutes = int(speaker_match.group(2))
-                        seconds = int(speaker_match.group(3))
-                        text = speaker_match.group(4).strip()
+        #             if speaker_match:
+        #                 speaker_name = speaker_match.group(1).strip()
+        #                 minutes = int(speaker_match.group(2))
+        #                 seconds = int(speaker_match.group(3))
+        #                 text = speaker_match.group(4).strip()
                         
-                        current_speaker = speaker_name
-                        current_time = minutes * 60 + seconds
+        #                 current_speaker = speaker_name
+        #                 current_time = minutes * 60 + seconds
                         
-                        # Add sentence if there's text
-                        if text:
-                            sentences.append({
-                                "speaker_name": current_speaker,
-                                "speaker_id": f"speaker_{len(set(s.get('speaker_name', '') for s in sentences))}",
-                                "text": text,
-                                "start_time": current_time,
-                                "end_time": current_time + 5  # Estimate 5 seconds per sentence
-                            })
-                            sentence_id += 1
-                    else:
-                        # This is continuation text from previous speaker
-                        if current_speaker and line:
-                            sentences.append({
-                                "speaker_name": current_speaker,
-                                "speaker_id": f"speaker_{current_speaker.lower().replace(' ', '_')}",
-                                "text": line,
-                                "start_time": current_time,
-                                "end_time": current_time + 5
-                            })
-                            sentence_id += 1
-                            current_time += 5  # Increment time for continuation
+        #                 # Add sentence if there's text
+        #                 if text:
+        #                     sentences.append({
+        #                         "speaker_name": current_speaker,
+        #                         "speaker_id": f"speaker_{len(set(s.get('speaker_name', '') for s in sentences))}",
+        #                         "text": text,
+        #                         "start_time": current_time,
+        #                         "end_time": current_time + 5  # Estimate 5 seconds per sentence
+        #                     })
+        #                     sentence_id += 1
+        #             else:
+        #                 # This is continuation text from previous speaker
+        #                 if current_speaker and line:
+        #                     sentences.append({
+        #                         "speaker_name": current_speaker,
+        #                         "speaker_id": f"speaker_{current_speaker.lower().replace(' ', '_')}",
+        #                         "text": line,
+        #                         "start_time": current_time,
+        #                         "end_time": current_time + 5
+        #                     })
+        #                     sentence_id += 1
+        #                     current_time += 5  # Increment time for continuation
                 
-                # Create transcript object in Fireflies format
-                transcript_data = {
-                    "id": "local_transcript_tkrg_planning",
-                    "title": "TKRG Planning Meeting - Local File",
-                    "date": 1719792000000,  # 2024-07-01 timestamp
-                    "duration": sentences[-1]["end_time"] if sentences else 0,
-                    "participants": list(set(s["speaker_name"] for s in sentences)),
-                    "sentences": sentences,
-                    "summary": {
-                        "overview": "TKRG Planning meeting transcript loaded from local file",
-                        "action_items": [],
-                        "keywords": ["planning", "meeting", "TKRG"],
-                        "bullet_gist": [],
-                        "gist": "Planning meeting discussion",
-                        "outline": []
-                    }
-                }
+        #         # Create transcript object in Fireflies format
+        #         transcript_data = {
+        #             "id": "local_transcript_tkrg_planning",
+        #             "title": "TKRG Planning Meeting - Local File",
+        #             "date": 1719792000000,  # 2024-07-01 timestamp
+        #             "duration": sentences[-1]["end_time"] if sentences else 0,
+        #             "participants": list(set(s["speaker_name"] for s in sentences)),
+        #             "sentences": sentences,
+        #             "summary": {
+        #                 "overview": "TKRG Planning meeting transcript loaded from local file",
+        #                 "action_items": [],
+        #                 "keywords": ["planning", "meeting", "TKRG"],
+        #                 "bullet_gist": [],
+        #                 "gist": "Planning meeting discussion",
+        #                 "outline": []
+        #             }
+        #         }
                 
-                print(f"✅ Loaded local transcript with {len(sentences)} sentences")
-                print(f"   Participants: {', '.join(transcript_data['participants'])}")
-                print(f"   Duration: {transcript_data['duration']} seconds")
+        #         print(f"✅ Loaded local transcript with {len(sentences)} sentences")
+        #         print(f"   Participants: {', '.join(transcript_data['participants'])}")
+        #         print(f"   Duration: {transcript_data['duration']} seconds")
                 
-                return transcript_data
+        #         return transcript_data
                 
-            except Exception as e:
-                print(f"❌ Error loading local transcript: {str(e)}")
-                raise
+        #     except Exception as e:
+        #         print(f"❌ Error loading local transcript: {str(e)}")
+        #         raise
         
-        # Load the local transcript file
-        transcript_file_path = "app/fireflies/transcripts/2025-07-01 - TKRG Planning.txt"
-        transcript_content = load_local_transcript(transcript_file_path)
+        # # Load the local transcript file
+        # transcript_file_path = "app/fireflies/transcripts/2025-07-01 - TKRG Planning.txt"
+        # transcript_content = load_local_transcript(transcript_file_path)
         
         # Chunk the transcript
         chunks = chunk_transcript_by_tokens(transcript_content)
@@ -1731,7 +1731,7 @@ async def get_recent_transcripts(request: Request, db: db_dependency):
         company_context = "General Business"  # getattr(current_user, 'industry', 'General Business')
         
         # Get user's name for personalized feedback (using default since auth is commented out)
-        user_name = "Laurent"  # Default test user name
+        user_name = "France"  # Default test user name
         
         # Use concurrent evaluation with comprehensive usage tracking
         evaluation_result = await evaluate_chunks_concurrently(
