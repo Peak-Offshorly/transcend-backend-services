@@ -1583,11 +1583,10 @@ async def get_recent_transcripts(request: Request, db: db_dependency):
                 status_code=200
             )
         
-        # Try to find a transcript with actual sentences
-        transcript_content = None
-        transcript_id_used = None
+        # Collect all valid transcripts (up to 10)
+        valid_transcripts = []
         
-        for transcript in transcripts[:10]:  # Try up to 10 transcripts
+        for transcript in transcripts[:10]:  # Check up to 10 transcripts
             transcript_id = transcript['id']
             print(f"Trying transcript ID: {transcript_id}")
             
@@ -1596,19 +1595,21 @@ async def get_recent_transcripts(request: Request, db: db_dependency):
             
             if sentences and len(sentences) > 0:
                 print(f"✅ Found transcript with {len(sentences)} sentences")
-                transcript_content = content
-                transcript_id_used = transcript_id
-                # break  # Exit loop if we found a valid transcript
+                valid_transcripts.append({
+                    'id': transcript_id,
+                    'content': content,
+                    'title': content.get('title', f'Meeting {len(valid_transcripts) + 1}')
+                })
             else:
                 print(f"❌ Transcript {transcript_id} has no sentences (duration: {transcript.get('duration', 0)}s)")
         
-        if not transcript_content or not transcript_content.get('sentences'):
+        if not valid_transcripts:
             return JSONResponse(
                 content={
                     "message": "No transcripts found with sentence data",
                     "debug_info": {
-                        "transcripts_checked": len(transcripts[:5]),
-                        "first_transcript_duration": transcripts[0].get('duration'),
+                        "transcripts_checked": len(transcripts[:10]),
+                        "valid_transcripts_found": 0,
                         "note": "Transcripts may still be processing or were too short to transcribe"
                     },
                     "total_chunks": 0,
@@ -1616,6 +1617,8 @@ async def get_recent_transcripts(request: Request, db: db_dependency):
                 },
                 status_code=200
             )
+        
+        print(f"✅ Processing {len(valid_transcripts)} valid transcripts")
 
         
 
@@ -1723,15 +1726,42 @@ async def get_recent_transcripts(request: Request, db: db_dependency):
         # transcript_file_path = "app/fireflies/transcripts/2025-07-01 - TKRG Planning.txt"
         # transcript_content = load_local_transcript(transcript_file_path)
         
-        # Chunk the transcript
-        chunks = chunk_transcript_by_tokens(transcript_content)
+        # Chunk all transcripts and combine them
+        all_chunks = []
+        chunk_counter = 0
         
-        # Prepare user context for AI evaluation (using default values since auth is commented out)
-        user_role = "Team Member"  # getattr(current_user, 'role', 'Team Member') 
-        company_context = "General Business"  # getattr(current_user, 'industry', 'General Business')
+        for i, transcript_data in enumerate(valid_transcripts):
+            transcript_content = transcript_data['content']
+            transcript_title = transcript_data['title']
+            transcript_id = transcript_data['id']
+            
+            print(f"Chunking transcript {i+1}/{len(valid_transcripts)}: {transcript_title}")
+            
+            # Chunk this transcript
+            transcript_chunks = chunk_transcript_by_tokens(transcript_content)
+            
+            # Add metadata to each chunk and renumber them globally
+            for chunk in transcript_chunks:
+                chunk_counter += 1
+                chunk['chunk_id'] = chunk_counter
+                chunk['transcript_id'] = transcript_id
+                chunk['transcript_title'] = transcript_title
+                chunk['transcript_index'] = i + 1
+                all_chunks.append(chunk)
+            
+            print(f"  Generated {len(transcript_chunks)} chunks from {transcript_title}")
         
-        # Get user's name for personalized feedback (using default since auth is commented out)
-        user_name = "France"  # Default test user name
+        print(f"✅ Total chunks from all transcripts: {len(all_chunks)}")
+        chunks = all_chunks
+        
+        # Prepare user context for AI evaluation using actual user data
+        user_role = getattr(current_user, 'role', 'Team Member')
+        company_context = getattr(current_user, 'industry', 'General Business')
+        
+        # Get user's name for personalized feedback
+        first_name = getattr(current_user, 'first_name', '')
+        last_name = getattr(current_user, 'last_name', '')
+        user_name = f"{first_name} {last_name}".strip() or "User"
         
         # Use concurrent evaluation with comprehensive usage tracking
         evaluation_result = await evaluate_chunks_concurrently(
@@ -1742,14 +1772,29 @@ async def get_recent_transcripts(request: Request, db: db_dependency):
             concurrency_limit=AI_EVALUATION_CONCURRENCY_LIMIT,
             timeout_seconds=AI_EVALUATION_TIMEOUT_SECONDS,
             db=db,
-            user_id=None  # Currently hardcoded - should be replaced with actual user_id when auth is implemented
+            user_id=current_user_id  # Use actual user ID from authentication
         )
         
-        # Summarize the evaluated chunks
+        # Summarize the evaluated chunks from all transcripts
+        # Create combined metadata for all transcripts
+        all_titles = [t['title'] for t in valid_transcripts]
+        all_durations = [t['content'].get('duration', 0) for t in valid_transcripts]
+        all_participants = []
+        for t in valid_transcripts:
+            participants = t['content'].get('participants', [])
+            all_participants.extend(participants)
+        
+        # Remove duplicate participants
+        unique_participants = list(set(all_participants))
+        
         transcript_metadata = {
-            "title": transcript_content.get("title", "Untitled Meeting"),
-            "duration": transcript_content.get("duration", 0),
-            "participants": transcript_content.get("participants", [])
+            "title": f"Multi-Meeting Analysis ({len(valid_transcripts)} meetings)",
+            "meeting_titles": all_titles,
+            "total_meetings": len(valid_transcripts),
+            "total_duration": sum(all_durations),
+            "average_duration": sum(all_durations) / len(all_durations) if all_durations else 0,
+            "participants": unique_participants,
+            "participant_count": len(unique_participants)
         }
         
         summary_result = await summarize_evaluated_chunks(
@@ -1764,9 +1809,22 @@ async def get_recent_transcripts(request: Request, db: db_dependency):
         
         return JSONResponse(
             content={
-                "chunked_evaluations": evaluation_result["ai_evaluations"],
-                "usage_analytics": evaluation_result["usage_analytics"],
-                "overall_summary": summary_result["overall_leadership_assessment"]
+                # "analysis_metadata": {
+                #     "transcripts_processed": len(valid_transcripts),
+                #     "meeting_titles": all_titles,
+                #     "total_chunks": len(chunks),
+                #     "total_duration_seconds": sum(all_durations),
+                #     "unique_participants": unique_participants
+                # },
+                # "chunked_evaluations": evaluation_result["ai_evaluations"],
+                # "usage_analytics": evaluation_result["usage_analytics"],
+                "overall_leadership_summary": summary_result["overall_leadership_assessment"],
+                # "multi_meeting_insights": {
+                #     "meetings_analyzed": len(valid_transcripts),
+                #     "total_leadership_moments": len([eval for eval in evaluation_result["ai_evaluations"] 
+                #                                    if eval.get("leadership_assessment", {}).get("participation_status") == "active"]),
+                #     "cross_meeting_analysis": "Analysis covers leadership patterns across multiple recent meetings"
+                # }
             },
             status_code=200
         )
