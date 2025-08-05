@@ -1,6 +1,3 @@
-"""
-Fireflies Helper Functions - Clean utility functions for transcript operations
-"""
 
 from typing import Dict, Any, List, Tuple
 import tiktoken
@@ -103,9 +100,12 @@ def estimate_tokens_with_tiktoken(text: str) -> int:
         return len(text) // 4
 
 
-def get_transcripts_list() -> List[Dict[str, Any]]:
+def get_transcripts_list(fireflies_token: str = None) -> List[Dict[str, Any]]:
     """
     Get list of 10 most recent transcripts with metadata
+
+    Args:
+        fireflies_token: Optional Fireflies API token to use instead of env variable
 
     Returns:
         List of transcript dictionaries with metadata
@@ -113,7 +113,7 @@ def get_transcripts_list() -> List[Dict[str, Any]]:
     Raises:
         Exception: If API request fails
     """
-    client = FirefliesAPIClient()
+    client = FirefliesAPIClient(api_key=fireflies_token)
 
     query = """
     query Transcripts {
@@ -141,12 +141,13 @@ def get_transcripts_list() -> List[Dict[str, Any]]:
     return result.get("data", {}).get("transcripts", [])
 
 
-def get_transcript_content(transcript_id: str) -> Dict[str, Any]:
+def get_transcript_content(transcript_id: str, fireflies_token: str = None) -> Dict[str, Any]:
     """
     Get the full transcript content including sentences and speakers
 
     Args:
         transcript_id: The ID of the transcript to fetch
+        fireflies_token: Optional Fireflies API token to use instead of env variable
 
     Returns:
         Dict containing transcript content with sentences
@@ -154,7 +155,7 @@ def get_transcript_content(transcript_id: str) -> Dict[str, Any]:
     Raises:
         Exception: If API request fails
     """
-    client = FirefliesAPIClient()
+    client = FirefliesAPIClient(api_key=fireflies_token)
 
     query = f"""
     query GetTranscriptContent {{
@@ -354,107 +355,6 @@ def count_transcript_sentences(transcript_data: Dict[str, Any]) -> int:
 
     return len(sentences)
 
-
-# def evaluate_chunk_leadership(
-#     chunk_content: str,
-#     user_role: str = "Team Member",
-#     company_context: str = "General Business",
-#     user_name: str = "Laurent"
-# ) -> Dict[str, Any]:
-#     """
-#     Evaluate a transcript chunk for leadership behaviors using GPT-4o mini
-
-#     Args:
-#         chunk_content: The transcript content to evaluate
-#         user_role: The user's role in the organization
-#         company_context: Company/industry context for relevant advice
-#         user_name: The user's name for personalized feedback (default: "Laurent")
-
-#     Returns:
-#         Dict containing leadership assessment and coaching advice
-
-#     Example:
-#         {
-#             "strengths": ["Laurent showed clear communication", "Active listening"],
-#             "areas_for_improvement": ["Laurent could improve decision-making speed"],
-#             "specific_action": "Laurent should schedule 1:1s with team members weekly",
-#             "overall_score": 7.5
-#         }
-#     """
-#     # Use GPT-4o mini for cost efficiency
-#     llm = ChatOpenAI(
-#         model="gpt-4o-mini",
-#         openai_api_key=OPENAI_API_KEY,
-#         temperature=0.3
-#     )
-
-#     prompt_template = PromptTemplate(
-#         template="""
-#         You are an expert leadership coach analyzing {user_name}'s meeting performance. 
-
-#         **IMPORTANT: First, check if {user_name} speaks or participates in this transcript chunk.**
-
-#         If {user_name} does NOT appear in the transcript:
-#         - Clearly state that {user_name} did not speak during this portion of the meeting
-#         - Analyze whether this silence was appropriate or problematic based on:
-#         * The meeting content and context
-#         * {user_name}'s role and expected participation level
-#         * Whether this was a moment requiring their input, decision-making, or leadership
-#         * The flow of conversation and natural speaking opportunities
-
-#         If {user_name} DOES appear in the transcript:
-#         - Evaluate their leadership behaviors and provide specific improvement advice
-#         - Focus on: communication style, decision-making, team engagement, and meeting facilitation
-
-#         Consider {user_name}'s role: {user_role}
-#         Company context: {company_context}
-
-#         Transcript content:
-#         {chunk_content}
-
-#         Provide your assessment in JSON format with:
-
-#         **If {user_name} did not speak:**
-#         - "participation_status": "silent"
-#         - "silence_analysis": Brief explanation of why {user_name} didn't participate in this segment
-#         - "silence_assessment": "appropriate" or "missed_opportunity" with reasoning
-#         - "recommended_action": One specific suggestion for how {user_name} could have engaged (if silence was problematic) or affirmation of good judgment (if silence was appropriate)
-#         - "overall_score": Numeric score from 1-10 for {user_name}'s participation decision in this interaction
-
-#         **If {user_name} did speak:**
-#         - "participation_status": "active"
-#         - "strengths": Array of 2-3 observed leadership strengths with brief explanations (reference {user_name} by name)
-#         - "areas_for_improvement": Array of 2-3 specific areas for {user_name} to develop with context
-#         - "specific_action": One concrete, actionable next step {user_name} can take (address them directly by name)
-#         - "overall_score": Numeric score from 1-10 for {user_name}'s overall leadership effectiveness in this interaction
-
-#         Keep feedback constructive, specific, and actionable. Address {user_name} directly in your recommendations. Base your assessment only on observable behaviors and participation patterns in the transcript. Remember that strategic silence can be as important as active participation in leadership.
-#         """,
-#         input_variables=["chunk_content", "user_role",
-#                          "company_context", "user_name"]
-#     )
-
-#     try:
-#         chain = prompt_template | llm | JsonOutputParser()
-
-#         response = chain.invoke({
-#             "chunk_content": chunk_content,
-#             "user_role": user_role,
-#             "company_context": company_context,
-#             "user_name": user_name
-#         })
-
-#         return response
-
-#     except Exception as e:
-#         # Return error response if AI evaluation fails
-#         return {
-#             "error": f"AI evaluation failed: {str(e)}",
-#             "strengths": [],
-#             "areas_for_improvement": [],
-#             "specific_action": "Unable to provide recommendation due to evaluation error",
-#             "overall_score": 0
-        # }
 
 
 async def evaluate_chunk_leadership_async(
@@ -853,7 +753,7 @@ async def evaluate_chunks_concurrently(
 
     # Execute all evaluations concurrently
     print(
-        f"🚀 Starting concurrent evaluation of {len(chunks)} chunks (max {concurrency_limit} at a time)")
+        f"Starting concurrent evaluation of {len(chunks)} chunks (max {concurrency_limit} at a time)")
     print(f"   Model: {CURRENT_MODEL}")
     print(
         f"   Current pricing: ${get_model_pricing()['input']:.2f}/1M input, ${get_model_pricing()['output']:.2f}/1M output")
@@ -908,7 +808,7 @@ async def evaluate_chunks_concurrently(
     }
 
     print(
-        f"✅ Completed {len(completed_evaluations)}/{len(chunks)} evaluations")
+        f"Completed {len(completed_evaluations)}/{len(chunks)} evaluations")
     print(
         f"   Total tokens: {total_tokens:,} (input: {total_input_tokens:,}, output: {total_output_tokens:,})")
     print(f"   Total cost: ${aggregated_cost['total_cost_usd']:.6f}")
@@ -1185,6 +1085,8 @@ Meeting Context:
         - Note any blind spots in your communication style based on the actual transcript
 
         Write as their personal coach speaking directly to them. Use "you" throughout and ground all feedback in their actual words and contributions.
+
+        FORMATTING INSTRUCTION: When creating summaries, use only plain text with no markup whatsoever. Do not use bold (**text**), italics, bullet points, headers, or any special formatting characters. This output will be used in a chatbot where markup should not appear. Write in natural paragraphs and sentences only.
         """,
         input_variables=["user_name", "user_role", "company_context", "metadata_context", "development_focus_context",
                         "chunks_context", "effective_moments_context", "improvements_context", "development_context", "coaching_context"]

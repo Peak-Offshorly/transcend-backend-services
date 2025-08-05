@@ -9,7 +9,7 @@ from app.firebase.session import firebase, auth
 import firebase_admin
 from firebase_admin import auth, credentials, storage
 from app.database.models import Users, UserInvitation
-from app.schemas.models import SignUpSchema, UpdateUserSchema, LoginSchema, UserCompanyDetailsSchema,CustomTokenRequestSchema, AddUserToCompanySchema, AddUserToCompanyDashboardSchema, PasswordChangeRequest, UpdatePersonalDetailsSchema, ResetPasswordRequest, UpdateFirstAndLastNameSchema, ResendLinkSchema, EmailRequestSchema
+from app.schemas.models import SignUpSchema, UpdateUserSchema, LoginSchema, UserCompanyDetailsSchema,CustomTokenRequestSchema, AddUserToCompanySchema, AddUserToCompanyDashboardSchema, PasswordChangeRequest, UpdatePersonalDetailsSchema, ResetPasswordRequest, UpdateFirstAndLastNameSchema, ResendLinkSchema, EmailRequestSchema, FirefliesTokenSchema
 from app.database.connection import get_db
 from app.firebase.utils import verify_token
 from app.utils.users_crud import (
@@ -1500,24 +1500,30 @@ async def get_user_details(data: EmailRequestSchema, db: db_dependency):
         raise HTTPException(status_code=400, detail=str(error))
 
 
-@router.get("/recent-transcripts")
-async def get_recent_transcripts(request: Request, db: db_dependency):
+@router.post("/recent-transcripts")
+async def get_recent_transcripts(data: FirefliesTokenSchema, request: Request, db: db_dependency):
     """
     Get the most recent Fireflies transcript, chunk it, and provide AI leadership evaluation
     
     This endpoint demonstrates the full pipeline:
-    1. Gets recent transcripts list
+    1. Gets recent transcripts list using user-provided Fireflies token
     2. Takes the first transcript with sentences
     3. Fetches full transcript content
     4. Chunks it by tokens for AI evaluation
     5. Uses GPT-4.1-nano to evaluate leadership behaviors in each chunk
     
     Args:
+        data: Request body containing the Fireflies API token
         request: Request object containing the user token
         db: Database session dependency
         
     Returns:
         Chunked transcript data with AI leadership evaluations
+        
+    Request Body:
+        {
+            "fireflies_token": "your_fireflies_api_token_here"
+        }
         
     Example Response:
         {
@@ -1568,8 +1574,9 @@ async def get_recent_transcripts(request: Request, db: db_dependency):
         if not current_user:
             raise HTTPException(status_code=400, detail="Current user not found")
         
-        # Get transcript list
-        transcripts = get_transcripts_list()
+        # Get transcript list using provided token
+        fireflies_token = data.fireflies_token
+        transcripts = get_transcripts_list(fireflies_token=fireflies_token)
 
         
         if not transcripts:
@@ -1590,7 +1597,7 @@ async def get_recent_transcripts(request: Request, db: db_dependency):
             transcript_id = transcript['id']
             print(f"Trying transcript ID: {transcript_id}")
             
-            content = get_transcript_content(transcript_id)
+            content = get_transcript_content(transcript_id, fireflies_token=fireflies_token)
             sentences = content.get('sentences')
             
             if sentences and len(sentences) > 0:

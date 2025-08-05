@@ -20,7 +20,7 @@ class FirefliesAPIClient:
         self.base_url = "https://api.fireflies.ai/graphql"
         
         if not self.api_key:
-            raise ValueError("FIREFLIES_API_KEY is required. Set it in your .env file.")
+            raise ValueError("FIREFLIES_API_KEY is required. Provide it as a parameter.")
     
     def _make_request(self, query: str, variables: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
