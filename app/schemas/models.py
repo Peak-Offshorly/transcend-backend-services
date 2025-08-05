@@ -221,3 +221,6 @@ class ResendLinkSchema(BaseModel):
 
 class EmailRequestSchema(BaseModel):
     email: str
+
+class FirefliesTokenSchema(BaseModel):
+    fireflies_token: str

@@ -76,6 +76,9 @@ async def dev_plan_get_current(db: Session, user_id: str):
         DevelopmentPlan.is_finished == False
     ).first()
 
+    if existing_dev_plan is None:
+        return None
+
     return { 
         "dev_plan_id": existing_dev_plan.id,
         "dev_plan_number": existing_dev_plan.number,
