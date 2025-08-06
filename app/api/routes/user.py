@@ -1429,7 +1429,8 @@ async def resend_email_invitation(request: Request, data: ResendLinkSchema, db: 
         created_invitation = create_user_invitation(db=db, user=new_user, oob_code=oob_code, expiration_time=expiration_time)
 
         # Send complete profile email
-        link = f"https://app.peakleadershipinstitute.com/update-invite-user?oob={oob_code}"
+        # link = f"https://app.peakleadershipinstitute.com/update-invite-user?oob={oob_code}"   # This is for deployed app
+        link = f"https://peak-transcend-staging.netlify.app/update-invite-user?oob={oob_code}"
         await send_complete_profile(user_email, link, current_user_first_name, current_user_last_name)
 
         # delete expired invitations
