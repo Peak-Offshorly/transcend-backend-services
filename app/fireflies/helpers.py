@@ -1086,7 +1086,7 @@ Meeting Context:
 
         Write as their personal coach speaking directly to them. Use "you" throughout and ground all feedback in their actual words and contributions.
 
-        FORMATTING INSTRUCTION: When creating summaries, use only plain text with no markup whatsoever. Do not use bold (**text**), italics, bullet points, headers, or any special formatting characters. This output will be used in a chatbot where markup should not appear. Write in natural paragraphs and sentences only.
+        FORMATTING INSTRUCTION: When creating summaries, use only plain text with no markup whatsoever. Do not use bold (**text**), italics, bullet points, headers, or any special formatting characters. This output will be used in a chatbot where markup should not appear. Write in natural paragraphs and sentences only. YOU MUST ALSO **SEPARATE EACH SECTION WITH A BLANK LINE**. LIKE ADD 2 BLANK LINES BETWEEN EACH SECTION FOR EASIER READING.
         """,
         input_variables=["user_name", "user_role", "company_context", "metadata_context", "development_focus_context",
                         "chunks_context", "effective_moments_context", "improvements_context", "development_context", "coaching_context"]
