@@ -170,7 +170,8 @@ async def create_company_endpoint(
                     created_invitation = create_user_invitation(db=db, user=new_user, oob_code=oob_code, expiration_time=expiration_time)
 
                     # Send complete profile email
-                    link = f"https://app.peakleadershipinstitute.com/update-invite-user?oob={oob_code}"
+                    # link = f"https://app.peakleadershipinstitute.com/update-invite-user?oob={oob_code}" # for production
+                    link =  f"https://peak-transcend-staging.netlify.app/update-invite-user?oob={oob_code}"  # for dev or staging
                     await send_complete_profile(firebase_user.email, link, current_user_firstname, current_user_lastname)
 
                     response_data.append({

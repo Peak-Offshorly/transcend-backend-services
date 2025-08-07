@@ -48,7 +48,7 @@ async def user_weekly_email(db: Session):
                 subject = f"Elevate - Week {week_number} Leadership Progress Check"
                 body = {
                     "user_name": user.first_name,
-                    "progress_check_link": f"{WEB_URL}/progress-check",
+                    "progress_check_link": "https://peak-transcend-staging.netlify.app/progress-check", # you need to change this link to the correct one for your environment
                     "week_number": week_number,
                     "strength": dev_plan_details["chosen_strength"]["name"],
                     "weakness": dev_plan_details["chosen_weakness"]["name"],
