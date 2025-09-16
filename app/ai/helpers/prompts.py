@@ -17,13 +17,14 @@ class DevelopmentActionsPrompts:
       - Role Responsibilities: **{role_description}**
       - Company Size: **{company_size} employees**
 
-      You MUST reference **at least 3 of these 4 elements directly within the text of each action**.
+      You MUST reference **at least 3 of these 4 elements directly within the text of each action written in a MEANINGFUL way and not just randomly added**.
 
       Provide your answer in a JSON format with `"actions"` as the key. It should contain a list of 3 actions as values. Each action in the list should be an object that contains:
       - `"name"`: A clear, concise title for the action
       - `"details"`: Specific instructions for the action (max 20 words) with the industry, role, responsibilities, or company size clearly in the instruction, including all of the following:
 
       The `"details"` must:
+      - Be written in the first-person view.
       - Address the chosen {type} and the specific chosen practice
       - Be focused primarily on the employee's personal development, though it can include team interactions if appropriate
       - Include a specific frequency or schedule (e.g., daily, weekly, twice in 2 weeks)
@@ -69,7 +70,10 @@ class DevelopmentActionsPrompts:
 
       The employee will give you their personal and company details, their answers to a leadership questionnaire, their {type} as a leader, and the practice they want to focus on for their chosen {type}. They will also provide the actions you have previously given them that they do not want.
       
-      Your task is to regenerate and provide 3 new detailed personal development actions that are feasible, measurable, and time-bound in order to guide the employee in leveraging and improving their {type}. Provide exactly 3 new personalized actions for the chosen {type} that can be done within a span of 2 weeks on an individual level or a team level, depending on the chosen practice.
+      Your task is to regenerate and provide 3 NEW detailed personal development actions that are feasible, measurable, and time-bound in order to guide the employee in leveraging and improving their {type}. Provide exactly 3 NEW personalized actions for the chosen {type} that can be done within a span of 2 weeks on an individual level or a team level, depending on the chosen practice.
+      
+      The following are your previous actions that the employee does not want. DO NOT use these actions again:
+      {previous_actions}
       
       **IMPORTANT**: Each action must be explicitly customized to include and reflect the following in the action's **details**:
       - Industry: **{industry}**
@@ -77,13 +81,14 @@ class DevelopmentActionsPrompts:
       - Role Responsibilities: **{role_description}**
       - Company Size: **{company_size} employees**
 
-      You MUST reference **at least 3 of these 4 elements directly within the text of each action**.
+      You MUST reference **at least 3 of these 4 elements directly within the text of each action written in a MEANINGFUL way and not just randomly added**.
 
       Provide your answer in a JSON format with `"actions"` as the key. It should contain a list of 3 actions as values. Each action in the list should be an object that contains:
       - `"name"`: A clear, concise title for the action
       - `"details"`: Specific instructions for the action (max 20 words) with the industry, role, responsibilities, or company size clearly in the instruction, including all of the following:
 
       The `"details"` must:
+      - Be written in the first-person view.
       - Address the chosen {type} and the specific chosen practice
       - Be focused primarily on the employee's personal development, though it can include team interactions if appropriate
       - Include a specific frequency or schedule (e.g., daily, weekly, twice in 2 weeks)
@@ -112,9 +117,6 @@ class DevelopmentActionsPrompts:
 
       They want to work on this {type}: "{chosen_trait}"
       Focused on their identified practice for that {type}: "{trait_practice}"
-
-      The following are your previous actions that the employee does not want:
-      {previous_actions}
 
       Answer: <|eot_id|><|start_header_id|>assistant<|end_header_id|>
       """,
