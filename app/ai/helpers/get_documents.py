@@ -46,13 +46,11 @@ def format_docs(docs):
 
 def get_docs(vectorstore, trait, practice):
   
-  # print("Retrieving relevant documents")
   query = f"{trait} - {practice}"
-  retrieved_docs = vectorstore.similarity_search(query=query, k=5)
+  retrieved_docs = vectorstore.similarity_search(query=query, k=3)
   retrieved_docs_string = ""
   for idx, doc in enumerate(retrieved_docs):
-    # print(f"Doc {doc.page_content}")  
-    #filename is for more context on what document it came from
+    # filename is for more context on what document it came from
     filename = doc.metadata['filename']
     retrieved_docs_string += f"""
       Document {idx} with filename '{filename}':
@@ -60,20 +58,17 @@ def get_docs(vectorstore, trait, practice):
       \n
     """
 
-  filtered_docs = []
-  graded_docs = grade_docs(trait, practice, retrieved_docs_string, filename)
-
-  for key, val in graded_docs.items():
-    if val == "yes":
-      filtered_docs.append(retrieved_docs[int(key)])
-
-  # print("filtered docs", filtered_docs)
-
-  #todo: ADD A FALLBACK FOR NO RELEVANT DOCS
+  # Remove grading and lessen k in query for optimizations
+  filtered_docs = retrieved_docs
+  
+  # graded_docs = grade_docs(trait, practice, retrieved_docs_string, filename)
+  # for key, val in graded_docs.items():
+  #   if val == "yes":
+  #     filtered_docs.append(retrieved_docs[int(key)])
+  
   if len(filtered_docs) == 0:
-    # print("No relevant documents found")
-    # return retrieved_docs
     return ""
   else:
     final_docs = format_docs(filtered_docs)
+    
     return final_docs
