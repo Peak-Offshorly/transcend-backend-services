@@ -15,18 +15,21 @@ from app.utils.dev_plan_crud import dev_plan_get_current
 from app.utils.traits_crud import traits_get_top_bottom_five, chosen_traits_get
 from app.utils.sprints_crud import sprint_get_current
 from app.utils.users_crud import get_user_company_details
-from app.utils.pending_actions_crud import pending_actions_create_one, pending_actions_read, pending_actions_clear_all
+from app.utils.pending_actions_crud import pending_actions_create_one, pending_actions_read, pending_actions_clear_all, pending_actions_create_bulk
 from app.ai.helpers.prompts import DevelopmentActionsPrompts
+from app.services.user_data_service import user_data_service
 
 db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter(prefix="/development-actions", tags=["development-actions"])
 
+import time
 @router.post("/get-actions")
 async def get_actions(data: DevelopmentActionsSchema, db: db_dependency):
   try:
     user_id = data.user_id
     trait_type = data.trait_type
 
+    # Check for existing actions first
     existing_actions = await pending_actions_read(db=db, user_id=user_id, category=trait_type)
 
     if existing_actions:
@@ -35,98 +38,39 @@ async def get_actions(data: DevelopmentActionsSchema, db: db_dependency):
         response.append({
           "details": action.action
         })
-
       return {"actions": response}
-    else:
-      company_details = get_user_company_details(db=db, user_id=user_id)
+    
+    # Get all user data with using user_data_service (with caching)
+    base_data = await user_data_service.get_user_base_data(db=db, user_id=user_id)
+    
+    # Get cached vectorstore
+    vectorstore = user_data_service.get_vectorstore()
+    
+    # Get trait-specific data
+    chosen_trait, trait_practice, _, _ = user_data_service.get_trait_inputs(base_data, trait_type)
+    
+    # Get documents for the trait and practice
+    docs = get_docs(vectorstore=vectorstore, trait=chosen_trait, practice=trait_practice)
+    
+    # Format context based on trait type
+    context_label = "Strength Context" if trait_type == "strength" else "Weakness Context"
+    final_docs = f"""
+      {context_label}:
+      {docs}
+    """
+    
+    # Build AI inputs
+    inputs = user_data_service.build_ai_inputs(base_data, trait_type, final_docs)
+    
+    # Generate actions
+    prompt_template = DevelopmentActionsPrompts.initial_generation_prompt()
+    response = generate_actions(prompt_template=prompt_template, inputs=inputs)
 
-      valid_data = check_user_input(company_size=company_details.company_size, industry=company_details.industry, employee_role=company_details.role, role_description=company_details.role_description)
-
-      company_size = valid_data['company_size']
-      industry = valid_data['industry']
-      employee_role = valid_data['employee_role']
-      role_description = valid_data['role_description']
-
-      vectorstore = get_vectorstore(index_name="peak-ai")
-
-      # Getting initial questions with answers
-      user_answers = await initial_questions_answers_all_forms_get_all(db=db, user_id=user_id)
-      answers_list = user_answers[0].answers
-      initial_questions_with_answers = get_initial_questions_with_answers(answers_list)
-
-      # Getting top and bottom five
-      ten_traits = traits_get_top_bottom_five(db=db, user_id=user_id)
-      strengths, weaknesses = get_ten_traits(ten_traits)
-
-      dev_plan = await dev_plan_get_current(db=db, user_id=user_id)
-      dev_plan_id = dev_plan["dev_plan_id"]
-
-      # Getting chosen traits
-      chosen_traits = chosen_traits_get(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
-      chosen_strength, chosen_weakness = get_chosen_traits(chosen_traits)
-
-      current_sprint = await sprint_get_current(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
-
-      chosen_trait_practices_1 = await chosen_practices_get(db=db, user_id=user_id, sprint_number=current_sprint['sprint_number'], dev_plan_id=dev_plan_id)
-      strength_practice, weakness_practice = get_chosen_practices(chosen_trait_practices_1)
-
-      response = ""
-      prompt_template = DevelopmentActionsPrompts.initial_generation_prompt()
-      if trait_type == "strength":
-        # print("Strengths", strengths)
-        # print("Chosen Strength: ", chosen_strength)
-        # print("Chosen Practice: ", strength_practice)
-        docs = get_docs(vectorstore=vectorstore, trait=chosen_strength, practice=strength_practice)
-        final_docs = f"""
-          Strength Context:
-          {docs}
-        """
-
-        inputs = {
-          "type": trait_type,
-          "context": final_docs,
-          "initial_questions": initial_questions_with_answers,
-          "five_traits": ",".join(strengths),
-          "chosen_trait": chosen_strength,
-          "trait_practice": strength_practice,
-          "company_size": company_size,
-          "industry": industry,
-          "employee_role": employee_role,
-          "role_description": role_description
-        }
-              
-        response = generate_actions(prompt_template=prompt_template, inputs=inputs)
-      elif trait_type == "weakness":
-        # print("Weaknesses", weaknesses)
-        # print("Chosen Weakness: ", chosen_weakness)
-        # print("Chosen Practice: ", weakness_practice)
-        docs = get_docs(vectorstore=vectorstore, trait=chosen_weakness, practice=weakness_practice)
-        final_docs = f"""
-          Weakness Context:
-          {docs}
-        """
-
-        inputs = {
-          "type": trait_type,
-          "context": final_docs,
-          "initial_questions": initial_questions_with_answers,
-          "five_traits": ",".join(weaknesses),
-          "chosen_trait": chosen_weakness,
-          "trait_practice": weakness_practice,
-          "company_size": company_size,
-          "industry": industry,
-          "employee_role": employee_role,
-          "role_description": role_description
-        }
+    # Create actions in bulk for better performance
+    action_details = [action["details"] for action in response["actions"]]
+    await pending_actions_create_bulk(db=db, user_id=user_id, actions=action_details, category=trait_type)
         
-        response = generate_actions(prompt_template=prompt_template, inputs=inputs)
-
-      #create one for each action
-      for action in response["actions"]:
-        print("action", action)
-        await pending_actions_create_one(db=db, user_id=user_id, action=action["details"], category=trait_type)
-        
-      return response
+    return response
   except Exception as error:
     raise HTTPException(status_code=500, detail=str(error))
   
@@ -137,102 +81,49 @@ async def regenerate_actions(data: DevelopmentActionsSchema, db: db_dependency):
     user_id = data.user_id
     trait_type = data.trait_type
 
+    # Get existing actions to build previous_actions string
     existing_actions = await pending_actions_read(db=db, user_id=user_id, category=trait_type)
     previous_actions = ""
-
     if existing_actions:
       for action in existing_actions:
         previous_actions += f"- {action.action}\n"
 
-    company_details = get_user_company_details(db=db, user_id=user_id)
-
-    valid_data = check_user_input(company_size=company_details.company_size, industry=company_details.industry, employee_role=company_details.role, role_description=company_details.role_description)
-
-    company_size = valid_data['company_size']
-    industry = valid_data['industry']
-    employee_role = valid_data['employee_role']
-    role_description = valid_data['role_description']
-
-    vectorstore = get_vectorstore(index_name="peak-ai")
-
-    # Getting initial questions with answers
-    user_answers = await initial_questions_answers_all_forms_get_all(db=db, user_id=user_id)
-    answers_list = user_answers[0].answers
-    initial_questions_with_answers = get_initial_questions_with_answers(answers_list)
-
-    # Getting top and bottom five
-    ten_traits = traits_get_top_bottom_five(db=db, user_id=user_id)
-    strengths, weaknesses = get_ten_traits(ten_traits)
-
-    dev_plan = await dev_plan_get_current(db=db, user_id=user_id)
-    dev_plan_id = dev_plan["dev_plan_id"]
-
-    # Getting chosen traits
-    chosen_traits = chosen_traits_get(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
-    chosen_strength, chosen_weakness = get_chosen_traits(chosen_traits)
-
-    current_sprint = await sprint_get_current(db=db, user_id=user_id, dev_plan_id=dev_plan_id)
-
-    chosen_trait_practices_1 = await chosen_practices_get(db=db, user_id=user_id, sprint_number=current_sprint['sprint_number'], dev_plan_id=dev_plan_id)
-    strength_practice, weakness_practice = get_chosen_practices(chosen_trait_practices_1)
-
-    response = ""
+    # Get all user data using the user_data_service (with caching)
+    base_data = await user_data_service.get_user_base_data(db=db, user_id=user_id)
+    
+    # Get cached vectorstore
+    vectorstore = user_data_service.get_vectorstore()
+    
+    # Get trait-specific data
+    chosen_trait, trait_practice, _, _ = user_data_service.get_trait_inputs(base_data, trait_type)
+    
+    # Get documents for the trait and practice
+    docs = get_docs(vectorstore=vectorstore, trait=chosen_trait, practice=trait_practice)
+    
+    # Format context based on trait type
+    context_label = "Strength Context" if trait_type == "strength" else "Weakness Context"
+    final_docs = f"""
+      {context_label}:
+      {docs}
+    """
+    
+    # Build AI inputs with previous actions
+    inputs = user_data_service.build_ai_inputs(base_data, trait_type, final_docs, previous_actions)
+    
+    # Generate actions
     prompt_template = DevelopmentActionsPrompts.regeneration_prompt()
-    if trait_type == "strength":
-      docs = get_docs(vectorstore=vectorstore, trait=chosen_strength, practice=strength_practice)
-      final_docs = f"""
-        Strength Context:
-        {docs}
-      """
+    response = generate_actions(prompt_template=prompt_template, inputs=inputs)
 
-      inputs = {
-        "type": trait_type,
-        "context": final_docs,
-        "initial_questions": initial_questions_with_answers,
-        "five_traits": ",".join(strengths),
-        "chosen_trait": chosen_strength,
-        "trait_practice": strength_practice,
-        "company_size": company_size,
-        "industry": industry,
-        "employee_role": employee_role,
-        "role_description": role_description,
-        "previous_actions": previous_actions
-      }
-            
-      response = generate_actions(prompt_template=prompt_template, inputs=inputs)
-    elif trait_type == "weakness":
-      docs = get_docs(vectorstore=vectorstore, trait=chosen_weakness, practice=weakness_practice)
-      final_docs = f"""
-        Weakness Context:
-        {docs}
-      """
-
-      inputs = {
-        "type": trait_type,
-        "context": final_docs,
-        "initial_questions": initial_questions_with_answers,
-        "five_traits": ",".join(weaknesses),
-        "chosen_trait": chosen_weakness,
-        "trait_practice": weakness_practice,
-        "company_size": company_size,
-        "industry": industry,
-        "employee_role": employee_role,
-        "role_description": role_description,
-        "previous_actions": previous_actions
-      }
-      
-      response = generate_actions(prompt_template=prompt_template, inputs=inputs)
-
-    #clear pending actions
+    # Clear existing actions and create new ones in bulk
     await pending_actions_clear_all(db=db, user_id=user_id)
+    
+    action_details = [action["details"] for action in response["actions"]]
+    await pending_actions_create_bulk(db=db, user_id=user_id, actions=action_details, category=trait_type)
 
-    #create one for each action
-    for action in response["actions"]:
-      await pending_actions_create_one(db=db, user_id=user_id, action=action["details"], category=trait_type)
-      
     return response
   except Exception as error:
     raise HTTPException(status_code=500, detail=str(error))
+
 
 @router.post("/clear-actions")
 async def clear_actions(user_id:str, db: db_dependency):
