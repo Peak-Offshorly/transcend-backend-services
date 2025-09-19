@@ -13,6 +13,20 @@ async def pending_actions_create_one(db: Session, user_id: str, action: str, cat
     db.add(new_pending_action)
     db.commit()
 
+# Bulk create for better performance
+async def pending_actions_create_bulk(db: Session, user_id: str, actions: list, category: str):
+    pending_actions = [
+        PendingActions(
+            user_id=user_id,
+            action=action,
+            category=category
+        )
+        for action in actions
+    ]
+    
+    db.add_all(pending_actions)
+    db.commit()
+
 # Returns all pending actions under a user_id and category
 async def pending_actions_read(db: Session, user_id: str, category: str):
     pending_actions = db.query(PendingActions).filter(
@@ -27,13 +41,9 @@ async def pending_actions_read(db: Session, user_id: str, category: str):
 
 # Clears all pending actions under a user_id
 async def pending_actions_clear_all(db: Session, user_id: str):
-    pending_actions = db.query(PendingActions).filter(
+    # bulk delete for better performance
+    db.query(PendingActions).filter(
         PendingActions.user_id == user_id
-    ).all()
-
-    if pending_actions:
-        for pending_action in pending_actions:
-            db.delete(pending_action)
-            db.flush()
+    ).delete()
     
     db.commit()
