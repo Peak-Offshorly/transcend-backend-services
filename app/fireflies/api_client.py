@@ -47,7 +47,7 @@ class FirefliesAPIClient:
             data['variables'] = variables
         
         try:
-            response = requests.post(self.base_url, json=data, headers=headers, timeout=30)
+            response = requests.post(self.base_url, json=data, headers=headers, timeout=60)
             response.raise_for_status()
             result = response.json()
             
