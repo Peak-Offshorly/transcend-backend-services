@@ -238,7 +238,7 @@ def save_transcript_to_file(content: Dict[str, Any], transcript_id: str) -> str:
         The filename where the transcript was saved
     """
     if not content:
-        print("❌ No content to save")
+        print("No content to save")
         return ""
     
     try:
@@ -264,9 +264,9 @@ def save_transcript_to_file(content: Dict[str, Any], transcript_id: str) -> str:
         try:
             if not os.path.exists(transcripts_dir):
                 os.makedirs(transcripts_dir)
-                print(f"📁 Created directory: {transcripts_dir}")
+                print(f"Created directory: {transcripts_dir}")
         except OSError as e:
-            print(f"❌ Error creating directory {transcripts_dir}: {str(e)}")
+            print(f"Error creating directory {transcripts_dir}: {str(e)}")
             # Try to save in current directory instead
             transcripts_dir = "."
             filename = f"transcript_{date_str}_{sanitize_filename(title)}.txt"
@@ -422,43 +422,43 @@ def save_transcript_to_file(content: Dict[str, Any], transcript_id: str) -> str:
         try:
             with open(filepath, 'w', encoding='utf-8') as f:
                 f.write('\n'.join(file_content))
-            print(f"✅ Successfully saved transcript to: {filepath}")
+            print(f"Successfully saved transcript to: {filepath}")
             return filepath
         except PermissionError:
-            print(f"❌ Permission denied writing to: {filepath}")
+            print(f"Permission denied writing to: {filepath}")
             # Try alternative filename
             alt_filename = f"transcript_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
             alt_filepath = os.path.join(".", alt_filename)
             try:
                 with open(alt_filepath, 'w', encoding='utf-8') as f:
                     f.write('\n'.join(file_content))
-                print(f"✅ Saved to alternative location: {alt_filepath}")
+                print(f"Saved to alternative location: {alt_filepath}")
                 return alt_filepath
             except Exception as e:
-                print(f"❌ Failed to save to alternative location: {str(e)}")
+                print(f"Failed to save to alternative location: {str(e)}")
                 return ""
         except UnicodeEncodeError as e:
-            print(f"❌ Unicode encoding error: {str(e)}")
+            print(f"Unicode encoding error: {str(e)}")
             # Try saving with different encoding
             try:
                 with open(filepath, 'w', encoding='utf-8', errors='ignore') as f:
                     f.write('\n'.join(file_content))
-                print(f"✅ Saved with unicode errors ignored: {filepath}")
+                print(f"Saved with unicode errors ignored: {filepath}")
                 return filepath
             except Exception as e2:
-                print(f"❌ Failed even with unicode error handling: {str(e2)}")
+                print(f"Failed even with unicode error handling: {str(e2)}")
                 return ""
         except OSError as e:
-            print(f"❌ OS error writing file: {str(e)}")
+            print(f"OS error writing file: {str(e)}")
             return ""
         except Exception as e:
-            print(f"❌ Unexpected error writing file: {str(e)}")
+            print(f"Unexpected error writing file: {str(e)}")
             return ""
     
     except Exception as e:
-        print(f"❌ Error in save_transcript_to_file: {str(e)}")
+        print(f"Error in save_transcript_to_file: {str(e)}")
         import traceback
-        print(f"❌ Traceback: {traceback.format_exc()}")
+        print(f"Traceback: {traceback.format_exc()}")
         return ""
 
 
@@ -522,14 +522,14 @@ def print_transcript_list(transcripts: List[Dict[str, Any]]):
 def print_transcript_content(content: Dict[str, Any], transcript_id: str):
     """Print formatted transcript content with sentences and save to file"""
     if not content:
-        print("❌ No transcript content found.")
+        print("No transcript content found.")
         return
     
     print_separator(f"TRANSCRIPT: {content.get('title', 'Untitled')}")
     
     # Basic information
-    print(f"📅 Date: {format_timestamp(content.get('date', 0))}")
-    print(f"⏱️  Duration: {format_duration(content.get('duration', 0))}")
+    print(f"Date: {format_timestamp(content.get('date', 0))}")
+    print(f"Duration: {format_duration(content.get('duration', 0))}")
     participants = content.get('participants', [])
     if participants:
         print(f"👥 Participants: {', '.join(participants)}")
@@ -542,12 +542,12 @@ def print_transcript_content(content: Dict[str, Any], transcript_id: str):
         print_separator("SUMMARY", char="-", width=60)
         
         if summary.get('overview'):
-            print(f"📋 Overview:")
+            print(f"Overview:")
             print(f"   {summary['overview']}\n")
         
         if summary.get('action_items'):
             action_items = summary['action_items']
-            print(f"✅ Action Items:")
+            print(f"Action Items:")
             
             # Handle both string and list formats
             if isinstance(action_items, str):
@@ -572,13 +572,13 @@ def print_transcript_content(content: Dict[str, Any], transcript_id: str):
         if summary.get('keywords'):
             keywords = summary['keywords']
             if isinstance(keywords, list):
-                print(f"🔍 Keywords: {', '.join(keywords)}\n")
+                print(f"Keywords: {', '.join(keywords)}\n")
             else:
-                print(f"🔍 Keywords: {keywords}\n")
+                print(f"Keywords: {keywords}\n")
         
         if summary.get('bullet_gist'):
             bullet_gist = summary['bullet_gist']
-            print(f"📝 Key Points:")
+            print(f"Key Points:")
             
             # Handle both string and list formats
             if isinstance(bullet_gist, str):
@@ -603,7 +603,7 @@ def print_transcript_content(content: Dict[str, Any], transcript_id: str):
     sentences = content.get('sentences', [])
     if sentences:
         print_separator("TRANSCRIPT CONTENT", char="-", width=60)
-        print(f"💬 Total sentences: {len(sentences)}\n")
+        print(f"Total sentences: {len(sentences)}\n")
         
         current_speaker = None
         for sentence in sentences:
@@ -613,27 +613,27 @@ def print_transcript_content(content: Dict[str, Any], transcript_id: str):
             
             # Print speaker name only when it changes
             if speaker != current_speaker:
-                print(f"\n🎤 {speaker} [{format_time_seconds(start_time)}]:")
+                print(f"\n{speaker} [{format_time_seconds(start_time)}]:")
                 current_speaker = speaker
             
             print(f"   {text}")
     else:
-        print("❌ No transcript sentences found.")
+        print("No transcript sentences found.")
     
     # Save to file
     print("\n" + "=" * 60)
-    print("💾 Saving transcript to file...")
+    print("Saving transcript to file...")
     
     filepath = save_transcript_to_file(content, transcript_id)
     if filepath:
-        print(f"✅ Transcript saved to: {filepath}")
+        print(f"Transcript saved to: {filepath}")
         try:
             file_size = os.path.getsize(filepath)
-            print(f"📁 File size: {file_size} bytes")
+            print(f"File size: {file_size} bytes")
         except:
-            print("📁 File created successfully")
+            print("File created successfully")
     else:
-        print("❌ Failed to save transcript to file")
+        print("Failed to save transcript to file")
 
 
 def main():
@@ -661,28 +661,28 @@ Examples:
         
         if args.id:
             # View specific transcript content
-            print(f"🔍 Fetching transcript content for ID: {args.id}")
+            print(f"Fetching transcript content for ID: {args.id}")
             content = manager.get_transcript_content(args.id)
             print_transcript_content(content, args.id)
             
         elif args.search:
             # Search transcripts
-            print(f"🔍 Searching for transcripts containing: '{args.search}'")
+            print(f"Searching for transcripts containing: '{args.search}'")
             transcripts = manager.search_transcripts(args.search, args.limit)
             print_transcript_list(transcripts)
             
         else:
             # List all transcripts (default behavior)
-            print(f"📋 Fetching {args.limit} most recent transcripts...")
+            print(f"Fetching {args.limit} most recent transcripts...")
             transcripts = manager.get_transcripts(args.limit)
             print_transcript_list(transcripts)
             
             if transcripts: 
-                print("\n💡 Tip: Use --id TRANSCRIPT_ID to view full transcript content")
-                print("💡 Tip: Use --search 'query' to search transcripts")
+                print("\nTip: Use --id TRANSCRIPT_ID to view full transcript content")
+                print("Tip: Use --search 'query' to search transcripts")
     
     except Exception as e:
-        print(f"❌ Error: {str(e)}")
+        print(f"Error: {str(e)}")
         print("\nTroubleshooting:")
         print("1. Check that your FIREFLIES_API_KEY is set in your .env file")
         print("2. Verify your API key has the correct permissions")

@@ -677,7 +677,7 @@ async def evaluate_chunks_concurrently(
                     **usage_info
                 }
 
-                print(f"✅ Completed evaluation for chunk {chunk['chunk_id']} - "
+                print(f"Completed evaluation for chunk {chunk['chunk_id']} - "
                       f"Tokens: {usage_info.get('total_tokens', 0)}, "
                       f"Cost: ${usage_info.get('total_cost_usd', 0):.6f}, "
                       f"Time: {chunk_processing_time:.1f}s")
@@ -685,7 +685,7 @@ async def evaluate_chunks_concurrently(
             except asyncio.TimeoutError:
                 chunk_processing_time = time.time() - chunk_start_time
                 print(
-                    f"⚠️ Timeout evaluating chunk {chunk['chunk_id']} after {chunk_processing_time:.1f}s")
+                    f"Timeout evaluating chunk {chunk['chunk_id']} after {chunk_processing_time:.1f}s")
                 chunk_index = chunk['chunk_id'] - 1
 
                 ai_evaluations[chunk_index] = {
@@ -718,7 +718,7 @@ async def evaluate_chunks_concurrently(
             except Exception as e:
                 chunk_processing_time = time.time() - chunk_start_time
                 print(
-                    f"⚠️ Failed to evaluate chunk {chunk['chunk_id']}: {str(e)} (after {chunk_processing_time:.1f}s)")
+                    f"Failed to evaluate chunk {chunk['chunk_id']}: {str(e)} (after {chunk_processing_time:.1f}s)")
                 chunk_index = chunk['chunk_id'] - 1
 
                 ai_evaluations[chunk_index] = {
