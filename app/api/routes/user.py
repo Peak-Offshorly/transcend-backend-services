@@ -46,6 +46,7 @@ from uuid import uuid4
 import os
 import secrets
 from app.fireflies.helpers import get_transcripts_list, get_transcript_content, chunk_transcript_by_tokens, evaluate_chunks_concurrently, count_transcript_sentences, summarize_evaluated_chunks
+from app.fireflies.api_client import FirefliesError
 from app.const import AI_EVALUATION_CONCURRENCY_LIMIT, AI_EVALUATION_TIMEOUT_SECONDS
 from app.utils.dev_plan_crud import dev_plan_get_current
 from app.utils.traits_crud import chosen_traits_get
@@ -1837,11 +1838,27 @@ async def get_recent_transcripts(data: FirefliesTokenSchema, request: Request, d
             },
             status_code=200
         )
-        
+
+
+    except FirefliesError as fireflies_error:
+        # Handle specific Fireflies API errors
+        error_response = {
+            "error": fireflies_error.message,
+            "error_code": fireflies_error.code
+        }
+        if fireflies_error.retry_after:
+            error_response["retry_after"] = fireflies_error.retry_after
+
+        return JSONResponse(
+            content=error_response,
+            status_code=400
+        )
     except HTTPException as http_error:
         raise http_error
     except Exception as error:
-        raise HTTPException(status_code=400, detail=str(error))
+        # Log unexpected errors for debugging
+        print(f"Unexpected error in /recent-transcripts: {str(error)}")
+        raise HTTPException(status_code=500, detail="An unexpected error occurred while processing your request.")
     
 
 

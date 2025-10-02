@@ -3,7 +3,7 @@ from typing import Dict, Any, List, Tuple
 import tiktoken
 import asyncio
 import time
-from .api_client import FirefliesAPIClient
+from .api_client import FirefliesAPIClient, FirefliesError
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import JsonOutputParser
 from langchain.prompts import PromptTemplate
