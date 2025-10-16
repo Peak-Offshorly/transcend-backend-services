@@ -100,6 +100,44 @@ def estimate_tokens_with_tiktoken(text: str) -> int:
         return len(text) // 4
 
 
+def get_user_info(fireflies_token: str = None) -> Dict[str, Any]:
+    """
+    Get user information from Fireflies API including name, user_id, and email
+
+    Args:
+        fireflies_token: Optional Fireflies API token to use instead of env variable
+
+    Returns:
+        Dict containing user data
+
+    Raises:
+        Exception: If API request fails
+
+    Example:
+        {
+            "user": {
+                "name": "Will Johnson",
+                "user_id": "abc123",
+                "email": "will@example.com"
+            }
+        }
+    """
+    client = FirefliesAPIClient(api_key=fireflies_token)
+
+    query = """
+    query User {
+        user {
+            user_id
+            email
+            name
+        }
+    }
+    """
+
+    result = client._make_request(query)
+    return result.get("data", {})
+
+
 def get_transcripts_list(fireflies_token: str = None) -> List[Dict[str, Any]]:
     """
     Get list of 10 most recent transcripts with metadata
@@ -129,7 +167,7 @@ def get_transcripts_list(fireflies_token: str = None) -> List[Dict[str, Any]]:
             duration
             transcript_url
             dateString
-            calendar_id 
+            calendar_id
             cal_id
             calendar_type
             meeting_link
@@ -876,7 +914,14 @@ async def summarize_evaluated_chunks(
 
     if not ai_evaluations:
         return {
-            "overall_leadership_assessment": "I don't have any meeting data to analyze at the moment. Please ensure your meeting transcript was processed successfully and try again.",
+            "overall_leadership_assessment": (
+                f"I couldn't find any segments where you participated as a speaker in the analyzed transcripts. "
+                f"This could mean:\n\n"
+                f"1. You didn't speak in these meetings, or\n"
+                f"2. Your name in the transcript doesn't match your account name\n\n"
+                f"💡 Tip: Make sure your Fireflies account name matches how you're identified in meeting transcripts. "
+                f"If you go by a different name in meetings (like a nickname), you may need to update your Fireflies profile."
+            ),
             "usage_analytics": {
                 "model_used": CURRENT_MODEL
             }
@@ -1042,51 +1087,80 @@ Meeting Context:
 
     prompt_template = PromptTemplate(
         template="""
-        You are {user_name}'s personal leadership coach providing specific feedback on their actual contributions during this meeting.
-        **IMPORTANT HARD RULE: First, check if {user_name} speaks or participates in this transcript chunk. IF *NOT* THEN THEIR PARTICIPATION IS SILENT. THIS IS A HARD RULE AND MUST FOLLOW EVERY TIME.**
+        You are {user_name}'s personal leadership coach providing specific, actionable feedback on their actual meeting performance.
 
         {user_name} is a {user_role} in a {company_context} context.
         {metadata_context}
         {development_focus_context}
 
-        I have analyzed your participation across multiple segments of the meeting. Here's the segment-by-segment data:
+        ANALYSIS DATA:
 
-        PARTICIPATION SUMMARY:
+        Participation Summary:
         {chunks_context}
 
-        EFFECTIVE LEADERSHIP MOMENTS OBSERVED:
+        Effective Leadership Moments:
         {effective_moments_context}
 
-        MISSED OPPORTUNITIES FOR IMPROVEMENT:
+        Missed Opportunities:
         {improvements_context}
 
-        DEVELOPMENT RECOMMENDATIONS FROM ANALYSIS:
+        Development Recommendations:
         {development_context}
 
-        SPECIFIC COACHING INSIGHTS:
+        Coaching Insights:
         {coaching_context}
 
-        Provide specific coaching feedback on their actual meeting performance, speaking directly to them as their coach. Focus on what they said and how they said it.
+        Create a well-structured leadership assessment with the following sections. Use emojis as section headers for visual clarity, and structure each section with clear numbered points or short paragraphs.
 
-        Structure your response as:
+        FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
 
-        **What You Did Well:**
-        - Quote specific phrases or approaches you used that were effective
-        - Explain why these particular words/approaches worked well for your leadership goals
-        - Connect your actual dialogue to leadership best practices you demonstrated
+        💪 What You Did Well
 
-        **Missed Opportunities in Your Dialogue:**
-        - Identify specific moments where you could have used more effective language
-        - Quote what you actually said, then suggest how you could have phrased it differently
-        - Point to leadership techniques you could have applied in those specific exchanges
+        [Start with a brief 1-2 sentence summary of their overall performance]
 
-        **Your Language Patterns:**
-        - Highlight recurring phrases or communication patterns that serve you well
-        - Note any blind spots in your communication style based on the actual transcript
+        [Then list 2-4 specific examples, each as a separate short paragraph:]
+        1. [Quote or describe specific moment] - [Explain why this was effective and what leadership technique they demonstrated]
 
-        Write as their personal coach speaking directly to them. Use "you" throughout and ground all feedback in their actual words and contributions.
+        2. [Another specific example with explanation]
 
-        FORMATTING INSTRUCTION: When creating summaries, use only plain text with no markup whatsoever. Do not use bold (**text**), italics, bullet points, headers, or any special formatting characters. This output will be used in a chatbot where markup should not appear. Write in natural paragraphs and sentences only. YOU MUST ALSO **SEPARATE EACH SECTION WITH A BLANK LINE**. LIKE ADD 2 BLANK LINES BETWEEN EACH SECTION FOR EASIER READING.
+
+        🎯 Opportunities for Growth
+
+        [Brief 1 sentence transition about areas to develop]
+
+        [List 2-4 specific missed opportunities, each as a short paragraph:]
+        1. [What they said or did] - [What they could have said instead] - [Why this alternative would be more effective]
+
+        2. [Another opportunity with clear alternative phrasing]
+
+
+        📊 Your Communication Patterns
+
+        [2-3 short paragraphs analyzing their recurring behaviors:]
+
+        Positive patterns: [Describe 1-2 effective habits you noticed]
+
+        Limiting patterns: [Describe 1-2 habits that may be holding them back]
+
+
+        🚀 Action Steps for Your Next Meeting
+
+        [List 2-3 concrete, actionable techniques to practice:]
+
+        1. [Specific technique with example phrasing]
+
+        2. [Another specific technique]
+
+
+        CRITICAL FORMATTING RULES:
+        - Use emoji headers exactly as shown (💪, 🎯, 📊, 🚀)
+        - Add TWO blank lines between each major section
+        - Keep each point concise (2-3 sentences max)
+        - Use numbering (1., 2., 3.) for lists
+        - Write in second person ("you", "your")
+        - Include specific quotes from the transcript when possible
+        - NO bold, italics, or markdown formatting - just plain text with emojis and numbers
+        - Keep total response under 400 words for readability
         """,
         input_variables=["user_name", "user_role", "company_context", "metadata_context", "development_focus_context",
                         "chunks_context", "effective_moments_context", "improvements_context", "development_context", "coaching_context"]
