@@ -1596,7 +1596,7 @@ async def get_recent_transcripts(data: FirefliesTokenSchema, request: Request, d
         # Collect all valid transcripts (up to 10)
         valid_transcripts = []
         
-        for transcript in transcripts[:1]:  # Check up to 10 transcripts
+        for transcript in transcripts[:10]:  # Check up to 10 transcripts
             transcript_id = transcript['id']
             print(f"Trying transcript ID: {transcript_id}")
             
