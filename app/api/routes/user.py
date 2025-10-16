@@ -1604,14 +1604,14 @@ async def get_recent_transcripts(data: FirefliesTokenSchema, request: Request, d
             sentences = content.get('sentences')
             
             if sentences and len(sentences) > 0:
-                print(f"✅ Found transcript with {len(sentences)} sentences")
+                print(f"Found transcript with {len(sentences)} sentences")
                 valid_transcripts.append({
                     'id': transcript_id,
                     'content': content,
                     'title': content.get('title', f'Meeting {len(valid_transcripts) + 1}')
                 })
             else:
-                print(f"❌ Transcript {transcript_id} has no sentences (duration: {transcript.get('duration', 0)}s)")
+                print(f"Transcript {transcript_id} has no sentences (duration: {transcript.get('duration', 0)}s)")
         
         if not valid_transcripts:
             return JSONResponse(
@@ -1628,7 +1628,7 @@ async def get_recent_transcripts(data: FirefliesTokenSchema, request: Request, d
                 status_code=200
             )
         
-        print(f"✅ Processing {len(valid_transcripts)} valid transcripts")
+        print(f"Processing {len(valid_transcripts)} valid transcripts")
 
         # Get user's actual Fireflies name from their account
         # This ensures we use their actual display name instead of database name
@@ -1638,11 +1638,11 @@ async def get_recent_transcripts(data: FirefliesTokenSchema, request: Request, d
             fireflies_user = user_info.get('user', {})
             if fireflies_user and fireflies_user.get('name'):
                 fireflies_user_name = fireflies_user.get('name')
-                print(f"✅ Fetched Fireflies user name: {fireflies_user_name}")
+                print(f"Fetched Fireflies user name: {fireflies_user_name}")
             else:
-                print("⚠️ No user name found in Fireflies account, using database name as fallback")
+                print("No user name found in Fireflies account, using database name as fallback")
         except Exception as e:
-            print(f"⚠️ Failed to fetch Fireflies user info: {str(e)}, using database name as fallback")
+            print(f"Failed to fetch Fireflies user info: {str(e)}, using database name as fallback")
 
 
 
@@ -1736,14 +1736,14 @@ async def get_recent_transcripts(data: FirefliesTokenSchema, request: Request, d
         #             }
         #         }
                 
-        #         print(f"✅ Loaded local transcript with {len(sentences)} sentences")
+        #         print(f" Loaded local transcript with {len(sentences)} sentences")
         #         print(f"   Participants: {', '.join(transcript_data['participants'])}")
         #         print(f"   Duration: {transcript_data['duration']} seconds")
                 
         #         return transcript_data
                 
         #     except Exception as e:
-        #         print(f"❌ Error loading local transcript: {str(e)}")
+        #         print(f" Error loading local transcript: {str(e)}")
         #         raise
         
         # # Load the local transcript file
@@ -1775,7 +1775,7 @@ async def get_recent_transcripts(data: FirefliesTokenSchema, request: Request, d
             
             print(f"  Generated {len(transcript_chunks)} chunks from {transcript_title}")
         
-        print(f"✅ Total chunks from all transcripts: {len(all_chunks)}")
+        print(f"Total chunks from all transcripts: {len(all_chunks)}")
         chunks = all_chunks
 
         # Prepare user context for AI evaluation using actual user data
@@ -1787,12 +1787,12 @@ async def get_recent_transcripts(data: FirefliesTokenSchema, request: Request, d
         # Priority 2: Fallback to database name if Fireflies lookup failed
         if fireflies_user_name:
             user_name = fireflies_user_name
-            print(f"✅ Using Fireflies name for analysis: {user_name}")
+            print(f"Using Fireflies name for analysis: {user_name}")
         else:
             first_name = getattr(current_user, 'first_name', '')
             last_name = getattr(current_user, 'last_name', '')
             user_name = f"{first_name} {last_name}".strip() or "User"
-            print(f"⚠️ Using database name as fallback: {user_name}")
+            print(f"Using database name as fallback: {user_name}")
             
         # Pre-filter chunks to only include those where the user actually speaks
         # This saves AI API costs by skipping chunks where the user didn't participate
@@ -1808,9 +1808,9 @@ async def get_recent_transcripts(data: FirefliesTokenSchema, request: Request, d
                 skipped_chunks.append(chunk['chunk_id'])
 
         if skipped_chunks:
-            print(f"⚠️ Skipped {len(skipped_chunks)} chunks where {user_name} didn't speak (chunk IDs: {skipped_chunks[:5]}{'...' if len(skipped_chunks) > 5 else ''})")
+            print(f"Skipped {len(skipped_chunks)} chunks where {user_name} didn't speak (chunk IDs: {skipped_chunks[:5]}{'...' if len(skipped_chunks) > 5 else ''})")
 
-        print(f"✅ Evaluating {len(filtered_chunks)} chunks where {user_name} participated (out of {len(chunks)} total chunks)")
+        print(f"Evaluating {len(filtered_chunks)} chunks where {user_name} participated (out of {len(chunks)} total chunks)")
 
         # Use concurrent evaluation with comprehensive usage tracking
         # Only evaluate chunks where the user actually spoke
