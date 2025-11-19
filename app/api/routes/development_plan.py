@@ -77,13 +77,15 @@ async def get_gantt_chart(db: db_dependency, user_id: str, token = Depends(verif
       sprint_2_dates = await compute_second_sprint_dates(start_to_mid_date=sprint_1_dates["end_date"], end_date=chosen_traits["chosen_strength"]["end_date"])
       chosen_trait_practices_2 = None
 
-    # Compute dates for Colleague messages
-    colleague_message_dates = await compute_colleague_message_dates(start_date=recommended_mind_body_category.start_date, end_date=recommended_mind_body_category.end_date)
+    # Compute dates for Colleague messages (only if mind body category exists with valid dates)
+    colleague_message_dates = None
+    if recommended_mind_body_category and recommended_mind_body_category.start_date and recommended_mind_body_category.end_date:
+      colleague_message_dates = await compute_colleague_message_dates(start_date=recommended_mind_body_category.start_date, end_date=recommended_mind_body_category.end_date)
     
     return {
       "colleague_message_1": {
-        "start_date": colleague_message_dates["week_1"][0],
-        "end_date": colleague_message_dates["week_1"][1]
+        "start_date": colleague_message_dates["week_1"][0] if colleague_message_dates else None,
+        "end_date": colleague_message_dates["week_1"][1] if colleague_message_dates else None
       },
       # UPDATE for 4 weeks cycle: Comment this out for now, as we are not sending colleague messages in week 5 and week 9 due to the new 4 weeks cycle
       # "colleague_message_2": {
@@ -95,8 +97,8 @@ async def get_gantt_chart(db: db_dependency, user_id: str, token = Depends(verif
       #   "end_date": colleague_message_dates["week_9"][1]
       # },
       "colleague_message_4": {
-        "start_date": colleague_message_dates["week_12"][0],
-        "end_date": colleague_message_dates["week_12"][1]
+        "start_date": colleague_message_dates["week_12"][0] if colleague_message_dates else None,
+        "end_date": colleague_message_dates["week_12"][1] if colleague_message_dates else None
       },
       "chosen_strength": chosen_traits["chosen_strength"],
       "chosen_weakness": chosen_traits["chosen_weakness"],
@@ -113,9 +115,9 @@ async def get_gantt_chart(db: db_dependency, user_id: str, token = Depends(verif
         "weakness_practice": chosen_trait_practices_2["chosen_weakness_practice"][0].name if chosen_trait_practices_2 else None
       },
       "mind_body_practice": {
-        "name": recommended_mind_body_category.name,
-        "start_date": recommended_mind_body_category.start_date,
-        "end_date": recommended_mind_body_category.end_date
+        "name": recommended_mind_body_category.name if recommended_mind_body_category else None,
+        "start_date": recommended_mind_body_category.start_date if recommended_mind_body_category else None,
+        "end_date": recommended_mind_body_category.end_date if recommended_mind_body_category else None
       }
     }
   except Exception as error:

@@ -31,12 +31,14 @@ async def add_dates(chosen_traits_data, recommended_mind_body_category_data, cho
     chosen_weakness.start_date = start_date
     chosen_weakness.end_date = end_date
 
-    mind_body_area = db.query(PersonalPracticeCategory).filter(
-        PersonalPracticeCategory.id == recommended_mind_body_category_data.id,
-        PersonalPracticeCategory.development_plan_id == dev_plan["dev_plan_id"]
-    ).first()
-    mind_body_area.start_date = start_date
-    mind_body_area.end_date = end_date
+    # Only update mind body area if it exists
+    if recommended_mind_body_category_data:
+        mind_body_area = db.query(PersonalPracticeCategory).filter(
+            PersonalPracticeCategory.id == recommended_mind_body_category_data.id,
+            PersonalPracticeCategory.development_plan_id == dev_plan["dev_plan_id"]
+        ).first()
+        mind_body_area.start_date = start_date
+        mind_body_area.end_date = end_date
 
     current_dev_plan = db.query(DevelopmentPlan).filter(
         DevelopmentPlan.id == dev_plan["dev_plan_id"]
