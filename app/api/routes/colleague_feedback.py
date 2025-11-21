@@ -104,7 +104,6 @@ async def send_initial_emails(db: db_dependency, background_tasks: BackgroundTas
         "weakness_practice": dev_plan_details["weakness_practice"][0].name,
         "strength_practice_dev_actions": dev_plan_details["strength_practice_dev_actions"],
         "weakness_practice_dev_actions": dev_plan_details["weakness_practice_dev_actions"],
-        "recommended_category": dev_plan_details["mind_body_practice"].name,
         "chosen_personal_practices": dev_plan_details["mind_body_chosen_recommendations"],
         "sprint_number": current_sprint["sprint_number"]
       }
