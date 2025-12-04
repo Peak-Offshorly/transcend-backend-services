@@ -111,7 +111,7 @@ async def send_all_test_emails(db: Session, test_user_id: str, test_colleague_em
             
             weekly_body = {
                 "user_name": user.first_name,
-                "progress_check_link": "https://peak-transcend-staging.netlify.app/user/progress-check", # staging/or dev if there is dev staging in the url. if not, use production link
+                "progress_check_link": "https://app.peakleadershipinstitute.com/user/progress-check", # production link
                 "week_number": week,
                 "strength": "Communication",
                 "weakness": "Time Management",
