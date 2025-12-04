@@ -882,8 +882,8 @@ async def add_user_to_company_dashboard(
             created_invitation = create_user_invitation(db=db, user=new_user, oob_code=oob_code, expiration_time=expiration_time)
 
             # Send complete profile email
-            # link = f"https://app.peakleadershipinstitute.com/update-invite-user?oob={oob_code}" # production link
-            link = f"https://peak-transcend-staging.netlify.app/update-invite-user?oob={oob_code}" # staging link or dev
+            link = f"https://app.peakleadershipinstitute.com/update-invite-user?oob={oob_code}" # production link
+            # link = f"https://peak-transcend-staging.netlify.app/update-invite-user?oob={oob_code}" # staging link or dev
             await send_complete_profile(firebase_user.email, link, current_user_first_name, current_user_last_name)
 
             # Add success response for the current user
@@ -1431,8 +1431,8 @@ async def resend_email_invitation(request: Request, data: ResendLinkSchema, db: 
         created_invitation = create_user_invitation(db=db, user=new_user, oob_code=oob_code, expiration_time=expiration_time)
 
         # Send complete profile email
-        # link = f"https://app.peakleadershipinstitute.com/update-invite-user?oob={oob_code}"   # This is for deployed app
-        link = f"https://peak-transcend-staging.netlify.app/update-invite-user?oob={oob_code}"  # can be staging or dev
+        link = f"https://app.peakleadershipinstitute.com/update-invite-user?oob={oob_code}" # production link
+        # link = f"https://peak-transcend-staging.netlify.app/update-invite-user?oob={oob_code}"  # can be staging or dev
         await send_complete_profile(user_email, link, current_user_first_name, current_user_last_name)
 
         # delete expired invitations
